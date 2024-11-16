@@ -450,7 +450,7 @@ void DrawFoundation(TileInfo *ti, Foundation f)
 	/* Two part foundations must be drawn separately */
 	assert(f != Foundation::SteepBoth);
 
-	uint sprite_block = GetFoundationSpriteBlock(ti->tile);
+	uint sprite_block = GetFoundationSpriteBlock(ti->index);
 
 	/* Use the original slope sprites if NW and NE borders should be visible */
 	SpriteID leveled_base = (sprite_block == 0 ? (int)SPR_FOUNDATION_BASE : (SPR_SLOPES_VIRTUAL_BASE + sprite_block * TRKFOUND_BLOCK_SIZE));

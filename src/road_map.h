@@ -10,6 +10,7 @@
 #ifndef ROAD_MAP_H
 #define ROAD_MAP_H
 
+#include "map_type.h"
 #include "track_func.h"
 #include "depot_type.h"
 #include "rail_type.h"
@@ -668,7 +669,7 @@ inline void MakeRoadCrossing(Tile t, Owner road, Owner tram, Owner rail, Axis ro
 	t.m5() = to_underlying(RoadTileType::Crossing) << 6 | to_underlying(roaddir);
 	SB(t.m6(), 2, 6, 0);
 	t.m7() = road.base();
-	t.m8() = INVALID_ROADTYPE << 6 | rat;
+	t.m8() = t.HasAssociated() << M8_ASSOCIATED_TILE_BIT | INVALID_ROADTYPE << 6 | rat; // Preserves the state of the associated tile flag.
 	SetRoadTypes(t, road_rt, tram_rt);
 	SetRoadOwner(t, RoadTramType::Tram, tram);
 }
@@ -702,7 +703,7 @@ inline void MakeRoadDepot(Tile tile, Owner owner, DepotID depot_id, DiagDirectio
 	tile.m5() = to_underlying(RoadTileType::Depot) << 6 | to_underlying(dir);
 	SB(tile.m6(), 2, 6, 0);
 	tile.m7() = owner.base();
-	tile.m8() = INVALID_ROADTYPE << 6;
+	tile.m8() = tile.HasAssociated() << M8_ASSOCIATED_TILE_BIT | INVALID_ROADTYPE << 6; // Preserves the state of the associated tile flag.
 	SetRoadType(tile, GetRoadTramType(rt), rt);
 	SetRoadOwner(tile, RoadTramType::Tram, owner);
 }
