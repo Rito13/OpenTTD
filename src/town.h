@@ -243,7 +243,7 @@ struct Town : TownPool::PoolItem<&_town_pool> {
 	 * @pre IsTileType(t, TileType::House) or IsTileType(t, TileType::Road) but not a road depot.
 	 * @return The town.
 	 */
-	static inline Town *GetByTile(TileIndex tile)
+	static inline Town *GetByTile(Tile tile)
 	{
 		return Town::Get(GetTownIndex(tile));
 	}

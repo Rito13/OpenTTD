@@ -110,7 +110,7 @@ struct GoalListWindow : public Window {
 				return;
 
 			case GoalType::Tile:
-				if (!IsValidTile(s->dst)) return;
+				if (!IsValidTile(TileIndex{s->dst})) return;
 				xy = TileIndex{s->dst};
 				break;
 
