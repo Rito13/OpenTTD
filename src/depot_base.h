@@ -34,7 +34,7 @@ struct Depot : DepotPool::PoolItem<&_depot_pool> {
 	 * @pre IsRailDepotTile(t) || IsRoadDepotTile(t) || IsShipDepotTile(t)
 	 * @return The depot.
 	 */
-	static inline Depot *GetByTile(TileIndex tile)
+	static inline Depot *GetByTile(Tile tile)
 	{
 		return Depot::Get(GetDepotIndex(tile));
 	}

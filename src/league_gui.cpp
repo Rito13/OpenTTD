@@ -212,7 +212,7 @@ static void HandleLinkClick(Link link)
 			return;
 
 		case LinkType::Tile:
-			if (!IsValidTile(link.target)) return;
+			if (!IsValidTile(TileIndex{link.target})) return;
 			xy = TileIndex{link.target};
 			break;
 
