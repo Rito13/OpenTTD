@@ -676,27 +676,27 @@ static void GetTileDesc_Object([[maybe_unused]] TileIndex index, Tile tile, Tile
 }
 
 /** @copydoc TileLoopProc */
-static void TileLoop_Object(TileIndex tile)
+static bool TileLoop_Object(TileIndex index, Tile &tile)
 {
 	const ObjectSpec *spec = ObjectSpec::GetByTile(tile);
 	if (spec->flags.Test(ObjectFlag::Animation)) {
 		Object *o = Object::GetByTile(tile);
-		TriggerObjectTileAnimation(o, tile, ObjectAnimationTrigger::TileLoop, spec);
-		if (o->location.tile == tile) TriggerObjectAnimation(o, ObjectAnimationTrigger::TileLoopNorth, spec);
+		TriggerObjectTileAnimation(o, index, ObjectAnimationTrigger::TileLoop, spec);
+		if (o->location.tile == index) TriggerObjectAnimation(o, ObjectAnimationTrigger::TileLoopNorth, spec);
 	}
 
-	if (IsTileOnWater(tile)) TileLoop_Water(tile);
+	if (IsTileOnWater(tile)) TileLoop_Water(index, tile);
 
-	if (!IsObjectType(tile, OBJECT_HQ)) return;
+	if (!IsObjectType(tile, OBJECT_HQ)) return false;
 
 	/* HQ accepts passenger and mail; but we have to divide the values
 	 * between 4 tiles it occupies! */
 
 	/* HQ level (depends on company performance) in the range 1..5. */
-	uint level = GetCompanyHQSize(tile) + 1;
+	uint level = GetCompanyHQSize(index) + 1;
 	assert(level < 6);
 
-	StationFinder stations(TileArea(tile, 2, 2));
+	StationFinder stations(TileArea(index, 2, 2));
 
 	uint r = Random();
 	/* Top town buildings generate 250, so the top HQ type makes 256. */
@@ -728,6 +728,8 @@ static void TileLoop_Object(TileIndex tile)
 
 		MoveGoodsToStation(mail, amt, {GetTileOwner(tile), SourceType::Headquarters}, stations.GetStations());
 	}
+
+	return false;
 }
 
 

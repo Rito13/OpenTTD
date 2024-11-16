@@ -3750,46 +3750,45 @@ static TrackStatus GetTileTrackStatus_Station(TileIndex tile, TransportType mode
 
 
 /** @copydoc TileLoopProc */
-static void TileLoop_Station(TileIndex tile)
+static bool TileLoop_Station(TileIndex index, Tile &tile)
 {
 	auto *st = BaseStation::GetByTile(tile);
 	switch (GetStationType(tile)) {
 		case StationType::Airport:
-			TriggerAirportTileAnimation(Station::From(st), tile, AirportAnimationTrigger::TileLoop);
+			TriggerAirportTileAnimation(Station::From(st), index, AirportAnimationTrigger::TileLoop);
 			break;
 
 		case StationType::Rail:
 		case StationType::RailWaypoint:
-			TriggerStationAnimation(st, tile, StationAnimationTrigger::TileLoop);
+			TriggerStationAnimation(st, index, StationAnimationTrigger::TileLoop);
 			break;
 
 		case StationType::Dock:
-			if (!IsTileFlat(tile)) break; // only handle water part
+			if (!IsTileFlat(index)) break; // only handle water part
 			[[fallthrough]];
 
 		case StationType::Oilrig: //(station part)
 		case StationType::Buoy:
-			TileLoop_Water(tile);
-			break;
+			return TileLoop_Water(index, tile);
 
 		case StationType::Truck:
 		case StationType::Bus:
-			TriggerRoadStopAnimation(st, tile, StationAnimationTrigger::TileLoop);
+			TriggerRoadStopAnimation(st, index, StationAnimationTrigger::TileLoop);
 			break;
 
 		case StationType::RoadWaypoint: {
 			switch (_settings_game.game_creation.landscape) {
 				case LandscapeType::Arctic:
-					if (IsRoadWaypointOnSnowOrDesert(tile) != (GetTileZ(tile) > GetSnowLine())) {
+					if (IsRoadWaypointOnSnowOrDesert(tile) != (GetTileZ(index) > GetSnowLine())) {
 						ToggleRoadWaypointOnSnowOrDesert(tile);
-						MarkTileDirtyByTile(tile);
+						MarkTileDirtyByTile(index);
 					}
 					break;
 
 				case LandscapeType::Tropic:
 					if (GetTropicZone(tile) == TropicZone::Desert && !IsRoadWaypointOnSnowOrDesert(tile)) {
 						ToggleRoadWaypointOnSnowOrDesert(tile);
-						MarkTileDirtyByTile(tile);
+						MarkTileDirtyByTile(index);
 					}
 					break;
 
@@ -3797,9 +3796,9 @@ static void TileLoop_Station(TileIndex tile)
 			}
 
 			HouseZone new_zone = HouseZone::TownEdge;
-			const Town *t = ClosestTownFromTile(tile, UINT_MAX);
+			const Town *t = ClosestTownFromTile(index, UINT_MAX);
 			if (t != nullptr) {
-				new_zone = GetTownRadiusGroup(t, tile);
+				new_zone = GetTownRadiusGroup(t, index);
 			}
 
 			/* Adjust road ground type depending on 'new_zone' */
@@ -3808,15 +3807,16 @@ static void TileLoop_Station(TileIndex tile)
 
 			if (new_rs != cur_rs) {
 				SetRoadWaypointRoadside(tile, cur_rs == Roadside::Barren ? new_rs : Roadside::Barren);
-				MarkTileDirtyByTile(tile);
+				MarkTileDirtyByTile(index);
 			}
 
-			TriggerRoadStopAnimation(st, tile, StationAnimationTrigger::TileLoop);
+			TriggerRoadStopAnimation(st, index, StationAnimationTrigger::TileLoop);
 			break;
 		}
 
 		default: break;
 	}
+	return false;
 }
 
 

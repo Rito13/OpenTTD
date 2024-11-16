@@ -48,10 +48,10 @@ static void GetTileDesc_Void([[maybe_unused]] TileIndex index, [[maybe_unused]] 
 }
 
 /** @copydoc TileLoopProc */
-static void TileLoop_Void(TileIndex tile)
+static bool TileLoop_Void(TileIndex index, Tile &tile)
 {
 	/* Floods adjacent edge tile to prevent maps without water. */
-	TileLoop_Water(tile);
+	return TileLoop_Water(index, tile);
 }
 
 /** TileTypeProcs definitions for TileType::Void tiles. */

@@ -147,10 +147,12 @@ using AnimateTileProc = void(TileIndex tile);
 
 /**
  * Tile callback function signature for running periodic tile updates.
- * @param tile The tile to update.
+ * @param index Tile index being updated.
+ * @param[in,out] tile The tile to update.
+ * @return \c true iff the tile was removed from the map.
  * @see RunTileLoop
  */
-using TileLoopProc = void(TileIndex tile);
+using TileLoopProc = bool(TileIndex index, Tile &tile);
 
 /**
  * Tile callback function signature for changing the owner of a tile.

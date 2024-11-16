@@ -814,7 +814,7 @@ static void TileLoopTreesAlps(TileIndex tile)
  * @param tile The tile to check.
  * @return Whether trees on this tile can spread.
  */
-static bool TreesOnTileCanSpread(TileIndex tile)
+static bool TreesOnTileCanSpread(Tile tile)
 {
 	/* Desert and rainforest trees need special handling. */
 	if (_settings_game.game_creation.landscape == LandscapeType::Tropic) {
@@ -833,39 +833,39 @@ static bool TreesOnTileCanSpread(TileIndex tile)
 }
 
 /** @copydoc TileLoopProc */
-static void TileLoop_Trees(TileIndex tile)
+static bool TileLoop_Trees(TileIndex index, Tile &tile)
 {
 	if (GetTreeGround(tile) == TreeGround::Shore) {
-		TileLoop_Water(tile);
+		TileLoop_Water(index, tile);
 	} else {
 		switch (_settings_game.game_creation.landscape) {
-			case LandscapeType::Tropic: TileLoopTreesDesert(tile); break;
-			case LandscapeType::Arctic: TileLoopTreesAlps(tile);   break;
+			case LandscapeType::Tropic: TileLoopTreesDesert(index); break;
+			case LandscapeType::Arctic: TileLoopTreesAlps(index);   break;
 			default: break;
 		}
 	}
 
-	AmbientSoundEffect(tile);
+	AmbientSoundEffect(index);
 
 	/* TimerGameTick::counter is incremented by 256 between each call, so ignore lower 8 bits.
 	 * Also, we use a simple hash to spread the updates evenly over the map.
 	 * 11 and 9 are just some co-prime numbers for better spread.
 	 */
-	uint32_t cycle = 11 * TileX(tile) + 9 * TileY(tile) + (TimerGameTick::counter >> 8);
+	uint32_t cycle = 11 * TileX(index) + 9 * TileY(index) + (TimerGameTick::counter >> 8);
 
 	/* Handle growth of grass (under trees/on TileType::Trees tiles) at every 8th processings, like it's done for grass on TileType::Clear tiles. */
 	if ((cycle & 7) == 7 && GetTreeGround(tile) == TreeGround::Grass) {
 		uint density = GetTreeDensity(tile);
 		if (density < 3) {
 			SetTreeGroundDensity(tile, TreeGround::Grass, density + 1);
-			MarkTileDirtyByTile(tile);
+			MarkTileDirtyByTile(index);
 		}
 	}
 
-	if (_settings_game.construction.extra_tree_placement == ETP_NO_GROWTH_NO_SPREAD) return;
+	if (_settings_game.construction.extra_tree_placement == ETP_NO_GROWTH_NO_SPREAD) return false;
 
 	static const uint32_t TREE_UPDATE_FREQUENCY = 16;  // How many tile updates happen for one tree update
-	if (cycle % TREE_UPDATE_FREQUENCY != TREE_UPDATE_FREQUENCY - 1) return;
+	if (cycle % TREE_UPDATE_FREQUENCY != TREE_UPDATE_FREQUENCY - 1) return false;
 
 	switch (GetTreeGrowth(tile)) {
 		case TreeGrowthStage::Grown: // regular sized tree
@@ -892,20 +892,20 @@ static void TileLoop_Trees(TileIndex tile)
 
 						TreeType treetype = GetTreeType(tile);
 
-						tile += TileOffsByDir(static_cast<Direction>(RandomRange(to_underlying(Direction::End))));
+						index += TileOffsByDir(static_cast<Direction>(RandomRange(to_underlying(Direction::End))));
 
-						if (!CanPlantTreesOnTile(tile, false)) return;
+						if (!CanPlantTreesOnTile(index, false)) return false;
 
 						/* Don't plant trees, if ground was freshly cleared */
-						if (IsTileType(tile, TileType::Clear) && GetClearGround(tile) == ClearGround::Grass && !IsSnowTile(tile) && GetClearDensity(tile) != 3) return;
+						if (IsTileType(index, TileType::Clear) && GetClearGround(index) == ClearGround::Grass && !IsSnowTile(index) && GetClearDensity(index) != 3) return false;
 
-						PlantTreesOnTile(tile, treetype, 0, TreeGrowthStage::Growing1);
+						PlantTreesOnTile(index, treetype, 0, TreeGrowthStage::Growing1);
 
 						break;
 					}
 
 					default:
-						return;
+						return false;
 				}
 			}
 			break;
@@ -948,7 +948,8 @@ static void TileLoop_Trees(TileIndex tile)
 			break;
 	}
 
-	MarkTileDirtyByTile(tile);
+	MarkTileDirtyByTile(index);
+	return false;
 }
 
 /**
