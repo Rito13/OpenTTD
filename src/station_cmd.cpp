@@ -3599,35 +3599,34 @@ static TrackStatus GetTileTrackStatus_Station(TileIndex tile, TransportType mode
 }
 
 
-static void TileLoop_Station(TileIndex tile)
+static bool TileLoop_Station(TileIndex index, Tile &tile)
 {
 	switch (GetStationType(tile)) {
 		case StationType::Airport:
-			TriggerAirportTileAnimation(Station::GetByTile(tile), tile, AirportAnimationTrigger::TileLoop);
+			TriggerAirportTileAnimation(Station::GetByTile(tile), index, AirportAnimationTrigger::TileLoop);
 			break;
 
 		case StationType::Dock:
-			if (!IsTileFlat(tile)) break; // only handle water part
+			if (!IsTileFlat(index)) break; // only handle water part
 			[[fallthrough]];
 
 		case StationType::Oilrig: //(station part)
 		case StationType::Buoy:
-			TileLoop_Water(tile);
-			break;
+			return TileLoop_Water(index, tile);
 
 		case StationType::RoadWaypoint: {
 			switch (_settings_game.game_creation.landscape) {
 				case LandscapeType::Arctic:
-					if (IsRoadWaypointOnSnowOrDesert(tile) != (GetTileZ(tile) > GetSnowLine())) {
+					if (IsRoadWaypointOnSnowOrDesert(tile) != (GetTileZ(index) > GetSnowLine())) {
 						ToggleRoadWaypointOnSnowOrDesert(tile);
-						MarkTileDirtyByTile(tile);
+						MarkTileDirtyByTile(index);
 					}
 					break;
 
 				case LandscapeType::Tropic:
 					if (GetTropicZone(tile) == TROPICZONE_DESERT && !IsRoadWaypointOnSnowOrDesert(tile)) {
 						ToggleRoadWaypointOnSnowOrDesert(tile);
-						MarkTileDirtyByTile(tile);
+						MarkTileDirtyByTile(index);
 					}
 					break;
 
@@ -3635,9 +3634,9 @@ static void TileLoop_Station(TileIndex tile)
 			}
 
 			HouseZonesBits new_zone = HZB_TOWN_EDGE;
-			const Town *t = ClosestTownFromTile(tile, UINT_MAX);
+			const Town *t = ClosestTownFromTile(index, UINT_MAX);
 			if (t != nullptr) {
-				new_zone = GetTownRadiusGroup(t, tile);
+				new_zone = GetTownRadiusGroup(t, index);
 			}
 
 			/* Adjust road ground type depending on 'new_zone' */
@@ -3646,13 +3645,14 @@ static void TileLoop_Station(TileIndex tile)
 
 			if (new_rs != cur_rs) {
 				SetRoadWaypointRoadside(tile, cur_rs == ROADSIDE_BARREN ? new_rs : ROADSIDE_BARREN);
-				MarkTileDirtyByTile(tile);
+				MarkTileDirtyByTile(index);
 			}
 			break;
 		}
 
 		default: break;
 	}
+	return false;
 }
 
 

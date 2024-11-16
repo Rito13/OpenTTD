@@ -2579,19 +2579,18 @@ static Foundation GetFoundation_Track(TileIndex tile, Slope tileh)
 	return IsPlainRail(tile) ? GetRailFoundation(tileh, GetTrackBits(tile)) : FlatteningFoundation(tileh);
 }
 
-static void TileLoop_Track(TileIndex tile)
+static bool TileLoop_Track(TileIndex index, Tile &tile)
 {
 	RailGroundType old_ground = GetRailGroundType(tile);
 	RailGroundType new_ground;
 
 	if (old_ground == RAIL_GROUND_WATER) {
-		TileLoop_Water(tile);
-		return;
+		return TileLoop_Water(index, tile);
 	}
 
 	switch (_settings_game.game_creation.landscape) {
 		case LandscapeType::Arctic: {
-			auto [slope, z] = GetTileSlopeZ(tile);
+			auto [slope, z] = GetTileSlopeZ(index);
 			bool half = false;
 
 			/* for non-flat track, use lower part of track
@@ -2672,7 +2671,7 @@ static void TileLoop_Track(TileIndex tile)
 			/* Track bit on this edge => no fence. */
 			if ((rail & dir_to_trackbits[d]) != TRACK_BIT_NONE) continue;
 
-			TileIndex tile2 = tile + TileOffsByDiagDir(d);
+			TileIndex tile2 = index + TileOffsByDiagDir(d);
 
 			/* Show fences if it's a house, industry, object, road, tunnelbridge or not owned by us. */
 			if (!IsValidTile(tile2) || IsTileType(tile2, MP_HOUSE) || IsTileType(tile2, MP_INDUSTRY) ||
@@ -2700,8 +2699,9 @@ static void TileLoop_Track(TileIndex tile)
 set_ground:
 	if (old_ground != new_ground) {
 		SetRailGroundType(tile, new_ground);
-		MarkTileDirtyByTile(tile);
+		MarkTileDirtyByTile(index);
 	}
+	return false;
 }
 
 
