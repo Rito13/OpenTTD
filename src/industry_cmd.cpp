@@ -469,7 +469,7 @@ static void AddAcceptedCargo_Industry(TileIndex tile, CargoArray &acceptance, Ca
 }
 
 /** @copydoc GetTileDescProc */
-static void GetTileDesc_Industry(TileIndex tile, TileDesc &td)
+static void GetTileDesc_Industry([[maybe_unused]] TileIndex index, Tile tile, TileDesc &td)
 {
 	const Industry *i = Industry::GetByTile(tile);
 	const IndustrySpec *is = GetIndustrySpec(i->type);
