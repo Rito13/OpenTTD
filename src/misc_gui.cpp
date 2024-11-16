@@ -118,6 +118,7 @@ public:
 #endif
 		Tile t(tile);
 		Debug(misc, LANDINFOD_LEVEL, "TILE: {0} (0x{0:x}) ({1},{2})", tile.base(), TileX(tile), TileY(tile));
+		Debug(misc, LANDINFOD_LEVEL, "offset: {0}", Map::GetOffsetForIndex(tile));
 		Debug(misc, LANDINFOD_LEVEL, "type   = 0x{:x}", t.type());
 		Debug(misc, LANDINFOD_LEVEL, "height = 0x{:x}", t.height());
 		Debug(misc, LANDINFOD_LEVEL, "m1     = 0x{:x}", t.m1());
