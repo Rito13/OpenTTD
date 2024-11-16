@@ -118,6 +118,7 @@ public:
 #endif
 		Tile t(tile);
 		Debug(Facility::Misc, severity, "TILE: {0} (0x{0:x}) ({1},{2})", tile.base(), TileX(tile), TileY(tile));
+		Debug(Facility::Misc, severity, "offset: {0}", Map::GetOffsetForIndex(tile));
 		Debug(Facility::Misc, severity, "type   = 0x{:x}", t.type());
 		Debug(Facility::Misc, severity, "height = 0x{:x}", t.height());
 		Debug(Facility::Misc, severity, "m1     = 0x{:x}", t.m1());
