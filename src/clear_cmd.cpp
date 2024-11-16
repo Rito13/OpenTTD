@@ -24,7 +24,7 @@
 #include "safeguards.h"
 
 /** @copydoc ClearTileProc */
-static CommandCost ClearTile_Clear(TileIndex tile, DoCommandFlags flags)
+static std::tuple<CommandCost, bool> ClearTile_Clear(TileIndex index, Tile &tile, DoCommandFlags flags)
 {
 	static constexpr EnumIndexArray<Price, ClearGround, ClearGround::MaxSize> clear_price_table{
 		Price::ClearGrass, // Base price for clearing grass.
@@ -48,9 +48,12 @@ static CommandCost ClearTile_Clear(TileIndex tile, DoCommandFlags flags)
 		price.AddCost(_price[clear_price_table[ground]]);
 	}
 
-	if (flags.Test(DoCommandFlag::Execute)) DoClearSquare(tile);
+	if (flags.Test(DoCommandFlag::Execute)) {
+		MakeClearGrass(tile);
+		MarkTileDirtyByTile(index);
+	}
 
-	return price;
+	return {price, false};
 }
 
 /**

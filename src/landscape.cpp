@@ -534,21 +534,41 @@ void DrawFoundation(TileInfo *ti, Foundation f)
 }
 
 /**
- * Clear whole storage of given tile and make it bare ground.
- * @param tile The tile to clear.
+ * Make a clear tile with grass ground.
+ * @param tile The tile to make a clear grass tile.
  */
-void DoClearSquare(TileIndex tile)
+void MakeClearGrass(const Tile &tile)
+{
+	MakeClear(tile, ClearGround::Grass, _generating_world ? 3 : 0);
+}
+
+/**
+ * Clear whole storage of given tile and make it bare ground.
+ * @param index The tile to clear.
+ */
+void DoClearSquare(TileIndex index)
 {
 	/* If the tile can have animation and we clear it, delete it from the animated tile list. */
-	if (MayAnimateTile(tile)) DeleteAnimatedTile(tile, true);
+	if (MayAnimateTile(index)) DeleteAnimatedTile(index, true);
 
-	bool remove = IsDockingTile(tile);
+	Tile tile = index;
+	bool is_docking = IsDockingTile(tile);
+
+	/* Remove all associated tiles. */
+	++tile;
+	while (tile) {
+		is_docking |= IsDockingTile(tile);
+		tile = Tile::Remove(index, tile);
+	}
+
+	tile = index; // Map might have re-allocated.
 	MakeClear(tile, ClearGround::Grass, _generating_world ? 3 : 0);
-	MarkTileDirtyByTile(tile);
-	if (remove) RemoveDockingTile(tile);
+	tile.SetAssociated(false);
+	MarkTileDirtyByTile(index);
+	if (is_docking) RemoveDockingTile(index);
 
-	ClearNeighbourNonFloodingStates(tile);
-	InvalidateWaterRegion(tile);
+	ClearNeighbourNonFloodingStates(index);
+	InvalidateWaterRegion(index);
 }
 
 /**
@@ -719,7 +739,13 @@ CommandCost CmdLandscapeClear(DoCommandFlags flags, TileIndex tile)
 			return CommandCost(STR_ERROR_CAN_T_BUILD_ON_WATER);
 		}
 	} else {
-		cost.AddCost(_tile_type_procs[GetTileType(tile)]->clear_tile_proc(tile, flags));
+		/* Get costs from all associated tiles. */
+		Tile cur = tile;
+		while (cur) {
+			auto [tile_cost, deleted] = _tile_type_procs[GetTileType(cur)]->clear_tile_proc(tile, cur, flags); // Modifies cur if tile was deleted.
+			cost.AddCost(std::move(tile_cost)); // Also copies error.
+			if (!deleted) ++cur;
+		}
 	}
 
 	if (flags.Test(DoCommandFlag::Execute)) {
