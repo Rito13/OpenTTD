@@ -199,7 +199,7 @@ void UpdateObjectColours(const Company *c)
 }
 
 extern CommandCost CheckBuildableTile(TileIndex tile, uint invalid_dirs, int &allowed_z, bool allow_steep, bool check_bridge);
-static CommandCost ClearTile_Object(TileIndex tile, DoCommandFlags flags);
+static std::tuple<CommandCost, bool> ClearTile_Object(TileIndex index, Tile &tile, DoCommandFlags flags);
 
 /**
  * Build an object object
@@ -339,7 +339,8 @@ CommandCost CmdBuildObject(DoCommandFlags flags, TileIndex tile, ObjectType type
 				if (c->location_of_HQ == tile) return CommandCost(STR_ERROR_ALREADY_BUILT);
 				/* We need to persuade a bit harder to remove the old HQ. */
 				_current_company = OWNER_WATER;
-				cost.AddCost(ClearTile_Object(c->location_of_HQ, flags));
+				Tile t = c->location_of_HQ;
+				cost.AddCost(std::get<0>(ClearTile_Object(c->location_of_HQ, t, flags)));
 				_current_company = c->index;
 			}
 
@@ -540,7 +541,7 @@ ClearedObjectArea *FindClearedObject(TileIndex tile)
 	return nullptr;
 }
 
-static CommandCost ClearTile_Object(TileIndex tile, DoCommandFlags flags)
+static std::tuple<CommandCost, bool> ClearTile_Object(TileIndex index, Tile &tile, DoCommandFlags flags)
 {
 	/* Get to the northern most tile. */
 	Object *o = Object::GetByTile(tile);
@@ -553,29 +554,29 @@ static CommandCost ClearTile_Object(TileIndex tile, DoCommandFlags flags)
 	if (spec->flags.Test(ObjectFlag::ClearIncome)) cost.MultiplyCost(-1); // They get an income!
 
 	/* Towns can't remove any objects. */
-	if (_current_company == OWNER_TOWN) return CMD_ERROR;
+	if (_current_company == OWNER_TOWN) return {CMD_ERROR, false};
 
 	/* Water can remove everything! */
 	if (_current_company != OWNER_WATER) {
 		if (flags.Test(DoCommandFlag::NoWater) && IsTileOnWater(tile)) {
 			/* There is water under the object, treat it as water tile. */
-			return CommandCost(STR_ERROR_CAN_T_BUILD_ON_WATER);
+			return {CommandCost(STR_ERROR_CAN_T_BUILD_ON_WATER), false};
 		} else if (!spec->flags.Test(ObjectFlag::Autoremove) && flags.Test(DoCommandFlag::Auto)) {
 			/* No automatic removal by overbuilding stuff. */
-			return CommandCost(type == OBJECT_HQ ? STR_ERROR_COMPANY_HEADQUARTERS_IN : STR_ERROR_OBJECT_IN_THE_WAY);
+			return {CommandCost(type == OBJECT_HQ ? STR_ERROR_COMPANY_HEADQUARTERS_IN : STR_ERROR_OBJECT_IN_THE_WAY), false};
 		} else if (_game_mode == GM_EDITOR) {
 			/* No further limitations for the editor. */
 		} else if (GetTileOwner(tile) == OWNER_NONE) {
 			/* Owned by nobody and unremovable, so we can only remove it with brute force! */
-			if (!_cheats.magic_bulldozer.value && spec->flags.Test(ObjectFlag::CannotRemove)) return CMD_ERROR;
-		} else if (CheckTileOwnership(tile).Failed()) {
+			if (!_cheats.magic_bulldozer.value && spec->flags.Test(ObjectFlag::CannotRemove)) return {CMD_ERROR, false};
+		} else if (CheckTileOwnership(index).Failed()) {
 			/* We don't own it!. */
-			return CommandCost(STR_ERROR_OWNED_BY);
+			return {CommandCost(STR_ERROR_OWNED_BY), false};
 		} else if (spec->flags.Test(ObjectFlag::CannotRemove) && !spec->flags.Test(ObjectFlag::Autoremove)) {
 			/* In the game editor or with cheats we can remove, otherwise we can't. */
 			if (!_cheats.magic_bulldozer.value) {
-				if (type == OBJECT_HQ) return CommandCost(STR_ERROR_COMPANY_HEADQUARTERS_IN);
-				return CMD_ERROR;
+				if (type == OBJECT_HQ) return {CommandCost(STR_ERROR_COMPANY_HEADQUARTERS_IN), false};
+				return {CMD_ERROR, false};
 			}
 
 			/* Removing with the cheat costs more in TTDPatch / the specs. */
@@ -583,7 +584,7 @@ static CommandCost ClearTile_Object(TileIndex tile, DoCommandFlags flags)
 		}
 	} else if (spec->flags.Any({ObjectFlag::BuiltOnWater, ObjectFlag::NotOnLand})) {
 		/* Water can't remove objects that are buildable on water. */
-		return CMD_ERROR;
+		return {CMD_ERROR, false};
 	}
 
 	switch (type) {
@@ -612,11 +613,11 @@ static CommandCost ClearTile_Object(TileIndex tile, DoCommandFlags flags)
 			break;
 	}
 
-	_cleared_object_areas.emplace_back(tile, ta);
+	_cleared_object_areas.emplace_back(index, ta);
 
 	if (flags.Test(DoCommandFlag::Execute)) ReallyClearObjectTile(o);
 
-	return cost;
+	return {cost, false};
 }
 
 static void AddAcceptedCargo_Object(TileIndex tile, CargoArray &acceptance, CargoTypes &always_accepted)

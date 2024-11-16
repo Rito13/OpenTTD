@@ -785,7 +785,7 @@ void Station::AfterStationTileSetChange(bool adding, StationType type)
 
 }
 
-CommandCost ClearTile_Station(TileIndex tile, DoCommandFlags flags);
+std::tuple<CommandCost, bool> ClearTile_Station(TileIndex index, Tile &tile, DoCommandFlags flags);
 
 /**
  * Checks if the given tile is buildable, flat and has a certain height.
@@ -902,7 +902,8 @@ static CommandCost CheckFlatLandRailStation(TileIndex tile_cur, TileIndex north_
 		* Or it points to a station if we're only allowed to build on exactly that station. */
 	if (station != nullptr && IsTileType(tile_cur, MP_STATION)) {
 		if (!IsRailStation(tile_cur)) {
-			return ClearTile_Station(tile_cur, DoCommandFlag::Auto); // get error message
+			Tile t = tile_cur;
+			return std::get<0>(ClearTile_Station(tile_cur, t, DoCommandFlag::Auto)); // get error message
 		} else {
 			StationID st = GetStationIndex(tile_cur);
 			if (*station == StationID::Invalid()) {
@@ -973,12 +974,13 @@ CommandCost CheckFlatLandRoadStop(TileIndex cur_tile, int &allowed_z, DoCommandF
 	 * Station points to StationID::Invalid() if we can build on any station.
 	 * Or it points to a station if we're only allowed to build on exactly that station. */
 	if (station != nullptr && IsTileType(cur_tile, MP_STATION)) {
+		Tile t = cur_tile;
 		if (!IsAnyRoadStop(cur_tile)) {
-			return ClearTile_Station(cur_tile, DoCommandFlag::Auto); // Get error message.
+			return std::get<0>(ClearTile_Station(cur_tile, t, DoCommandFlag::Auto)); // Get error message.
 		} else {
 			if (station_type != GetStationType(cur_tile) ||
 					is_drive_through != IsDriveThroughStopTile(cur_tile)) {
-				return ClearTile_Station(cur_tile, DoCommandFlag::Auto); // Get error message.
+				return std::get<0>(ClearTile_Station(cur_tile, t, DoCommandFlag::Auto)); // Get error message.
 			}
 			/* Drive-through station in the wrong direction. */
 			if (is_drive_through && IsDriveThroughStopTile(cur_tile) && GetDriveThroughStopAxis(cur_tile) != axis) {
@@ -4686,46 +4688,46 @@ static CommandCost CanRemoveRoadWithStop(TileIndex tile, DoCommandFlags flags)
  * @param flags The DoCommand flags related to the "command".
  * @return The cost, or error of clearing.
  */
-CommandCost ClearTile_Station(TileIndex tile, DoCommandFlags flags)
+std::tuple<CommandCost, bool> ClearTile_Station(TileIndex index, Tile &tile, DoCommandFlags flags)
 {
 	if (flags.Test(DoCommandFlag::Auto)) {
 		switch (GetStationType(tile)) {
 			default: break;
-			case StationType::Rail:     return CommandCost(STR_ERROR_MUST_DEMOLISH_RAILROAD);
-			case StationType::RailWaypoint: return CommandCost(STR_ERROR_BUILDING_MUST_BE_DEMOLISHED);
-			case StationType::Airport:  return CommandCost(STR_ERROR_MUST_DEMOLISH_AIRPORT_FIRST);
-			case StationType::Truck:    return CommandCost(HasTileRoadType(tile, RTT_TRAM) ? STR_ERROR_MUST_DEMOLISH_CARGO_TRAM_STATION_FIRST : STR_ERROR_MUST_DEMOLISH_TRUCK_STATION_FIRST);
-			case StationType::Bus:      return CommandCost(HasTileRoadType(tile, RTT_TRAM) ? STR_ERROR_MUST_DEMOLISH_PASSENGER_TRAM_STATION_FIRST : STR_ERROR_MUST_DEMOLISH_BUS_STATION_FIRST);
-			case StationType::RoadWaypoint: return CommandCost(STR_ERROR_BUILDING_MUST_BE_DEMOLISHED);
-			case StationType::Buoy:     return CommandCost(STR_ERROR_BUOY_IN_THE_WAY);
-			case StationType::Dock:     return CommandCost(STR_ERROR_MUST_DEMOLISH_DOCK_FIRST);
+			case StationType::Rail:     return {CommandCost(STR_ERROR_MUST_DEMOLISH_RAILROAD), false};
+			case StationType::RailWaypoint: return {CommandCost(STR_ERROR_BUILDING_MUST_BE_DEMOLISHED), false};
+			case StationType::Airport:  return {CommandCost(STR_ERROR_MUST_DEMOLISH_AIRPORT_FIRST), false};
+			case StationType::Truck:    return {CommandCost(HasTileRoadType(tile, RTT_TRAM) ? STR_ERROR_MUST_DEMOLISH_CARGO_TRAM_STATION_FIRST : STR_ERROR_MUST_DEMOLISH_TRUCK_STATION_FIRST), false};
+			case StationType::Bus:      return {CommandCost(HasTileRoadType(tile, RTT_TRAM) ? STR_ERROR_MUST_DEMOLISH_PASSENGER_TRAM_STATION_FIRST : STR_ERROR_MUST_DEMOLISH_BUS_STATION_FIRST), false};
+			case StationType::RoadWaypoint: return {CommandCost(STR_ERROR_BUILDING_MUST_BE_DEMOLISHED), false};
+			case StationType::Buoy:     return {CommandCost(STR_ERROR_BUOY_IN_THE_WAY), false};
+			case StationType::Dock:     return {CommandCost(STR_ERROR_MUST_DEMOLISH_DOCK_FIRST), false};
 			case StationType::Oilrig:
-				return CommandCostWithParam(STR_ERROR_GENERIC_OBJECT_IN_THE_WAY, STR_INDUSTRY_NAME_OIL_RIG);
+				return {CommandCostWithParam(STR_ERROR_GENERIC_OBJECT_IN_THE_WAY, STR_INDUSTRY_NAME_OIL_RIG), false};
 		}
 	}
 
 	switch (GetStationType(tile)) {
-		case StationType::Rail:     return RemoveRailStation(tile, flags);
-		case StationType::RailWaypoint: return RemoveRailWaypoint(tile, flags);
-		case StationType::Airport:  return RemoveAirport(tile, flags);
+		case StationType::Rail:     return {RemoveRailStation(index, flags), false};
+		case StationType::RailWaypoint: return {RemoveRailWaypoint(index, flags), false};
+		case StationType::Airport:  return {RemoveAirport(index, flags), false};
 		case StationType::Truck:    [[fallthrough]];
 		case StationType::Bus:
 			if (IsDriveThroughStopTile(tile)) {
-				CommandCost remove_road = CanRemoveRoadWithStop(tile, flags);
-				if (remove_road.Failed()) return remove_road;
+				CommandCost remove_road = CanRemoveRoadWithStop(index, flags);
+				if (remove_road.Failed()) return {remove_road, false};
 			}
-			return RemoveRoadStop(tile, flags);
+			return {RemoveRoadStop(index, flags), false};
 		case StationType::RoadWaypoint: {
-			CommandCost remove_road = CanRemoveRoadWithStop(tile, flags);
-			if (remove_road.Failed()) return remove_road;
-			return RemoveRoadWaypointStop(tile, flags);
+			CommandCost remove_road = CanRemoveRoadWithStop(index, flags);
+			if (remove_road.Failed()) return {remove_road, false};
+			return {RemoveRoadWaypointStop(index, flags), false};
 		}
-		case StationType::Buoy:     return RemoveBuoy(tile, flags);
-		case StationType::Dock:     return RemoveDock(tile, flags);
+		case StationType::Buoy:     return {RemoveBuoy(index, flags), false};
+		case StationType::Dock:     return {RemoveDock(index, flags), false};
 		default: break;
 	}
 
-	return CMD_ERROR;
+	return {CMD_ERROR, false};
 }
 
 static CommandCost TerraformTile_Station(TileIndex tile, DoCommandFlags flags, int z_new, Slope tileh_new)
