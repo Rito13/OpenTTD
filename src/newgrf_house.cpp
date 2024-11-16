@@ -467,8 +467,9 @@ static void DrawTileLayout(const TileInfo *ti, const TileLayoutSpriteGroup *grou
 
 	const HouseSpec *hs = HouseSpec::Get(house_id);
 	PaletteID palette = GetColourPalette(hs->random_colour[TileHash2Bit(ti->x, ti->y)]);
+
 	if (hs->callback_mask.Test(HouseCallbackMask::Colour)) {
-		uint16_t callback = GetHouseCallback(CBID_HOUSE_COLOUR, 0, 0, house_id, Town::GetByTile(ti->tile), ti->tile);
+		uint16_t callback = GetHouseCallback(CBID_HOUSE_COLOUR, 0, 0, house_id, Town::GetByTile(ti->index), ti->index);
 		if (callback != CALLBACK_FAILED) {
 			/* If bit 14 is set, we should use a 2cc colour map, else use the callback value. */
 			palette = HasBit(callback, 14) ? GB(callback, 0, 8) + SPR_2CCMAP_BASE : callback;
@@ -496,14 +497,14 @@ void DrawNewHouseTile(TileInfo *ti, HouseID house_id)
 		bool draw_old_one = true;
 		if (hs->callback_mask.Test(HouseCallbackMask::DrawFoundations)) {
 			/* Called to determine the type (if any) of foundation to draw for the house tile */
-			uint32_t callback_res = GetHouseCallback(CBID_HOUSE_DRAW_FOUNDATIONS, 0, 0, house_id, Town::GetByTile(ti->tile), ti->tile);
+			uint32_t callback_res = GetHouseCallback(CBID_HOUSE_DRAW_FOUNDATIONS, 0, 0, house_id, Town::GetByTile(ti->index), ti->index);
 			if (callback_res != CALLBACK_FAILED) draw_old_one = ConvertBooleanCallback(hs->grf_prop.grffile, CBID_HOUSE_DRAW_FOUNDATIONS, callback_res);
 		}
 
 		if (draw_old_one) DrawFoundation(ti, FOUNDATION_LEVELED);
 	}
 
-	HouseResolverObject object(house_id, ti->tile, Town::GetByTile(ti->tile));
+	HouseResolverObject object(house_id, ti->index, Town::GetByTile(ti->index));
 
 	const SpriteGroup *group = object.Resolve();
 	if (group != nullptr && group->type == SGT_TILELAYOUT) {
