@@ -107,7 +107,7 @@ public:
 	 * Create new "Land Area Information" window.
 	 * @param tile The tile that this window will provide information of.
 	 */
-	LandInfoWindow(Tile tile) : Window(_land_info_desc), tile(tile)
+	LandInfoWindow(TileIndex tile) : Window(_land_info_desc), tile(tile)
 	{
 		this->InitNested();
 
@@ -116,17 +116,18 @@ public:
 #else
 		static constexpr Severity severity = Severity::Error;
 #endif
-		Debug(Facility::Misc, severity, "TILE: {0} (0x{0:x}) ({1},{2})", (TileIndex)tile, TileX(tile), TileY(tile));
-		Debug(Facility::Misc, severity, "type   = 0x{:x}", tile.type());
-		Debug(Facility::Misc, severity, "height = 0x{:x}", tile.height());
-		Debug(Facility::Misc, severity, "m1     = 0x{:x}", tile.m1());
-		Debug(Facility::Misc, severity, "m2     = 0x{:x}", tile.m2());
-		Debug(Facility::Misc, severity, "m3     = 0x{:x}", tile.m3());
-		Debug(Facility::Misc, severity, "m4     = 0x{:x}", tile.m4());
-		Debug(Facility::Misc, severity, "m5     = 0x{:x}", tile.m5());
-		Debug(Facility::Misc, severity, "m6     = 0x{:x}", tile.m6());
-		Debug(Facility::Misc, severity, "m7     = 0x{:x}", tile.m7());
-		Debug(Facility::Misc, severity, "m8     = 0x{:x}", tile.m8());
+		Tile t(tile);
+		Debug(Facility::Misc, severity, "TILE: {0} (0x{0:x}) ({1},{2})", tile.base(), TileX(tile), TileY(tile));
+		Debug(Facility::Misc, severity, "type   = 0x{:x}", t.type());
+		Debug(Facility::Misc, severity, "height = 0x{:x}", t.height());
+		Debug(Facility::Misc, severity, "m1     = 0x{:x}", t.m1());
+		Debug(Facility::Misc, severity, "m2     = 0x{:x}", t.m2());
+		Debug(Facility::Misc, severity, "m3     = 0x{:x}", t.m3());
+		Debug(Facility::Misc, severity, "m4     = 0x{:x}", t.m4());
+		Debug(Facility::Misc, severity, "m5     = 0x{:x}", t.m5());
+		Debug(Facility::Misc, severity, "m6     = 0x{:x}", t.m6());
+		Debug(Facility::Misc, severity, "m7     = 0x{:x}", t.m7());
+		Debug(Facility::Misc, severity, "m8     = 0x{:x}", t.m8());
 
 		PrintWaterRegionDebugInfo(tile);
 	}

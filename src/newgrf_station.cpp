@@ -893,7 +893,7 @@ bool DrawStationTile(int x, int y, RailType railtype, Axis axis, StationClassID 
  * @param t The tile that station is built on.
  * @return Specification of that station.
  */
-const StationSpec *GetStationSpec(TileIndex t)
+const StationSpec *GetStationSpec(Tile t)
 {
 	if (!IsCustomStationSpecIndex(t)) return nullptr;
 

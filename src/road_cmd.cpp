@@ -1953,7 +1953,7 @@ bool UpdateNearestTownForRoadTiles(bool invalidate)
 
 	bool found = false;
 
-	for (const auto t : Map::Iterate()) {
+	for (const auto t : Map::IterateIndex()) {
 		if (IsTileType(t, TileType::Road) && !IsRoadDepot(t) && !HasTownOwnedRoad(t)) {
 			TownID tid = TownID::Invalid();
 			if (!invalidate) {
