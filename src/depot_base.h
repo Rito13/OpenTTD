@@ -29,7 +29,7 @@ struct Depot : DepotPool::PoolItem<&_depot_pool> {
 	Depot(TileIndex xy) : xy(xy), build_date(TimerGameCalendar::date) {}
 	~Depot();
 
-	static inline Depot *GetByTile(TileIndex tile)
+	static inline Depot *GetByTile(Tile tile)
 	{
 		return Depot::Get(GetDepotIndex(tile));
 	}
