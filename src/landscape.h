@@ -133,6 +133,7 @@ inline uint ApplyPixelFoundationToSlope(Foundation f, Slope &s)
 uint GetFoundationSpriteBlock (TileIndex tile);
 void DrawFoundation(TileInfo *ti, Foundation f);
 
+void MakeClearGrass(const Tile &tile);
 void DoClearSquare(TileIndex tile);
 void RunTileLoop();
 

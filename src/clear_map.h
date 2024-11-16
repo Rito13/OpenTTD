@@ -252,6 +252,7 @@ inline void SetFence(const Tile &t, DiagDirection side, uint h)
  */
 inline void MakeClear(const Tile &t, ClearGround g, uint density)
 {
+	if (!MayHaveAssociatedTile(t.GetTileType())) ClrBit(t.m8(), 14); // Guard against garbage.
 	SetTileType(t, TileType::Clear);
 	t.m1() = 0;
 	SetTileOwner(t, OWNER_NONE);

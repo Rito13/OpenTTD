@@ -80,12 +80,13 @@ using GetSlopePixelZProc = int(TileIndex tile, uint x, uint y, bool ground_vehic
 
 /**
  * Tile callback function signature for clearing a tile.
- * @param tile The tile to clear.
+ * @param index Tile index that is being cleared.
+ * @param[in,out] tile The associated tile that is to be cleared.
  * @param flags The command flags.
- * @return The cost or error.
+ * @return Tuple: Error code or clearing cost / Indication if the current associated tile was removed from the map array.
  * @see ClearTile
  */
-using ClearTileProc = CommandCost(TileIndex tile, DoCommandFlags flags);
+using ClearTileProc = std::tuple<CommandCost, bool>(TileIndex index, Tile &tile, DoCommandFlags flags);
 
 /**
  * Tile callback function signature for obtaining cargo acceptance of a tile
