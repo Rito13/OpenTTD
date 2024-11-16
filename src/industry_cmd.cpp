@@ -869,45 +869,45 @@ static void TileLoopIndustry_BubbleGenerator(TileIndex tile)
 }
 
 /** @copydoc TileLoopProc */
-static void TileLoop_Industry(TileIndex tile)
+static bool TileLoop_Industry(TileIndex index, Tile &tile)
 {
-	if (IsTileOnWater(tile)) TileLoop_Water(tile);
+	if (IsTileOnWater(tile)) TileLoop_Water(index, tile);
 
 	/* Normally this doesn't happen, but if an industry NewGRF is removed
 	 * an industry that was previously build on water can now be flooded.
 	 * If this happens the tile is no longer an industry tile after
 	 * returning from TileLoop_Water. */
-	if (!IsTileType(tile, TileType::Industry)) return;
+	if (!IsTileType(tile, TileType::Industry)) return false;
 
-	TriggerIndustryTileRandomisation(tile, IndustryRandomTrigger::TileLoop);
+	TriggerIndustryTileRandomisation(index, IndustryRandomTrigger::TileLoop);
 
 	if (!IsIndustryCompleted(tile)) {
-		MakeIndustryTileBigger(tile);
-		return;
+		MakeIndustryTileBigger(index);
+		return false;
 	}
 
-	if (_game_mode == GameMode::Editor) return;
+	if (_game_mode == GameMode::Editor) return false;
 
-	if (TransportIndustryGoods(tile) && !TriggerIndustryAnimation(Industry::GetByTile(tile), IndustryAnimationTrigger::CargoDistributed)) {
+	if (TransportIndustryGoods(index) && !TriggerIndustryAnimation(Industry::GetByTile(tile), IndustryAnimationTrigger::CargoDistributed)) {
 		uint newgfx = GetIndustryTileSpec(GetIndustryGfx(tile))->anim_production;
 
 		if (newgfx != INDUSTRYTILE_NOANIM) {
 			ResetIndustryConstructionStage(tile);
 			SetIndustryCompleted(tile);
 			SetIndustryGfx(tile, newgfx);
-			MarkTileDirtyByTile(tile);
-			return;
+			MarkTileDirtyByTile(index);
+			return false;
 		}
 	}
 
-	if (TriggerIndustryTileAnimation(tile, IndustryAnimationTrigger::TileLoop)) return;
+	if (TriggerIndustryTileAnimation(index, IndustryAnimationTrigger::TileLoop)) return false;
 
 	IndustryGfx newgfx = GetIndustryTileSpec(GetIndustryGfx(tile))->anim_next;
 	if (newgfx != INDUSTRYTILE_NOANIM) {
 		ResetIndustryConstructionStage(tile);
 		SetIndustryGfx(tile, newgfx);
-		MarkTileDirtyByTile(tile);
-		return;
+		MarkTileDirtyByTile(index);
+		return false;
 	}
 
 	IndustryGfx gfx = GetIndustryGfx(tile);
@@ -923,7 +923,7 @@ static void TileLoop_Industry(TileIndex tile)
 			}
 			SetIndustryGfx(tile, gfx);
 			SetAnimationFrame(tile, 0x80);
-			AddAnimatedTile(tile);
+			AddAnimatedTile(index);
 		}
 		break;
 
@@ -931,7 +931,7 @@ static void TileLoop_Industry(TileIndex tile)
 		if (Chance16(1, 6)) {
 			SetIndustryGfx(tile, GFX_OILWELL_ANIMATED_1);
 			SetAnimationFrame(tile, 0);
-			AddAnimatedTile(tile);
+			AddAnimatedTile(index);
 		}
 		break;
 
@@ -947,20 +947,20 @@ static void TileLoop_Industry(TileIndex tile)
 			SetIndustryGfx(tile, gfx);
 			SetIndustryCompleted(tile);
 			SetIndustryConstructionStage(tile, 3);
-			DeleteAnimatedTile(tile);
-			MarkTileDirtyByTile(tile);
+			DeleteAnimatedTile(index);
+			MarkTileDirtyByTile(index);
 		}
 		break;
 
 	case GFX_POWERPLANT_SPARKS:
 		if (Chance16(1, 3)) {
-			if (_settings_client.sound.ambient) SndPlayTileFx(SND_0C_POWER_STATION, tile);
-			AddAnimatedTile(tile);
+			if (_settings_client.sound.ambient) SndPlayTileFx(SND_0C_POWER_STATION, index);
+			AddAnimatedTile(index);
 		}
 		break;
 
 	case GFX_COPPER_MINE_CHIMNEY:
-		CreateEffectVehicleAbove(TileX(tile) * TILE_SIZE + 6, TileY(tile) * TILE_SIZE + 6, 43, EV_COPPER_MINE_SMOKE);
+		CreateEffectVehicleAbove(TileX(index) * TILE_SIZE + 6, TileY(index) * TILE_SIZE + 6, 43, EV_COPPER_MINE_SMOKE);
 		break;
 
 
@@ -969,23 +969,25 @@ static void TileLoop_Industry(TileIndex tile)
 			if (i->was_cargo_delivered) {
 				i->was_cargo_delivered = false;
 				SetIndustryAnimationLoop(tile, 0);
-				AddAnimatedTile(tile);
+				AddAnimatedTile(index);
 			}
 		}
 		break;
 
 	case GFX_BUBBLE_GENERATOR:
-		TileLoopIndustry_BubbleGenerator(tile);
+		TileLoopIndustry_BubbleGenerator(index);
 		break;
 
 	case GFX_TOFFEE_QUARRY:
-		AddAnimatedTile(tile);
+		AddAnimatedTile(index);
 		break;
 
 	case GFX_SUGAR_MINE_SIEVE:
-		if (Chance16(1, 3)) AddAnimatedTile(tile);
+		if (Chance16(1, 3)) AddAnimatedTile(index);
 		break;
 	}
+
+	return false;
 }
 
 /** @copydoc ClickTileProc */

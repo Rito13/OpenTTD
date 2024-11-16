@@ -283,26 +283,26 @@ static void TileLoopClearDesert(TileIndex tile)
 }
 
 /** @copydoc TileLoopProc */
-static void TileLoop_Clear(TileIndex tile)
+static bool TileLoop_Clear(TileIndex index, Tile &tile)
 {
-	AmbientSoundEffect(tile);
+	AmbientSoundEffect(index);
 
 	switch (_settings_game.game_creation.landscape) {
-		case LandscapeType::Tropic: TileLoopClearDesert(tile); break;
-		case LandscapeType::Arctic: TileLoopClearAlps(tile);   break;
+		case LandscapeType::Tropic: TileLoopClearDesert(index); break;
+		case LandscapeType::Arctic: TileLoopClearAlps(index); break;
 		default: break;
 	}
 
-	if (IsSnowTile(tile)) return;
+	if (IsSnowTile(tile)) return false;
 
 	switch (GetClearGround(tile)) {
 		case ClearGround::Grass:
-			if (GetClearDensity(tile) == 3) return;
+			if (GetClearDensity(tile) == 3) return false;
 
 			if (_game_mode != GameMode::Editor) {
 				if (GetClearCounter(tile) < 7) {
 					AddClearCounter(tile, 1);
-					return;
+					return false;
 				} else {
 					SetClearCounter(tile, 0);
 					AddClearDensity(tile, 1);
@@ -313,13 +313,13 @@ static void TileLoop_Clear(TileIndex tile)
 			break;
 
 		case ClearGround::Fields:
-			UpdateFences(tile);
+			UpdateFences(index);
 
-			if (_game_mode == GameMode::Editor) return;
+			if (_game_mode == GameMode::Editor) return false;
 
 			if (GetClearCounter(tile) < 7) {
 				AddClearCounter(tile, 1);
-				return;
+				return false;
 			} else {
 				SetClearCounter(tile, 0);
 			}
@@ -335,10 +335,11 @@ static void TileLoop_Clear(TileIndex tile)
 			break;
 
 		default:
-			return;
+			return false;
 	}
 
-	MarkTileDirtyByTile(tile);
+	MarkTileDirtyByTile(index);
+	return false;
 }
 
 void GenerateClearTile()

@@ -1293,18 +1293,18 @@ static void DoDryUp(TileIndex tile)
  * Let a water tile floods its diagonal adjoining tiles
  * called by #TileLoop_Industry, #TileLoop_Rail, #TileLoop_Station, #TileLoop_Object, #TileLoop_Trees and #TileLoop_Void.
  */
-void TileLoop_Water(TileIndex tile)
+bool TileLoop_Water(TileIndex index, Tile &tile)
 {
 	if (IsTileType(tile, TileType::Water)) {
-		AmbientSoundEffect(tile);
-		if (IsNonFloodingWaterTile(tile)) return;
+		AmbientSoundEffect(index);
+		if (IsNonFloodingWaterTile(tile)) return false;
 	}
 
-	switch (GetFloodingBehaviour(tile)) {
+	switch (GetFloodingBehaviour(index)) {
 		case FloodingBehaviour::Active: {
 			bool continue_flooding = false;
 			for (Direction dir = Direction::Begin; dir < Direction::End; dir++) {
-				TileIndex dest = AddTileIndexDiffCWrap(tile, TileIndexDiffCByDir(dir));
+				TileIndex dest = AddTileIndexDiffCWrap(index, TileIndexDiffCByDir(dir));
 				/* Contrary to drying up, flooding does not consider TileType::Void tiles. */
 				if (!IsValidTile(dest)) continue;
 				/* do not try to flood water tiles - increases performance a lot */
@@ -1331,21 +1331,23 @@ void TileLoop_Water(TileIndex tile)
 		}
 
 		case FloodingBehaviour::DryOut: {
-			Slope slope_here = std::get<Slope>(GetFoundationSlope(tile)).Reset(SLOPE_HALFTILE_MASK).Reset(Corner::Steep);
+			Slope slope_here = std::get<Slope>(GetFoundationSlope(index)).Reset(SLOPE_HALFTILE_MASK).Reset(Corner::Steep);
 			for (Direction dir : _flood_from_dirs[slope_here]) {
-				TileIndex dest = AddTileIndexDiffCWrap(tile, TileIndexDiffCByDir(dir));
+				TileIndex dest = AddTileIndexDiffCWrap(index, TileIndexDiffCByDir(dir));
 				/* Contrary to flooding, drying up does consider TileType::Void tiles. */
 				if (dest == INVALID_TILE) continue;
 
 				FloodingBehaviour dest_behaviour = GetFloodingBehaviour(dest);
-				if (dest_behaviour == FloodingBehaviour::Active || dest_behaviour == FloodingBehaviour::Passive) return;
+				if (dest_behaviour == FloodingBehaviour::Active || dest_behaviour == FloodingBehaviour::Passive) return false;
 			}
-			DoDryUp(tile);
+			DoDryUp(index);
 			break;
 		}
 
-		default: return;
+		default: break;
 	}
+
+	return false;
 }
 
 void ConvertGroundTilesIntoWaterTiles()

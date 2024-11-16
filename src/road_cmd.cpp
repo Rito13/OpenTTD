@@ -2006,15 +2006,15 @@ static_assert(lengthof(_town_road_types_2) == NUM_HOUSE_ZONES);
 
 
 /** @copydoc TileLoopProc */
-static void TileLoop_Road(TileIndex tile)
+static bool TileLoop_Road(TileIndex index, Tile &tile)
 {
 	switch (_settings_game.game_creation.landscape) {
 		case LandscapeType::Arctic: {
 			/* Roads use the snow level of their maximum height minus one, unless flat. */
-			int tile_z = (std::get<Slope>(GetFoundationSlope(tile)) == SLOPE_FLAT) ? GetTileMaxZ(tile) : GetTileMaxZ(tile) - 1;
+			int tile_z = (std::get<Slope>(GetFoundationSlope(index)) == SLOPE_FLAT) ? GetTileMaxZ(index) : GetTileMaxZ(index) - 1;
 			if (IsOnSnowOrDesert(tile) != (tile_z > GetSnowLine())) {
 				ToggleSnowOrDesert(tile);
-				MarkTileDirtyByTile(tile);
+				MarkTileDirtyByTile(index);
 			}
 			break;
 		}
@@ -2022,7 +2022,7 @@ static void TileLoop_Road(TileIndex tile)
 		case LandscapeType::Tropic:
 			if (GetTropicZone(tile) == TropicZone::Desert && !IsOnSnowOrDesert(tile)) {
 				ToggleSnowOrDesert(tile);
-				MarkTileDirtyByTile(tile);
+				MarkTileDirtyByTile(index);
 			}
 			break;
 
@@ -2030,30 +2030,30 @@ static void TileLoop_Road(TileIndex tile)
 			break;
 	}
 
-	if (IsRoadDepot(tile)) return;
+	if (IsRoadDepot(tile)) return false;
 
-	const Town *t = ClosestTownFromTile(tile, UINT_MAX);
+	const Town *t = ClosestTownFromTile(index, UINT_MAX);
 	if (!HasRoadWorks(tile)) {
 		HouseZone grp = HouseZone::TownEdge;
 
 		if (t != nullptr) {
-			grp = GetTownRadiusGroup(t, tile);
+			grp = GetTownRadiusGroup(t, index);
 
 			/* Show an animation to indicate road work */
 			if (t->road_build_months != 0 &&
-					(DistanceManhattan(t->xy, tile) < 8 || grp != HouseZone::TownEdge) &&
+					(DistanceManhattan(t->xy, index) < 8 || grp != HouseZone::TownEdge) &&
 					IsNormalRoad(tile) && GetAllRoadBits(tile).Count() > 1) {
-				if (std::get<Slope>(GetFoundationSlope(tile)) == SLOPE_FLAT && EnsureNoVehicleOnGround(tile).Succeeded() && Chance16(1, 40)) {
+				if (std::get<Slope>(GetFoundationSlope(index)) == SLOPE_FLAT && EnsureNoVehicleOnGround(index).Succeeded() && Chance16(1, 40)) {
 					StartRoadWorks(tile);
 
-					if (_settings_client.sound.ambient) SndPlayTileFx(SND_21_ROAD_WORKS, tile);
+					if (_settings_client.sound.ambient) SndPlayTileFx(SND_21_ROAD_WORKS, index);
 					CreateEffectVehicleAbove(
-						TileX(tile) * TILE_SIZE + 7,
-						TileY(tile) * TILE_SIZE + 7,
+						TileX(index) * TILE_SIZE + 7,
+						TileY(index) * TILE_SIZE + 7,
 						0,
 						EV_BULLDOZER);
-					MarkTileDirtyByTile(tile);
-					return;
+					MarkTileDirtyByTile(index);
+					return false;
 				}
 			}
 		}
@@ -2064,7 +2064,7 @@ static void TileLoop_Road(TileIndex tile)
 			Roadside cur_rs = GetRoadside(tile);
 
 			/* We have our desired type, do nothing */
-			if (cur_rs == new_rs[0]) return;
+			if (cur_rs == new_rs[0]) return false;
 
 			/* We have the pre-type of the desired type, switch to the desired type */
 			if (cur_rs == new_rs[1]) {
@@ -2077,7 +2077,7 @@ static void TileLoop_Road(TileIndex tile)
 				cur_rs = Roadside::Barren;
 			}
 			SetRoadside(tile, cur_rs);
-			MarkTileDirtyByTile(tile);
+			MarkTileDirtyByTile(index);
 		}
 	} else if (IncreaseRoadWorksCounter(tile)) {
 		TerminateRoadWorks(tile);
@@ -2085,15 +2085,15 @@ static void TileLoop_Road(TileIndex tile)
 		if (_settings_game.economy.mod_road_rebuild) {
 			/* Generate a nicer town surface */
 			RoadBits old_rb = GetAnyRoadBits(tile, RoadTramType::Road);
-			RoadBits new_rb = CleanUpRoadBits(tile, old_rb);
+			RoadBits new_rb = CleanUpRoadBits(index, old_rb);
 
 			if (old_rb != new_rb) {
-				RemoveRoad(tile, {DoCommandFlag::Execute, DoCommandFlag::Auto, DoCommandFlag::NoWater}, old_rb.Flip(new_rb), RoadTramType::Road, true);
+				RemoveRoad(index, {DoCommandFlag::Execute, DoCommandFlag::Auto, DoCommandFlag::NoWater}, old_rb.Flip(new_rb), RoadTramType::Road, true);
 
 				/* If new_rb is 0, there are now no road pieces left and the tile is no longer a road tile */
 				if (new_rb.None()) {
-					MarkTileDirtyByTile(tile);
-					return;
+					MarkTileDirtyByTile(index);
+					return false;
 				}
 			}
 		}
@@ -2106,8 +2106,9 @@ static void TileLoop_Road(TileIndex tile)
 			}
 		}
 
-		MarkTileDirtyByTile(tile);
+		MarkTileDirtyByTile(index);
 	}
+	return false;
 }
 
 /** @copydoc ClickTileProc */
