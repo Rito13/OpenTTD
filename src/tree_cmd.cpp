@@ -737,7 +737,7 @@ static CommandCost ClearTile_Trees(TileIndex tile, DoCommandFlags flags)
 }
 
 /** @copydoc GetTileDescProc */
-static void GetTileDesc_Trees(TileIndex tile, TileDesc &td)
+static void GetTileDesc_Trees([[maybe_unused]] TileIndex index, Tile tile, TileDesc &td)
 {
 	TreeType tt = GetTreeType(tile);
 

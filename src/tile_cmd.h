@@ -97,11 +97,12 @@ using AddAcceptedCargoProc = void(TileIndex tile, CargoArray &acceptance, CargoT
 
 /**
  * Tile callback function signature for obtaining a tile description
+ * @param index Index of the tile being queried.
  * @param tile Tile being queried
  * @param[out] td Storage pointer for returned tile description.
  * @see GetTileDesc
  */
-using GetTileDescProc = void(TileIndex tile, TileDesc &td);
+using GetTileDescProc = void(TileIndex index, Tile tile, TileDesc &td);
 
 /**
  * Tile callback function signature for getting the possible tracks
@@ -234,7 +235,7 @@ extern const EnumIndexArray<const TileTypeProcs *, TileType, TileType::MaxSize> 
 TrackStatus GetTileTrackStatus(TileIndex tile, TransportType mode, RoadTramType sub_mode, DiagDirection side = DiagDirection::Invalid);
 VehicleEnterTileStates VehicleEnterTile(Vehicle *v, TileIndex tile, int x, int y);
 void ChangeTileOwner(TileIndex tile, Owner old_owner, Owner new_owner);
-void GetTileDesc(TileIndex tile, TileDesc &td);
+void GetTileDesc(TileIndex index, Tile tile, TileDesc &td);
 
 /**
  * Obtain cargo acceptance of a tile.
