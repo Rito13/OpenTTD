@@ -120,7 +120,7 @@ CommandCost CmdBuildShipDepot(DoCommandFlags flags, TileIndex tile, Axis axis)
 		return CommandCost(STR_ERROR_MUST_BE_BUILT_ON_WATER);
 	}
 
-	for (Tile t : {tile, tile2}) {
+	for (TileIndex t : {tile, tile2}) {
 		if (IsBridgeAbove(t)) {
 			int height_diff = GetTileMaxZ(t) + MINIMAL_DEPOT_BRIDGE_HEIGHT - GetBridgeHeight(GetSouthernBridgeEnd(t));
 			if (height_diff > 0) return CommandCostWithParam(STR_ERROR_BRIDGE_TOO_LOW_FOR_SHIP_DEPOT, height_diff * TILE_HEIGHT_STEP);
@@ -178,11 +178,11 @@ CommandCost CmdBuildShipDepot(DoCommandFlags flags, TileIndex tile, Axis axis)
 
 /**
  * Check whether it is feasible that the given tile could be a docking tile.
- * @param t The tile to query.
+ * @param t The index of the tile to query.
  * @return \c true iff there is a chance the tile could be a docking tile.
  * @see CheckForDockingTile
  */
-bool IsPossibleDockingTile(Tile t)
+bool IsPossibleDockingTile(TileIndex t)
 {
 	assert(IsValidTile(t));
 	switch (GetTileType(t)) {
@@ -1357,7 +1357,7 @@ void TileLoop_Water(TileIndex tile)
 
 void ConvertGroundTilesIntoWaterTiles()
 {
-	for (const auto tile : Map::Iterate()) {
+	for (const auto tile : Map::IterateIndex()) {
 		auto [slope, z] = GetTileSlopeZ(tile);
 		if (IsTileType(tile, TileType::Clear) && z == 0) {
 			/* Make both water for tiles at level 0

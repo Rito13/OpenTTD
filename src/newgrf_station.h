@@ -188,7 +188,7 @@ using StationClass = NewGRFClass<StationSpec, StationClassID>;
 static const StationClass::GlobalID STATION_CLASS_LABEL_DEFAULT{"DFLT"}; ///< Class label for default rail station.
 static const StationClass::GlobalID STATION_CLASS_LABEL_WAYPOINT{"WAYP"}; ///< Class label for default rail waypoints.
 
-const StationSpec *GetStationSpec(TileIndex t);
+const StationSpec *GetStationSpec(Tile t);
 
 /**
  * Get the station layout key for a given station layout size.
