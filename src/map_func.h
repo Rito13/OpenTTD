@@ -23,6 +23,8 @@ class Tile;
 struct Map {
 private:
 	friend class Tile;
+	friend struct MAPRChunkHandler;
+	friend struct RawMapIterator;
 
 	/**
 	 * Data that is stored per tile. Also used TileExtended for this.
@@ -83,13 +85,15 @@ private:
 	static uint size_y;    ///< Size of the map along the Y
 	static uint size;      ///< The number of tiles on the map
 	static uint tile_mask; ///< _map_size - 1 (to mask the mapsize)
-
 	static uint initial_land_count; ///< Initial number of land tiles on the map.
-	static std::unique_ptr<TileBase[]> base_tiles; ///< Pointer to the tile-array.
-	static std::unique_ptr<TileExtended[]> extended_tiles; ///< Pointer to the extended tile-array.
+
+	static std::vector<std::vector<TileBase>> base_tiles; ///< Map array organized as an array of tile lines.
+	static std::vector<std::vector<TileExtended>> extended_tiles; ///< Extended map array organized as an array of tile lines.
+	static std::vector<uint16_t> offsets; ///< Mapping of TileIndex to offset in tile line.
 
 public:
 	static void Allocate(uint size_x, uint size_y);
+	static size_t GetTotalTileCount();
 	static void CountLandTiles();
 
 	/**
@@ -207,13 +211,23 @@ public:
 	}
 
 	/**
+	 * Get offset in map array chunk for given map array index.
+	 * @param index The index into map array to get offset for.
+	 * @return The offset in map array chunk.
+	 */
+	static inline uint16_t GetOffsetForIndex(TileIndex index)
+	{
+		return Map::offsets[index.base()];
+	}
+
+	/**
 	 * Check whether the map has been initialized, as to not try to save the map
 	 * during crashlog when the map is not there yet.
 	 * @return true when the map has been allocated/initialized.
 	 */
 	static bool IsInitialized()
 	{
-		return Map::base_tiles != nullptr;
+		return !Map::base_tiles.empty() && !Map::extended_tiles.empty() && !Map::offsets.empty();
 	}
 
 	/**
@@ -238,20 +252,38 @@ public:
  */
 class Tile {
 private:
-	TileIndex tile; ///< The tile to access the map data for.
+	friend struct RawMapIterator;
 
+	Map::TileBase *tile; ///< The tile to access the map data for.
+	Map::TileExtended *tile_extended; ///< The tile to access the map extended data for.
+
+	/**
+	 * Create the tile wrapper from raw pointers.
+	 * @param tile Pointer to a tile inside the map array.
+	 * @param tile_extended Pointer to the same tile but inside the map extended array.
+	 */
+	Tile(Map::TileBase *tile, Map::TileExtended *tile_extended) : tile(tile), tile_extended(tile_extended) {}
 public:
 	/**
 	 * Create the tile wrapper for the given tile.
-	 * @param tile The tile to access the map for.
+	 * @param tile_index The tile to access the map for.
 	 */
-	[[debug_inline]] inline Tile(TileIndex tile) : tile(tile) {}
+	Tile(TileIndex::BaseType tile_index)
+	{
+		if (tile_index < Map::Size()) {
+			this->tile = &Map::base_tiles[TileY(TileIndex{tile_index})][Map::offsets[tile_index]];
+			this->tile_extended = &Map::extended_tiles[TileY(TileIndex{tile_index})][Map::offsets[tile_index]];
+		} else {
+			this->tile = nullptr;
+			this->tile_extended = nullptr;
+		}
+	}
 
 	/**
 	 * Create the tile wrapper for the given tile.
 	 * @param tile The tile to access the map for.
 	 */
-	Tile(uint tile) : tile(tile) {}
+	[[debug_inline]] inline Tile(TileIndex tile) : Tile(tile.base()) {}
 
 	/**
 	 * Check if the tile reference is a valid on-map tile.
@@ -259,7 +291,7 @@ public:
 	 */
 	[[debug_inline]] inline bool IsValid() const
 	{
-		return this->tile < Map::Size();
+		return this->tile != nullptr && this->tile_extended != nullptr;
 	}
 
 	/**
@@ -270,7 +302,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &type()
 	{
-		return Map::base_tiles[this->tile.base()].type;
+		return this->tile->type;
 	}
 
 	/**
@@ -281,7 +313,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &height()
 	{
-		return Map::base_tiles[this->tile.base()].height;
+		return this->tile->height;
 	}
 
 	/**
@@ -292,7 +324,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &m1()
 	{
-		return Map::base_tiles[this->tile.base()].m1;
+		return this->tile->m1;
 	}
 
 	/**
@@ -303,7 +335,7 @@ public:
 	 */
 	[[debug_inline]] inline uint16_t &m2()
 	{
-		return Map::base_tiles[this->tile.base()].m2;
+		return this->tile->m2;
 	}
 
 	/**
@@ -314,7 +346,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &m3()
 	{
-		return Map::base_tiles[this->tile.base()].m3;
+		return this->tile->m3;
 	}
 
 	/**
@@ -325,7 +357,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &m4()
 	{
-		return Map::base_tiles[this->tile.base()].m4;
+		return this->tile->m4;
 	}
 
 	/**
@@ -336,7 +368,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &m5()
 	{
-		return Map::base_tiles[this->tile.base()].m5;
+		return this->tile->m5;
 	}
 
 	/**
@@ -347,7 +379,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &m6()
 	{
-		return Map::extended_tiles[this->tile.base()].m6;
+		return this->tile_extended->m6;
 	}
 
 	/**
@@ -358,7 +390,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &m7()
 	{
-		return Map::extended_tiles[this->tile.base()].m7;
+		return this->tile_extended->m7;
 	}
 
 	/**
@@ -369,7 +401,7 @@ public:
 	 */
 	[[debug_inline]] inline uint16_t &m8()
 	{
-		return Map::extended_tiles[this->tile.base()].m8;
+		return this->tile_extended->m8;
 	}
 
 	/**
@@ -377,7 +409,7 @@ public:
 	 * @param other The other #Tile to compare to.
 	 * @return \c true iff both tiles point to the same place in map array.
 	 */
-	constexpr bool operator ==(const Tile &other) const noexcept { return this->tile == other.tile; }
+	constexpr bool operator ==(const Tile &other) const noexcept { return this->tile == other.tile && this->tile_extended == other.tile_extended; }
 };
 
 /**
