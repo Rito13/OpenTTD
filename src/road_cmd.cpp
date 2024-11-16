@@ -1369,9 +1369,8 @@ void DrawRoadTypeCatenary(const TileInfo *ti, RoadType rt, RoadBits rb)
 {
 	/* Don't draw the catenary under a low bridge */
 	if (IsBridgeAbove(ti->tile) && !IsTransparencySet(TransparencyOption::Catenary)) {
-		int height = GetBridgeHeight(GetNorthernBridgeEnd(ti->tile));
-
-		if (height <= GetTileMaxZ(ti->tile) + 1) return;
+		int height = GetBridgeHeight(GetNorthernBridgeEnd(ti->index));
+		if (height <= GetTileMaxZ(ti->index) + 1) return;
 	}
 
 	if (rb.Count() > 2) {
@@ -1380,7 +1379,7 @@ void DrawRoadTypeCatenary(const TileInfo *ti, RoadType rt, RoadBits rb)
 		RoadBits rb_new{};
 		for (DiagDirection dir = DiagDirection::Begin; dir < DiagDirection::End; dir++) {
 			if (rb.Any(DiagDirToRoadBits(dir))) {
-				TileIndex neighbour = TileAddByDiagDir(ti->tile, dir);
+				TileIndex neighbour = TileAddByDiagDir(ti->index, dir);
 				if (MayHaveRoad(neighbour)) {
 					RoadType rt_road = GetRoadTypeRoad(neighbour);
 					RoadType rt_tram = GetRoadTypeTram(neighbour);
@@ -1396,8 +1395,8 @@ void DrawRoadTypeCatenary(const TileInfo *ti, RoadType rt, RoadBits rb)
 	}
 
 	const RoadTypeInfo *rti = GetRoadTypeInfo(rt);
-	SpriteID front = GetCustomRoadSprite(rti, ti->tile, RoadSpriteType::CatenaryFront);
-	SpriteID back = GetCustomRoadSprite(rti, ti->tile, RoadSpriteType::CatenaryRear);
+	SpriteID front = GetCustomRoadSprite(rti, ti->index, RoadSpriteType::CatenaryFront);
+	SpriteID back = GetCustomRoadSprite(rti, ti->index, RoadSpriteType::CatenaryRear);
 
 	if (front != 0 || back != 0) {
 		if (front != 0) front += GetRoadSpriteOffset(ti->tileh, rb);
@@ -1511,12 +1510,12 @@ void DrawRoadOverlays(const TileInfo *ti, PaletteID pal, const RoadTypeInfo *roa
 		/* Road underlay takes precedence over tram */
 		if (road_rti != nullptr) {
 			if (road_rti->UsesOverlay()) {
-				SpriteID ground = GetCustomRoadSprite(road_rti, ti->tile, RoadSpriteType::Ground);
+				SpriteID ground = GetCustomRoadSprite(road_rti, ti->index, RoadSpriteType::Ground);
 				DrawGroundSprite(ground + road_offset, pal);
 			}
 		} else {
 			if (tram_rti->UsesOverlay()) {
-				SpriteID ground = GetCustomRoadSprite(tram_rti, ti->tile, RoadSpriteType::Ground);
+				SpriteID ground = GetCustomRoadSprite(tram_rti, ti->index, RoadSpriteType::Ground);
 				DrawGroundSprite(ground + tram_offset, pal);
 			} else {
 				DrawGroundSprite(SPR_TRAMWAY_TRAM + tram_offset, pal);
@@ -1527,7 +1526,7 @@ void DrawRoadOverlays(const TileInfo *ti, PaletteID pal, const RoadTypeInfo *roa
 	/* Draw road overlay */
 	if (road_rti != nullptr) {
 		if (road_rti->UsesOverlay()) {
-			SpriteID ground = GetCustomRoadSprite(road_rti, ti->tile, RoadSpriteType::Overlay);
+			SpriteID ground = GetCustomRoadSprite(road_rti, ti->index, RoadSpriteType::Overlay);
 			if (ground != 0) DrawGroundSprite(ground + road_offset, pal);
 		}
 	}
@@ -1535,7 +1534,7 @@ void DrawRoadOverlays(const TileInfo *ti, PaletteID pal, const RoadTypeInfo *roa
 	/* Draw tram overlay */
 	if (tram_rti != nullptr) {
 		if (tram_rti->UsesOverlay()) {
-			SpriteID ground = GetCustomRoadSprite(tram_rti, ti->tile, RoadSpriteType::Overlay);
+			SpriteID ground = GetCustomRoadSprite(tram_rti, ti->index, RoadSpriteType::Overlay);
 			if (ground != 0) DrawGroundSprite(ground + tram_offset, pal);
 		} else if (road_rti != nullptr) {
 			DrawGroundSprite(SPR_TRAMWAY_OVERLAY + tram_offset, pal);
@@ -1647,7 +1646,7 @@ static void DrawRoadBits(TileInfo *ti)
 	if (road_rti != nullptr) {
 		DisallowedRoadDirections drd = GetDisallowedRoadDirections(ti->tile);
 		if (drd.Any()) {
-			SpriteID oneway = GetCustomRoadSprite(road_rti, ti->tile, RoadSpriteType::Oneway);
+			SpriteID oneway = GetCustomRoadSprite(road_rti, ti->index, RoadSpriteType::Oneway);
 
 			if (oneway == 0) oneway = SPR_ONEWAY_BASE;
 
@@ -1676,8 +1675,8 @@ static void DrawRoadBits(TileInfo *ti)
 	/* Do not draw details (street lights, trees) under low bridge */
 	Roadside roadside = GetRoadside(ti->tile);
 	if (IsBridgeAbove(ti->tile) && (roadside == Roadside::Trees || roadside == Roadside::StreetLights)) {
-		int height = GetBridgeHeight(GetNorthernBridgeEnd(ti->tile));
-		int minz = GetTileMaxZ(ti->tile) + 2;
+		int height = GetBridgeHeight(GetNorthernBridgeEnd(ti->index));
+		int minz = GetTileMaxZ(ti->index) + 2;
 
 		if (roadside == Roadside::Trees) minz++;
 
@@ -1791,13 +1790,13 @@ static void DrawTile_Road(TileInfo *ti)
 			bool draw_pbs = _game_mode != GameMode::Menu && _settings_client.gui.show_track_reservation && HasCrossingReservation(ti->tile);
 			if (rti->UsesOverlay()) {
 				pal = draw_pbs ? PALETTE_CRASH : PAL_NONE;
-				SpriteID rail = GetCustomRailSprite(rti, ti->tile, RailSpriteType::Crossing) + to_underlying(axis);
+				SpriteID rail = GetCustomRailSprite(rti, ti->index, RailSpriteType::Crossing) + to_underlying(axis);
 				DrawGroundSprite(rail, pal);
 
 				Axis road_axis = GetCrossingRoadAxis(ti->tile);
 				DiagDirections adjacent_diagdirs{};
 				for (DiagDirection dir : AxisToDiagDirs(road_axis)) {
-					const TileIndex t = TileAddByDiagDir(ti->tile, dir);
+					const TileIndex t = TileAddByDiagDir(ti->index, dir);
 					if (t < Map::Size() && IsLevelCrossingTile(t) && GetCrossingRoadAxis(t) == road_axis) {
 						adjacent_diagdirs.Set(dir);
 					}
@@ -1854,7 +1853,7 @@ static void DrawTile_Road(TileInfo *ti)
 			RoadType tram_rt = GetRoadTypeTram(ti->tile);
 			const RoadTypeInfo *rti = GetRoadTypeInfo(road_rt == INVALID_ROADTYPE ? tram_rt : road_rt);
 
-			int relocation = GetCustomRoadSprite(rti, ti->tile, RoadSpriteType::Depot);
+			int relocation = GetCustomRoadSprite(rti, ti->index, RoadSpriteType::Depot);
 			bool default_gfx = relocation == 0;
 			if (default_gfx) {
 				if (rti->flags.Test(RoadTypeFlag::Catenary)) {
@@ -1878,7 +1877,7 @@ static void DrawTile_Road(TileInfo *ti)
 			if (default_gfx) {
 				uint offset = GetRoadSpriteOffset(SLOPE_FLAT, DiagDirToRoadBits(dir));
 				if (rti->UsesOverlay()) {
-					SpriteID ground = GetCustomRoadSprite(rti, ti->tile, RoadSpriteType::Overlay);
+					SpriteID ground = GetCustomRoadSprite(rti, ti->index, RoadSpriteType::Overlay);
 					if (ground != 0) DrawGroundSprite(ground + offset, PAL_NONE);
 				} else if (road_rt == INVALID_ROADTYPE) {
 					DrawGroundSprite(SPR_TRAMWAY_OVERLAY + offset, PAL_NONE);

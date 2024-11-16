@@ -10,6 +10,7 @@
 #ifndef RAIL_MAP_H
 #define RAIL_MAP_H
 
+#include "map_type.h"
 #include "rail_type.h"
 #include "depot_type.h"
 #include "signal_func.h"
@@ -632,7 +633,7 @@ inline void MakeRailNormal(Tile t, Owner o, TrackBits b, RailType r)
 	t.m5() = to_underlying(RailTileType::Normal) << 6 | b.base();
 	SB(t.m6(), 2, 6, 0);
 	t.m7() = 0;
-	t.m8() = r;
+	t.m8() = t.HasAssociated() << M8_ASSOCIATED_TILE_BIT | r; // Preserves the state of the associated tile flag.
 }
 
 /**
@@ -665,7 +666,7 @@ inline void MakeRailDepot(Tile tile, Owner owner, DepotID depot_id, DiagDirectio
 	tile.m5() = to_underlying(RailTileType::Depot) << 6 | to_underlying(dir);
 	SB(tile.m6(), 2, 6, 0);
 	tile.m7() = 0;
-	tile.m8() = rail_type;
+	tile.m8() = tile.HasAssociated() << M8_ASSOCIATED_TILE_BIT | rail_type; // Preserves the state of the associated tile flag.
 }
 
 #endif /* RAIL_MAP_H */
