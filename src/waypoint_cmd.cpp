@@ -135,7 +135,7 @@ Axis GetAxisForNewRoadWaypoint(TileIndex tile)
 	return INVALID_AXIS;
 }
 
-extern CommandCost ClearTile_Station(TileIndex tile, DoCommandFlags flags);
+extern std::tuple<CommandCost, bool> ClearTile_Station(TileIndex index, Tile &tile, DoCommandFlags flags);
 
 /**
  * Check whether the given tile is suitable for a waypoint.
@@ -150,7 +150,8 @@ static CommandCost IsValidTileForWaypoint(TileIndex tile, Axis axis, StationID *
 	 * Or it points to a waypoint if we're only allowed to build on exactly that waypoint. */
 	if (waypoint != nullptr && IsTileType(tile, MP_STATION)) {
 		if (!IsRailWaypoint(tile)) {
-			return ClearTile_Station(tile, DoCommandFlag::Auto); // get error message
+			Tile t = tile;
+			return std::get<0>(ClearTile_Station(tile, t, DoCommandFlag::Auto)); // get error message
 		} else {
 			StationID wp = GetStationIndex(tile);
 			if (*waypoint == StationID::Invalid()) {
