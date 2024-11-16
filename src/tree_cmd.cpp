@@ -721,19 +721,19 @@ static int GetSlopePixelZ_Trees(TileIndex tile, uint x, uint y, [[maybe_unused]]
 }
 
 /** @copydoc ClearTileProc */
-static CommandCost ClearTile_Trees(TileIndex tile, DoCommandFlags flags)
+static std::tuple<CommandCost, bool> ClearTile_Trees(TileIndex index, Tile &tile, DoCommandFlags flags)
 {
 	if (Company::IsValidID(_current_company)) {
-		Town *t = ClosestTownFromTile(tile, _settings_game.economy.dist_local_authority);
+		Town *t = ClosestTownFromTile(index, _settings_game.economy.dist_local_authority);
 		if (t != nullptr) ChangeTownRating(t, RATING_TREE_DOWN_STEP, RATING_TREE_MINIMUM, flags);
 	}
 
 	uint num = GetTreeCount(tile);
 	if (IsInsideMM(GetTreeType(tile), TREE_RAINFOREST, TREE_CACTUS)) num *= 4;
 
-	if (flags.Test(DoCommandFlag::Execute)) DoClearSquare(tile);
+	if (flags.Test(DoCommandFlag::Execute)) DoClearSquare(index);
 
-	return CommandCost(ExpensesType::Construction, num * _price[Price::ClearTrees]);
+	return {CommandCost(ExpensesType::Construction, num * _price[Price::ClearTrees]), false};
 }
 
 /** @copydoc GetTileDescProc */

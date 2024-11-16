@@ -654,7 +654,7 @@ static bool TileLoop_Town(TileIndex index, Tile &tile)
 
 	if (hs->building_flags.Any(BUILDING_HAS_1_TILE) &&
 			t->flags.Test(TownFlag::IsGrowing) &&
-			CanDeleteHouse(index) &&
+			CanDeleteHouse(index, tile) &&
 			GetHouseAge(tile) >= hs->minimum_life &&
 			--t->time_until_rebuild == 0) {
 		t->time_until_rebuild = GB(r, 16, 8) + 192;
@@ -692,10 +692,10 @@ static bool TileLoop_Town(TileIndex index, Tile &tile)
 }
 
 /** @copydoc ClearTileProc */
-static CommandCost ClearTile_Town(TileIndex tile, DoCommandFlags flags)
+static std::tuple<CommandCost, bool> ClearTile_Town(TileIndex index, Tile &tile, DoCommandFlags flags)
 {
-	if (flags.Test(DoCommandFlag::Auto)) return CommandCost(STR_ERROR_BUILDING_MUST_BE_DEMOLISHED);
-	if (!CanDeleteHouse(tile)) return CommandCost(STR_ERROR_BUILDING_IS_PROTECTED);
+	if (flags.Test(DoCommandFlag::Auto)) return {CommandCost(STR_ERROR_BUILDING_MUST_BE_DEMOLISHED), false};
+	if (!CanDeleteHouse(index, tile)) return {CommandCost(STR_ERROR_BUILDING_IS_PROTECTED), false};
 
 	const HouseSpec *hs = HouseSpec::Get(GetHouseType(tile));
 
@@ -709,21 +709,21 @@ static CommandCost ClearTile_Town(TileIndex tile, DoCommandFlags flags)
 		if (!_cheats.magic_bulldozer.value && !flags.Test(DoCommandFlag::NoTestTownRating)) {
 			/* NewGRFs can add indestructible houses. */
 			if (rating > RATING_MAXIMUM) {
-				return CommandCost(STR_ERROR_BUILDING_IS_PROTECTED);
+				return {CommandCost(STR_ERROR_BUILDING_IS_PROTECTED), false};
 			}
 			/* If town authority controls removal, check the company's rating. */
 			if (rating > t->ratings[_current_company] && _settings_game.difficulty.town_council_tolerance != TOWN_COUNCIL_PERMISSIVE) {
-				return CommandCostWithParam(STR_ERROR_LOCAL_AUTHORITY_REFUSES_TO_ALLOW_THIS, t->index);
+				return {CommandCostWithParam(STR_ERROR_LOCAL_AUTHORITY_REFUSES_TO_ALLOW_THIS, t->index), false};
 			}
 		}
 	}
 
 	ChangeTownRating(t, -rating, RATING_HOUSE_MINIMUM, flags);
 	if (flags.Test(DoCommandFlag::Execute)) {
-		ClearTownHouse(t, tile);
+		ClearTownHouse(t, index);
 	}
 
-	return cost;
+	return {cost, false};
 }
 
 /** @copydoc AddProducedCargoProc */
