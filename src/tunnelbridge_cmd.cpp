@@ -1025,14 +1025,14 @@ static CommandCost DoClearBridge(TileIndex tile, DoCommandFlags flags)
 }
 
 /** @copydoc ClearTileProc */
-static CommandCost ClearTile_TunnelBridge(TileIndex tile, DoCommandFlags flags)
+static std::tuple<CommandCost, bool> ClearTile_TunnelBridge(TileIndex index, Tile &tile, DoCommandFlags flags)
 {
 	if (IsTunnel(tile)) {
-		if (flags.Test(DoCommandFlag::Auto)) return CommandCost(STR_ERROR_MUST_DEMOLISH_TUNNEL_FIRST);
-		return DoClearTunnel(tile, flags);
+		if (flags.Test(DoCommandFlag::Auto)) return {CommandCost(STR_ERROR_MUST_DEMOLISH_TUNNEL_FIRST), false};
+		return {DoClearTunnel(index, flags), false};
 	} else { // IsBridge(tile)
-		if (flags.Test(DoCommandFlag::Auto)) return CommandCost(STR_ERROR_MUST_DEMOLISH_BRIDGE_FIRST);
-		return DoClearBridge(tile, flags);
+		if (flags.Test(DoCommandFlag::Auto)) return {CommandCost(STR_ERROR_MUST_DEMOLISH_BRIDGE_FIRST), false};
+		return {DoClearBridge(index, flags), false};
 	}
 }
 

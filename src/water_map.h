@@ -388,6 +388,7 @@ inline bool IsDockingTile(const Tile &t)
  */
 inline void MakeShore(const Tile &t, bool rocks = false)
 {
+	if (!MayHaveAssociatedTile(t.GetTileType())) ClrBit(t.m8(), 14); // Guard against garbage.
 	SetTileType(t, TileType::Water);
 	SetTileOwner(t, OWNER_WATER);
 	SetWaterClass(t, WaterClass::Sea);
@@ -412,6 +413,7 @@ inline void MakeShore(const Tile &t, bool rocks = false)
  */
 inline void MakeWater(const Tile &t, Owner o, WaterClass wc, uint8_t random_bits, bool rocks = false)
 {
+	if (!MayHaveAssociatedTile(t.GetTileType())) ClrBit(t.m8(), 14); // Guard against garbage.
 	SetTileType(t, TileType::Water);
 	SetTileOwner(t, o);
 	SetWaterClass(t, wc);
@@ -469,6 +471,7 @@ inline void MakeCanal(const Tile &t, Owner o, uint8_t random_bits)
  */
 inline void MakeShipDepot(const Tile &t, Owner o, DepotID did, DepotPart part, Axis a, WaterClass original_water_class)
 {
+	if (!MayHaveAssociatedTile(t.GetTileType())) ClrBit(t.m8(), 14); // Guard against garbage.
 	SetTileType(t, TileType::Water);
 	SetTileOwner(t, o);
 	SetWaterClass(t, original_water_class);
@@ -494,6 +497,7 @@ inline void MakeShipDepot(const Tile &t, Owner o, DepotID did, DepotPart part, A
  */
 inline void MakeLockTile(const Tile &t, Owner o, LockPart part, DiagDirection dir, WaterClass original_water_class)
 {
+	if (!MayHaveAssociatedTile(t.GetTileType())) ClrBit(t.m8(), 14); // Guard against garbage.
 	SetTileType(t, TileType::Water);
 	SetTileOwner(t, o);
 	SetWaterClass(t, original_water_class);

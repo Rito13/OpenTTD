@@ -544,6 +544,8 @@ public:
 
 	/** Bool conversion operator. Converts this tile into a boolean. */
 	explicit operator bool() const { return this->IsValid(); }
+
+	static Tile Remove(TileIndex index, Tile tile);
 };
 
 /**
