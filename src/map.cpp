@@ -104,6 +104,45 @@ TileIndex TileVirtXYClampedToMap(int x, int y)
 	return std::accumulate(Map::base_tiles.begin(), Map::base_tiles.end(), size_t{0}, [](size_t s, const std::vector<Map::TileBase> &t) { return s + t.size(); });
 }
 
+/**
+ * Remove a tile from the map.
+ * @param index Tile index from where to remove a tile.
+ * @param to_remove Associated sub-tile to remove.
+ * @return Next associated tile after the removed tile if present or an invalid tile otherwise.
+ * @pre Tile(index).HasAssociated()
+ * @pre Tile is associated with this tile index.
+ */
+/* static */ Tile Tile::Remove(TileIndex index, Tile to_remove)
+{
+	assert(Tile(index).HasAssociated()); // Can't remove the last tile from a tile index.
+
+	for (Tile cur_tile(index); cur_tile.HasAssociated(); ++cur_tile) {
+		if (cur_tile.tile + 1 == to_remove.tile) {
+			/* Copy associated tile flag from tile to be removed. */
+			bool has_next = to_remove.HasAssociated();
+			cur_tile.SetAssociated(has_next);
+			/* Remove tile. */
+			auto &line = Map::base_tiles[index.base() >> LOG_2_OF_TILE_INDEXES_PER_CHUNK];
+			auto next = line.erase(line.begin() + (to_remove.tile - line.data()));
+
+			auto &line_extended = Map::extended_tiles[index.base() >> LOG_2_OF_TILE_INDEXES_PER_CHUNK];
+			auto next_extended = line_extended.erase(line_extended.begin() + (to_remove.tile_extended - line_extended.data()));
+
+			/* Fix-up tile offsets. */
+			size_t count = TILE_INDEXES_PER_CHUNK - (index.base() & (TILE_INDEXES_PER_CHUNK - 1));
+			for (size_t i = 1; i < count; ++i) {
+				--Map::offsets[index.base() + i];
+			}
+
+			/* Return next associated tile after the removed tile (if there is one). */
+			return {has_next ? std::addressof(*next) : nullptr, has_next ? std::addressof(*next_extended) : nullptr};
+		}
+	}
+
+	/* Tile wasn't actually part of this tile index. */
+	NOT_REACHED();
+}
+
 #ifdef _DEBUG
 TileIndex TileAdd(TileIndex tile, TileIndexDiff offset)
 {

@@ -1798,56 +1798,56 @@ static CommandCost RemoveTrainDepot(TileIndex tile, DoCommandFlags flags)
 }
 
 /** @copydoc ClearTileProc */
-static CommandCost ClearTile_Rail(TileIndex tile, DoCommandFlags flags)
+static std::tuple<CommandCost, bool> ClearTile_Rail(TileIndex index, Tile &tile, DoCommandFlags flags)
 {
 	CommandCost cost(ExpensesType::Construction);
 
 	if (flags.Test(DoCommandFlag::Auto)) {
 		if (!IsTileOwner(tile, _current_company)) {
-			return CommandCost(STR_ERROR_AREA_IS_OWNED_BY_ANOTHER);
+			return {CommandCost(STR_ERROR_AREA_IS_OWNED_BY_ANOTHER), false};
 		}
 
 		if (IsPlainRail(tile)) {
-			return CommandCost(STR_ERROR_MUST_REMOVE_RAILROAD_TRACK);
+			return {CommandCost(STR_ERROR_MUST_REMOVE_RAILROAD_TRACK), false};
 		} else {
-			return CommandCost(STR_ERROR_BUILDING_MUST_BE_DEMOLISHED);
+			return {CommandCost(STR_ERROR_BUILDING_MUST_BE_DEMOLISHED), false};
 		}
 	}
 
 	switch (GetRailTileType(tile)) {
 		case RailTileType::Signals:
 		case RailTileType::Normal: {
-			Slope tileh = GetTileSlope(tile);
+			Slope tileh = GetTileSlope(index);
 			/* Is there flat water on the lower halftile that gets cleared expensively? */
 			bool water_ground = (GetRailGroundType(tile) == RailGroundType::HalfTileWater && IsSlopeWithOneCornerRaised(tileh));
 
 			for (Track track : GetTrackBits(tile)) {
-				CommandCost ret = Command<Commands::RemoveRail>::Do(flags, tile, track);
-				if (ret.Failed()) return ret;
+				CommandCost ret = Command<Commands::RemoveRail>::Do(flags, index, track);
+				if (ret.Failed()) return {ret, false};
 				cost.AddCost(ret.GetCost());
 			}
 
 			/* When bankrupting, don't make water dirty, there could be a ship on lower halftile.
 			 * Same holds for non-companies clearing the tile, e.g. disasters. */
 			if (water_ground && !flags.Test(DoCommandFlag::Bankrupt) && Company::IsValidID(_current_company)) {
-				CommandCost ret = EnsureNoVehicleOnGround(tile);
-				if (ret.Failed()) return ret;
+				CommandCost ret = EnsureNoVehicleOnGround(index);
+				if (ret.Failed()) return {ret, false};
 
 				/* The track was removed, and left a coast tile. Now also clear the water. */
 				if (flags.Test(DoCommandFlag::Execute)) {
-					DoClearSquare(tile);
+					DoClearSquare(index);
 				}
 				cost.AddCost(_price[Price::ClearWater]);
 			}
 
-			return cost;
+			return {cost, false};
 		}
 
 		case RailTileType::Depot:
-			return RemoveTrainDepot(tile, flags);
+			return {RemoveTrainDepot(index, flags), false};
 
 		default:
-			return CMD_ERROR;
+			return {CMD_ERROR, false};
 	}
 }
 

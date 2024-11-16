@@ -577,27 +577,27 @@ CommandCost CmdBuildCanal(DoCommandFlags flags, TileIndex tile, TileIndex start_
 
 
 /** @copydoc ClearTileProc */
-static CommandCost ClearTile_Water(TileIndex tile, DoCommandFlags flags)
+static std::tuple<CommandCost, bool> ClearTile_Water(TileIndex index, Tile &tile, DoCommandFlags flags)
 {
 	switch (GetWaterTileType(tile)) {
 		case WaterTileType::Clear: {
-			if (flags.Test(DoCommandFlag::NoWater)) return CommandCost(STR_ERROR_CAN_T_BUILD_ON_WATER);
+			if (flags.Test(DoCommandFlag::NoWater)) return {CommandCost(STR_ERROR_CAN_T_BUILD_ON_WATER), false};
 
 			Money base_cost = IsCanal(tile) ? _price[Price::ClearCanal] : _price[Price::ClearWater];
 			/* Make sure freeform edges are allowed or it's not an edge tile. */
-			if (!_settings_game.construction.freeform_edges && (!IsInsideMM(TileX(tile), 1, Map::MaxX() - 1) ||
-					!IsInsideMM(TileY(tile), 1, Map::MaxY() - 1))) {
-				return CommandCost(STR_ERROR_TOO_CLOSE_TO_EDGE_OF_MAP);
+			if (!_settings_game.construction.freeform_edges && (!IsInsideMM(TileX(index), 1, Map::MaxX() - 1) ||
+					!IsInsideMM(TileY(index), 1, Map::MaxY() - 1))) {
+				return {CommandCost(STR_ERROR_TOO_CLOSE_TO_EDGE_OF_MAP), false};
 			}
 
 			/* Make sure no vehicle is on the tile */
-			CommandCost ret = EnsureNoVehicleOnGround(tile);
-			if (ret.Failed()) return ret;
+			CommandCost ret = EnsureNoVehicleOnGround(index);
+			if (ret.Failed()) return {ret, false};
 
 			Owner owner = GetTileOwner(tile);
 			if (owner != OWNER_WATER && owner != OWNER_NONE) {
-				ret = CheckTileOwnership(tile);
-				if (ret.Failed()) return ret;
+				ret = CheckTileOwnership(index);
+				if (ret.Failed()) return {ret, false};
 			}
 
 			if (flags.Test(DoCommandFlag::Execute)) {
@@ -609,35 +609,37 @@ static CommandCost ClearTile_Water(TileIndex tile, DoCommandFlags flags)
 				/* Handle local authority impact */
 				if (IsRiver(tile)) {
 					if (Company::IsValidID(_current_company)) {
-						Town *town = ClosestTownFromTile(tile, _settings_game.economy.dist_local_authority);
+						Town *town = ClosestTownFromTile(index, _settings_game.economy.dist_local_authority);
 						if (town != nullptr) ChangeTownRating(town, RATING_WATER_RIVER_DOWN_STEP, RATING_WATER_MINIMUM, flags);
 					}
 				}
 
-				DoClearSquare(tile);
-				MarkCanalsAndRiversAroundDirty(tile);
-				ClearNeighbourNonFloodingStates(tile);
+				MakeClearGrass(index);
+				MarkTileDirtyByTile(index);
+				MarkCanalsAndRiversAroundDirty(index);
+				ClearNeighbourNonFloodingStates(index);
 			}
 
-			return CommandCost(ExpensesType::Construction, base_cost);
+			return {CommandCost(ExpensesType::Construction, base_cost), false};
 		}
 
 		case WaterTileType::Coast: {
-			Slope slope = GetTileSlope(tile);
+			Slope slope = GetTileSlope(index);
 
 			/* Make sure no vehicle is on the tile */
-			CommandCost ret = EnsureNoVehicleOnGround(tile);
-			if (ret.Failed()) return ret;
+			CommandCost ret = EnsureNoVehicleOnGround(index);
+			if (ret.Failed()) return {ret, false};
 
 			if (flags.Test(DoCommandFlag::Execute)) {
-				DoClearSquare(tile);
-				MarkCanalsAndRiversAroundDirty(tile);
-				ClearNeighbourNonFloodingStates(tile);
+				MakeClearGrass(index);
+				MarkTileDirtyByTile(index);
+				MarkCanalsAndRiversAroundDirty(index);
+				ClearNeighbourNonFloodingStates(index);
 			}
 			if (IsSlopeWithOneCornerRaised(slope)) {
-				return CommandCost(ExpensesType::Construction, _price[Price::ClearWater]);
+				return {CommandCost(ExpensesType::Construction, _price[Price::ClearWater]), false};
 			} else {
-				return CommandCost(ExpensesType::Construction, _price[Price::ClearRough]);
+				return {CommandCost(ExpensesType::Construction, _price[Price::ClearRough]), false};
 			}
 		}
 
@@ -649,15 +651,15 @@ static CommandCost ClearTile_Water(TileIndex tile, DoCommandFlags flags)
 				{{{ { 1,  0}, {0, -1}, {-1, 0}, {0,  1} }}}, // LockPart::Upper
 			}}};
 
-			if (flags.Test(DoCommandFlag::Auto)) return CommandCost(STR_ERROR_BUILDING_MUST_BE_DEMOLISHED);
-			if (_current_company == OWNER_WATER) return CMD_ERROR;
+			if (flags.Test(DoCommandFlag::Auto)) return {CommandCost(STR_ERROR_BUILDING_MUST_BE_DEMOLISHED), false};
+			if (_current_company == OWNER_WATER) return {CMD_ERROR, false};
 			/* move to the middle tile.. */
-			return RemoveLock(tile + ToTileIndexDiff(_lock_tomiddle_offs[GetLockPart(tile)][GetLockDirection(tile)]), flags);
+			return {RemoveLock(index + ToTileIndexDiff(_lock_tomiddle_offs[GetLockPart(tile)][GetLockDirection(tile)]), flags), false};
 		}
 
 		case WaterTileType::Depot:
-			if (flags.Test(DoCommandFlag::Auto)) return CommandCost(STR_ERROR_BUILDING_MUST_BE_DEMOLISHED);
-			return RemoveShipDepot(tile, flags);
+			if (flags.Test(DoCommandFlag::Auto)) return {CommandCost(STR_ERROR_BUILDING_MUST_BE_DEMOLISHED), false};
+			return {RemoveShipDepot(index, flags), false};
 
 		default:
 			NOT_REACHED();

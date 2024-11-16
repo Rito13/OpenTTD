@@ -601,10 +601,11 @@ void TriggerHouseAnimation_ConstructionStageChanged(TileIndex tile, bool first_c
 /**
  * Check if the house on given tile can be deleted by current actor.
  * Uses `_current_company` to define the actor.
- * @param tile The tile that the house is built on.
+ * @param index The tile that the house is built on.
+ * @param tile The tile that contains the house data.
  * @return \c true iff the house can be deleted by current actor.
  */
-bool CanDeleteHouse(TileIndex tile)
+bool CanDeleteHouse(TileIndex index, const Tile &tile)
 {
 	const HouseSpec *hs = HouseSpec::Get(GetHouseType(tile));
 
@@ -615,7 +616,7 @@ bool CanDeleteHouse(TileIndex tile)
 	}
 
 	if (hs->callback_mask.Test(HouseCallbackMask::DenyDestruction)) {
-		uint16_t callback_res = GetHouseCallback(CBID_HOUSE_DENY_DESTRUCTION, 0, 0, GetHouseType(tile), Town::GetByTile(tile), tile);
+		uint16_t callback_res = GetHouseCallback(CBID_HOUSE_DENY_DESTRUCTION, 0, 0, GetHouseType(tile), Town::GetByTile(tile), index);
 		return (callback_res == CALLBACK_FAILED || !ConvertBooleanCallback(hs->grf_prop.grffile, CBID_HOUSE_DENY_DESTRUCTION, callback_res));
 	} else {
 		return !IsHouseProtected(tile);
