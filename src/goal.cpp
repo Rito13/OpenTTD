@@ -39,7 +39,7 @@ INSTANTIATE_POOL_METHODS(Goal)
 			break;
 
 		case GoalType::Tile:
-			if (!IsValidTile(dest)) return false;
+			if (!IsValidTile(TileIndex(dest))) return false;
 			break;
 
 		case GoalType::Industry:
