@@ -816,7 +816,7 @@ static void DrawWaterEdges(bool canal, uint offset, TileIndex tile)
 }
 
 /** Draw a plain sea water tile with no edges */
-static void DrawSeaWater(TileIndex)
+static void DrawSeaWater()
 {
 	DrawGroundSprite(SPR_FLAT_WATER_TILE, PAL_NONE);
 }
@@ -857,7 +857,7 @@ static void DrawWaterTileStruct(const TileInfo *ti, std::span<const DrawTileSeqS
 
 	for (const DrawTileSeqStruct &dtss : seq) {
 		uint tile_offs = offset + dtss.image.sprite;
-		if (feature < CanalFeature::End) tile_offs = GetCanalSpriteOffset(feature, ti->tile, tile_offs);
+		if (feature < CanalFeature::End) tile_offs = GetCanalSpriteOffset(feature, ti->index, tile_offs);
 		AddSortableSpriteToDraw(base + tile_offs, palette, *ti, dtss, IsTransparencySet(TransparencyOption::Buildings));
 	}
 }
@@ -873,8 +873,7 @@ static void DrawWaterLock(const TileInfo *ti)
 
 	/* Draw ground sprite. */
 	SpriteID image = dts.ground.sprite;
-
-	SpriteID water_base = GetCanalSprite(CanalFeature::LockWaterSlope, ti->tile);
+	SpriteID water_base = GetCanalSprite(CanalFeature::LockWaterSlope, ti->index);
 	if (water_base == 0) {
 		/* Use default sprites. */
 		water_base = SPR_CANALS_BASE;
@@ -892,7 +891,7 @@ static void DrawWaterLock(const TileInfo *ti)
 
 	/* Draw structures. */
 	uint     zoffs = 0;
-	SpriteID base  = GetCanalSprite(CanalFeature::Locks, ti->tile);
+	SpriteID base = GetCanalSprite(CanalFeature::Locks, ti->index);
 
 	if (base == 0) {
 		/* If no custom graphics, use defaults. */
@@ -921,7 +920,7 @@ static void DrawRiverWater(const TileInfo *ti)
 	uint     edges_offset = 0;
 
 	if (ti->tileh != SLOPE_FLAT || _water_feature[CanalFeature::RiverSlope].flags.Test(CanalFeatureFlag::HasFlatSprite)) {
-		image = GetCanalSprite(CanalFeature::RiverSlope, ti->tile);
+		image = GetCanalSprite(CanalFeature::RiverSlope, ti->index);
 		if (image == 0) {
 			switch (ti->tileh.base()) {
 				case SLOPE_NW.base(): image = SPR_WATER_SLOPE_Y_DOWN; break;
@@ -942,14 +941,14 @@ static void DrawRiverWater(const TileInfo *ti)
 				default:       offset  = 0; break;
 			}
 
-			offset = GetCanalSpriteOffset(CanalFeature::RiverSlope, ti->tile, offset);
+			offset = GetCanalSpriteOffset(CanalFeature::RiverSlope, ti->index, offset);
 		}
 	}
 
 	DrawGroundSprite(image + offset, PAL_NONE);
 
 	/* Draw river edges if available. */
-	DrawWaterEdges(false, edges_offset, ti->tile);
+	DrawWaterEdges(false, edges_offset, ti->index);
 }
 
 /**
@@ -976,8 +975,8 @@ void DrawShoreTile(Slope tileh)
 void DrawWaterClassGround(const TileInfo *ti)
 {
 	switch (GetWaterClass(ti->tile)) {
-		case WaterClass::Sea:   DrawSeaWater(ti->tile); break;
-		case WaterClass::Canal: DrawCanalWater(ti->tile); break;
+		case WaterClass::Sea: DrawSeaWater(); break;
+		case WaterClass::Canal: DrawCanalWater(ti->index); break;
 		case WaterClass::River: DrawRiverWater(ti); break;
 		default: NOT_REACHED();
 	}

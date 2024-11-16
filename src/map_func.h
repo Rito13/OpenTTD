@@ -11,11 +11,23 @@
 #define MAP_FUNC_H
 
 #include "core/math_func.hpp"
+#include "core/bitmath_func.hpp"
 #include "tile_type.h"
 #include "map_type.h"
 #include "direction_func.h"
 
 class Tile;
+
+/**
+ * Check if a tile type can have associated tiles.
+ * @note Because of how association is stored tiles with types that don't allow for it must have M8_ASSOCIATED_TILE_BIT clear.
+ * @param tt The tile type to check
+ * @return True if the type can have associated tiles
+ */
+static inline bool MayHaveAssociatedTile(TileType tt)
+{
+	return tt == TileType::Clear || tt == TileType::Water;
+}
 
 /**
  * Size related data of the map.
@@ -265,6 +277,9 @@ private:
 	 */
 	Tile(Map::TileBase *tile, Map::TileExtended *tile_extended) : tile(tile), tile_extended(tile_extended) {}
 public:
+	/** Create an invalid tile wrapper. */
+	[[debug_inline]] inline Tile() : tile(nullptr), tile_extended(nullptr) {}
+
 	/**
 	 * Create the tile wrapper for the given tile.
 	 * @param tile_index The tile to access the map for.
@@ -412,11 +427,73 @@ public:
 	}
 
 	/**
+	 * Get the tiletype of a this tile.
+	 * @return The tiletype of the tile.
+	 */
+	[[debug_inline]] inline TileType GetTileType()
+	{
+		return static_cast<TileType>(GB(this->type(), 4, TILE_TYPE_BITS));
+	}
+
+	/**
+	 * Check if this tile has an associated tile following.
+	 * @return \c true iff the next tile is associated with this tile.
+	 */
+	[[debug_inline]] inline bool HasAssociated()
+	{
+		assert(MayHaveAssociatedTile(this->GetTileType()) || !HasBit(this->m8(), M8_ASSOCIATED_TILE_BIT));
+		return HasBit(this->m8(), M8_ASSOCIATED_TILE_BIT);
+	}
+
+	/**
+	 * Set the flag indicating if a tile has an associated tile.
+	 * @param has_associated \c true for has tile, \c false for has not.
+	 * @pre this->IsValid()
+	 * @pre MayHaveAssociatedTile()
+	 */
+	void SetAssociated(bool has_associated)
+	{
+		assert(this->IsValid());
+		assert(MayHaveAssociatedTile(this->GetTileType()));
+		AssignBit(this->m8(), M8_ASSOCIATED_TILE_BIT, has_associated);
+	}
+
+	/**
+	 * Advance tile to the next associated tile.
+	 * @return Next associated tile if present or an invalid tile.
+	 */
+	Tile &operator ++()
+	{
+		if (this->IsValid() && this->HasAssociated()) {
+			++this->tile;
+			++this->tile_extended;
+		} else {
+			this->tile = nullptr;
+			this->tile_extended = nullptr;
+		}
+		return *this;
+	}
+
+	/**
+	 * Advance tile to the next associated tile.
+	 * @return Current tile.
+	 */
+	Tile operator ++(int)
+	{
+		Tile old(this->tile, this->tile_extended);
+		this->operator++();
+		return old;
+	}
+
+	/**
 	 * Equality comparison. Check whether this and an other tile point to the same place in map array.
 	 * @param other The other #Tile to compare to.
 	 * @return \c true iff both tiles point to the same place in map array.
 	 */
 	constexpr bool operator ==(const Tile &other) const noexcept { return this->tile == other.tile && this->tile_extended == other.tile_extended; }
+
+	/** Bool conversion operator. Converts this tile into a boolean. */
+	explicit operator bool() const { return this->IsValid(); }
 };
 
 /**
