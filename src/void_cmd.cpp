@@ -44,8 +44,7 @@ static CommandCost ClearTile_Void(TileIndex, DoCommandFlags)
 	return CommandCost(STR_ERROR_OFF_EDGE_OF_MAP);
 }
 
-
-static void GetTileDesc_Void(TileIndex, TileDesc &td)
+static void GetTileDesc_Void(TileIndex, Tile, TileDesc &td)
 {
 	td.str = STR_EMPTY;
 	td.owner[0] = OWNER_NONE;

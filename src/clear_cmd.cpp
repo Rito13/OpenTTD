@@ -350,7 +350,7 @@ static TrackStatus GetTileTrackStatus_Clear(TileIndex, TransportType, uint, Diag
 	return 0;
 }
 
-static void GetTileDesc_Clear(TileIndex tile, TileDesc &td)
+static void GetTileDesc_Clear(TileIndex, Tile tile, TileDesc &td)
 {
 	/* Each pair holds a normal and a snowy ClearGround description. */
 	static constexpr std::pair<StringID, StringID> clear_land_str[] = {
