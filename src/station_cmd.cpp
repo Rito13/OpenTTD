@@ -3580,7 +3580,7 @@ void StationPickerDrawSprite(int x, int y, StationType st, RailType railtype, Ro
  * @param tile Tile being queried that is part of a road stop.
  * @param[out] td Storage pointer for returned road stop description.
  */
-static void FillTileDescRoadStop(TileIndex tile, TileDesc &td)
+static void FillTileDescRoadStop(Tile tile, TileDesc &td)
 {
 	RoadType road_rt = GetRoadTypeRoad(tile);
 	RoadType tram_rt = GetRoadTypeTram(tile);
@@ -3623,7 +3623,7 @@ static void FillTileDescRoadStop(TileIndex tile, TileDesc &td)
  * @param tile Tile being queried that is part of a rail station.
  * @param[out] td Storage pointer for returned rail station description.
  */
-void FillTileDescRailStation(TileIndex tile, TileDesc &td)
+void FillTileDescRailStation(Tile tile, TileDesc &td)
 {
 	const StationSpec *spec = GetStationSpec(tile);
 
@@ -3647,7 +3647,7 @@ void FillTileDescRailStation(TileIndex tile, TileDesc &td)
  * @param tile Tile being queried that is part of an airport.
  * @param[out] td Storage pointer for returned airport description.
  */
-void FillTileDescAirport(TileIndex tile, TileDesc &td)
+void FillTileDescAirport(Tile tile, TileDesc &td)
 {
 	const AirportSpec *as = Station::GetByTile(tile)->airport.GetSpec();
 	td.airport_class = AirportClass::Get(as->class_index)->name;
@@ -3666,7 +3666,7 @@ void FillTileDescAirport(TileIndex tile, TileDesc &td)
 }
 
 /** @copydoc GetTileDescProc */
-static void GetTileDesc_Station(TileIndex tile, TileDesc &td)
+static void GetTileDesc_Station([[maybe_unused]] TileIndex index, Tile tile, TileDesc &td)
 {
 	td.owner[0] = GetTileOwner(tile);
 	td.build_date = BaseStation::GetByTile(tile)->build_date;

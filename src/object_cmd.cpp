@@ -663,7 +663,7 @@ static void AddProducedCargo_Object(TileIndex tile, CargoArray &produced)
 
 
 /** @copydoc GetTileDescProc */
-static void GetTileDesc_Object(TileIndex tile, TileDesc &td)
+static void GetTileDesc_Object([[maybe_unused]] TileIndex index, Tile tile, TileDesc &td)
 {
 	const ObjectSpec *spec = ObjectSpec::GetByTile(tile);
 	td.str = spec->name;
