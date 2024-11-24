@@ -2840,11 +2840,11 @@ static TrackStatus GetTileTrackStatus_Rail(TileIndex tile, TransportType mode, [
 }
 
 /** @copydoc ClickTileProc */
-static bool ClickTile_Rail(TileIndex tile)
+static bool ClickTile_Rail(TileIndex index, const Tile &tile)
 {
 	if (!IsRailDepot(tile)) return false;
 
-	ShowDepotWindow(tile, VehicleType::Train);
+	ShowDepotWindow(index, VehicleType::Train);
 	return true;
 }
 
