@@ -992,7 +992,7 @@ static bool TileLoop_Industry(TileIndex index, Tile &tile)
 }
 
 /** @copydoc ClickTileProc */
-static bool ClickTile_Industry(TileIndex tile)
+static bool ClickTile_Industry([[maybe_unused]] TileIndex index, const Tile &tile)
 {
 	ShowIndustryViewWindow(GetIndustryIndex(tile));
 	return true;
