@@ -3677,7 +3677,7 @@ static void AnimateTile_Station(TileIndex tile)
 }
 
 
-static bool ClickTile_Station(TileIndex tile)
+static bool ClickTile_Station(TileIndex index, Tile tile)
 {
 	const BaseStation *bst = BaseStation::GetByTile(tile);
 
@@ -3685,7 +3685,7 @@ static bool ClickTile_Station(TileIndex tile)
 		ShowWaypointWindow(Waypoint::From(bst));
 	} else if (IsHangar(tile)) {
 		const Station *st = Station::From(bst);
-		ShowDepotWindow(st->airport.GetHangarTile(st->airport.GetHangarNum(tile)), VEH_AIRCRAFT);
+		ShowDepotWindow(st->airport.GetHangarTile(st->airport.GetHangarNum(index)), VEH_AIRCRAFT);
 	} else {
 		ShowStationViewWindow(bst->index);
 	}
