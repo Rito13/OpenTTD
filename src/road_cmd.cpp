@@ -2112,11 +2112,11 @@ static bool TileLoop_Road(TileIndex index, Tile &tile)
 }
 
 /** @copydoc ClickTileProc */
-static bool ClickTile_Road(TileIndex tile)
+static bool ClickTile_Road(TileIndex index, const Tile &tile)
 {
 	if (!IsRoadDepot(tile)) return false;
 
-	ShowDepotWindow(tile, VehicleType::Road);
+	ShowDepotWindow(index, VehicleType::Road);
 	return true;
 }
 

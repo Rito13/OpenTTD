@@ -133,11 +133,12 @@ using AddProducedCargoProc = void(TileIndex tile, CargoArray &produced);
 
 /**
  * Tile callback function signature for clicking a tile.
+ * @param index The index of tile that was clicked.
  * @param tile The tile that was clicked.
  * @return Whether any action was taken.
  * @see ClickTile
  */
-using ClickTileProc = bool(TileIndex tile);
+using ClickTileProc = bool(TileIndex index, const Tile &tile);
 
 /**
  * Tile callback function signature for animating a tile.
@@ -285,9 +286,12 @@ inline void AnimateTile(TileIndex tile)
 
 inline bool ClickTile(TileIndex tile)
 {
-	ClickTileProc *proc = _tile_type_procs[GetTileType(tile)]->click_tile_proc;
-	if (proc == nullptr) return false;
-	return proc(tile);
+	for (Tile t = tile; t.IsValid(); ++t) {
+		ClickTileProc *proc = _tile_type_procs[t.GetTileType()]->click_tile_proc;
+		if (proc != nullptr && proc(tile, t)) return true;
+	}
+
+	return false;
 }
 
 #endif /* TILE_CMD_H */

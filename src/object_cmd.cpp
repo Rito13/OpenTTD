@@ -735,7 +735,7 @@ static bool TileLoop_Object(TileIndex index, Tile &tile)
 
 
 /** @copydoc ClickTileProc */
-static bool ClickTile_Object(TileIndex tile)
+static bool ClickTile_Object([[maybe_unused]] TileIndex index, const Tile &tile)
 {
 	if (!IsObjectType(tile, OBJECT_HQ)) return false;
 

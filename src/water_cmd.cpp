@@ -1414,10 +1414,10 @@ static TrackStatus GetTileTrackStatus_Water(TileIndex tile, TransportType mode, 
 }
 
 /** @copydoc ClickTileProc */
-static bool ClickTile_Water(TileIndex tile)
+static bool ClickTile_Water(TileIndex index, const Tile &tile)
 {
 	if (GetWaterTileType(tile) == WaterTileType::Depot) {
-		ShowDepotWindow(GetShipDepotNorthTile(tile), VehicleType::Ship);
+		ShowDepotWindow(GetShipDepotNorthTile(index), VehicleType::Ship);
 		return true;
 	}
 	return false;
