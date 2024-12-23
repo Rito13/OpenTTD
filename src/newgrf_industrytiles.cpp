@@ -268,12 +268,12 @@ struct IndustryAnimationBase : public AnimationBase<IndustryAnimationBase, Indus
 	static constexpr IndustryTileCallbackMask cbm_animation_next_frame = IndustryTileCallbackMask::AnimationNextFrame;
 };
 
-void AnimateNewIndustryTile(TileIndex tile)
+void AnimateNewIndustryTile(TileIndex index, Tile tile)
 {
 	const IndustryTileSpec *itspec = GetIndustryTileSpec(GetIndustryGfx(tile));
 	if (itspec == nullptr) return;
 
-	IndustryAnimationBase::AnimateTile(itspec, Industry::GetByTile(tile), tile, itspec->special_flags.Test(IndustryTileSpecialFlag::NextFrameRandomBits));
+	IndustryAnimationBase::AnimateTile(itspec, Industry::GetByTile(tile), index, tile, itspec->special_flags.Test(IndustryTileSpecialFlag::NextFrameRandomBits));
 }
 
 static bool DoTriggerIndustryTileAnimation(TileIndex tile, IndustryAnimationTrigger iat, uint32_t random, uint32_t var18_extra = 0)
@@ -281,7 +281,7 @@ static bool DoTriggerIndustryTileAnimation(TileIndex tile, IndustryAnimationTrig
 	const IndustryTileSpec *itspec = GetIndustryTileSpec(GetIndustryGfx(tile));
 	if (!itspec->animation.triggers.Test(iat)) return false;
 
-	IndustryAnimationBase::ChangeAnimationFrame(CBID_INDTILE_ANIMATION_TRIGGER, itspec, Industry::GetByTile(tile), tile, random, to_underlying(iat) | var18_extra);
+	IndustryAnimationBase::ChangeAnimationFrame(CBID_INDTILE_ANIMATION_TRIGGER, itspec, Industry::GetByTile(tile), tile, Tile(tile), random, to_underlying(iat) | var18_extra);
 	return true;
 }
 

@@ -356,8 +356,8 @@ uint16_t GetAnimRoadStopCallback(CallbackID callback, uint32_t param1, uint32_t 
 }
 
 struct RoadStopAnimationFrameAnimationHelper {
-	static uint8_t Get(BaseStation *st, TileIndex tile) { return st->GetRoadStopAnimationFrame(tile); }
-	static bool Set(BaseStation *st, TileIndex tile, uint8_t frame) { return st->SetRoadStopAnimationFrame(tile, frame); }
+	static uint8_t Get(BaseStation *st, TileIndex index, Tile) { return st->GetRoadStopAnimationFrame(index); }
+	static bool Set(BaseStation *st, TileIndex index, Tile, uint8_t frame) { return st->SetRoadStopAnimationFrame(index, frame); }
 };
 
 /** Helper class for animation control. */
@@ -369,12 +369,12 @@ struct RoadStopAnimationBase : public AnimationBase<RoadStopAnimationBase, RoadS
 	static constexpr RoadStopCallbackMask cbm_animation_next_frame = RoadStopCallbackMask::AnimationNextFrame;
 };
 
-void AnimateRoadStopTile(TileIndex tile)
+void AnimateRoadStopTile(TileIndex index, Tile tile)
 {
 	const RoadStopSpec *ss = GetRoadStopSpec(tile);
 	if (ss == nullptr) return;
 
-	RoadStopAnimationBase::AnimateTile(ss, BaseStation::GetByTile(tile), tile, ss->flags.Test(RoadStopSpecFlag::Cb141RandomBits));
+	RoadStopAnimationBase::AnimateTile(ss, BaseStation::GetByTile(tile), index, tile, ss->flags.Test(RoadStopSpecFlag::Cb141RandomBits));
 }
 
 void TriggerRoadStopAnimation(BaseStation *st, TileIndex trigger_tile, StationAnimationTrigger trigger, CargoType cargo_type)
@@ -395,7 +395,7 @@ void TriggerRoadStopAnimation(BaseStation *st, TileIndex trigger_tile, StationAn
 			} else {
 				local_cargo = ss->grf_prop.grffile->cargo_map[cargo_type];
 			}
-			RoadStopAnimationBase::ChangeAnimationFrame(CBID_STATION_ANIMATION_TRIGGER, ss, st, cur_tile, (random_bits << 16) | GB(Random(), 0, 16), to_underlying(trigger) | (local_cargo << 8));
+			RoadStopAnimationBase::ChangeAnimationFrame(CBID_STATION_ANIMATION_TRIGGER, ss, st, cur_tile, Tile(cur_tile), (random_bits << 16) | GB(Random(), 0, 16), to_underlying(trigger) | (local_cargo << 8));
 		}
 	};
 
@@ -552,7 +552,7 @@ bool GetIfStopIsForType(const RoadStopSpec *roadstopspec, RoadStopType rs, RoadT
 	return false;
 }
 
-const RoadStopSpec *GetRoadStopSpec(TileIndex t)
+const RoadStopSpec *GetRoadStopSpec(Tile t)
 {
 	if (!IsCustomRoadStopSpecIndex(t)) return nullptr;
 

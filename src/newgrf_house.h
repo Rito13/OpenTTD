@@ -98,8 +98,7 @@ void DecreaseBuildingCount(Town *t, HouseID house_id);
 std::span<const uint> GetBuildingHouseIDCounts();
 
 void DrawNewHouseTile(TileInfo *ti, HouseID house_id);
-void AnimateNewHouseTile(TileIndex tile);
-/* see also: void TriggerHouseAnimation_TileLoop(TileIndex tile, uint16_t random_bits) */
+void AnimateNewHouseTile(TileIndex index, Tile tile);
 void TriggerHouseAnimation_ConstructionStageChanged(TileIndex tile);
 void TriggerHouseAnimation_WatchedCargoAccepted(TileIndex tile, CargoTypes trigger_cargoes);
 

@@ -87,7 +87,7 @@ private:
 	friend void AirportTileOverrideManager::SetEntitySpec(AirportTileSpec &&airpts);
 };
 
-void AnimateAirportTile(TileIndex tile);
+void AnimateAirportTile(TileIndex index, Tile tile);
 bool TriggerAirportTileAnimation(Station *st, TileIndex tile, AirportAnimationTrigger trigger, CargoType cargo_type = INVALID_CARGO);
 bool TriggerAirportAnimation(Station *st, AirportAnimationTrigger trigger, CargoType cargo_type = INVALID_CARGO);
 bool DrawNewAirportTile(TileInfo *ti, Station *st, const AirportTileSpec *airts);

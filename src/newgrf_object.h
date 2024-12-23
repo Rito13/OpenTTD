@@ -173,7 +173,7 @@ uint16_t GetObjectCallback(CallbackID callback, uint32_t param1, uint32_t param2
 
 void DrawNewObjectTile(TileInfo *ti, const ObjectSpec *spec);
 void DrawNewObjectTileInGUI(int x, int y, const ObjectSpec *spec, uint8_t view);
-void AnimateNewObjectTile(TileIndex tile);
+void AnimateNewObjectTile(TileIndex index, Tile tile);
 bool TriggerObjectTileAnimation(Object *o, TileIndex tile, ObjectAnimationTrigger trigger, const ObjectSpec *spec);
 bool TriggerObjectAnimation(Object *o, ObjectAnimationTrigger trigger, const ObjectSpec *spec);
 
