@@ -194,6 +194,7 @@ using GetFoundationProc = Foundation(TileIndex tile, Slope tileh);
  *
  * @note The terraforming has not yet taken place. So GetTileZ() and GetTileSlope() refer to the landscape before the terraforming operation.
  *
+ * @param index The TileIndex being terraformed.
  * @param tile      The involved tile.
  * @param flags     Command flags passed to the terraform command (DoCommandFlag::Execute, DoCommandFlag::QueryCost, etc.).
  * @param z_new     TileZ after terraforming.
@@ -201,7 +202,7 @@ using GetFoundationProc = Foundation(TileIndex tile, Slope tileh);
  * @return Error code or extra cost for terraforming (like clearing land, building foundations, etc., but not the terraforming itself.)
  * @see TerraformTile
  */
-using TerraformTileProc = CommandCost(TileIndex tile, DoCommandFlags flags, int z_new, Slope tileh_new);
+using TerraformTileProc = CommandCost(TileIndex index, const Tile &tile, DoCommandFlags flags, int z_new, Slope tileh_new);
 
 /**
  * Tile callback function signature to test if a bridge can be built above a tile.

@@ -61,5 +61,5 @@ extern const TileTypeProcs _tile_type_void_procs = {
 	.clear_tile_proc = [](TileIndex, Tile&, DoCommandFlags) { return std::tuple{CommandCost(STR_ERROR_OFF_EDGE_OF_MAP), false}; },
 	.get_tile_desc_proc = GetTileDesc_Void,
 	.tile_loop_proc = TileLoop_Void,
-	.terraform_tile_proc = [](TileIndex, DoCommandFlags, int, Slope) { return CommandCost(STR_ERROR_OFF_EDGE_OF_MAP); },
+	.terraform_tile_proc = [](TileIndex, const Tile&, DoCommandFlags, int, Slope) { return CommandCost(STR_ERROR_OFF_EDGE_OF_MAP); },
 };
