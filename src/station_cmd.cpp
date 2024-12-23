@@ -4730,17 +4730,17 @@ std::tuple<CommandCost, bool> ClearTile_Station(TileIndex index, Tile &tile, DoC
 	return {CMD_ERROR, false};
 }
 
-static CommandCost TerraformTile_Station(TileIndex tile, DoCommandFlags flags, int z_new, Slope tileh_new)
+static CommandCost TerraformTile_Station(TileIndex index, Tile tile, DoCommandFlags, int z_new, Slope tileh_new)
 {
 	if (_settings_game.construction.build_on_slopes && AutoslopeEnabled()) {
 		/* TODO: If you implement newgrf callback 149 'land slope check', you have to decide what to do with it here.
 		 *       TTDP does not call it.
 		 */
-		if (GetTileMaxZ(tile) == z_new + GetSlopeMaxZ(tileh_new)) {
+		if (GetTileMaxZ(index) == z_new + GetSlopeMaxZ(tileh_new)) {
 			switch (GetStationType(tile)) {
 				case StationType::RailWaypoint:
 				case StationType::Rail: {
-					if (!AutoslopeCheckForAxis(tile, z_new, tileh_new, GetRailStationAxis(tile))) break;
+					if (!AutoslopeCheckForAxis(index, z_new, tileh_new, GetRailStationAxis(tile))) break;
 					return CommandCost(EXPENSES_CONSTRUCTION, _price[PR_BUILD_FOUNDATION]);
 				}
 
@@ -4751,9 +4751,9 @@ static CommandCost TerraformTile_Station(TileIndex tile, DoCommandFlags flags, i
 				case StationType::Bus:
 				case StationType::RoadWaypoint: {
 					if (IsDriveThroughStopTile(tile)) {
-						if (!AutoslopeCheckForAxis(tile, z_new, tileh_new, GetDriveThroughStopAxis(tile))) break;
+						if (!AutoslopeCheckForAxis(index, z_new, tileh_new, GetDriveThroughStopAxis(tile))) break;
 					} else {
-						if (!AutoslopeCheckForEntranceEdge(tile, z_new, tileh_new, GetBayRoadStopDir(tile))) break;
+						if (!AutoslopeCheckForEntranceEdge(index, z_new, tileh_new, GetBayRoadStopDir(tile))) break;
 					}
 					return CommandCost(EXPENSES_CONSTRUCTION, _price[PR_BUILD_FOUNDATION]);
 				}
@@ -4762,7 +4762,7 @@ static CommandCost TerraformTile_Station(TileIndex tile, DoCommandFlags flags, i
 			}
 		}
 	}
-	return Command<CMD_LANDSCAPE_CLEAR>::Do(flags, tile);
+	return CommandCost(INVALID_STRING_ID); // Dummy error
 }
 
 /**

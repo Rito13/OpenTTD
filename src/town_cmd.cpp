@@ -4037,16 +4037,16 @@ static IntervalTimer<TimerGameEconomy> _economy_towns_yearly({TimerGameEconomy::
 	}
 });
 
-static CommandCost TerraformTile_Town(TileIndex tile, DoCommandFlags flags, int z_new, Slope tileh_new)
+static CommandCost TerraformTile_Town(TileIndex index, Tile tile, DoCommandFlags, int z_new, Slope tileh_new)
 {
 	if (AutoslopeEnabled()) {
 		HouseID house = GetHouseType(tile);
 		GetHouseNorthPart(house); // modifies house to the ID of the north tile
 		const HouseSpec *hs = HouseSpec::Get(house);
 
-		/* Here we differ from TTDP by checking BuildingFlag::NotSloped */
+		/* Here we differ from TTDP by checking TILE_NOT_SLOPED */
 		if (!hs->building_flags.Test(BuildingFlag::NotSloped) && !IsSteepSlope(tileh_new) &&
-				(GetTileMaxZ(tile) == z_new + GetSlopeMaxZ(tileh_new))) {
+				(GetTileMaxZ(index) == z_new + GetSlopeMaxZ(tileh_new))) {
 			bool allow_terraform = true;
 
 			/* Call the autosloping callback per tile, not for the whole building at once. */
@@ -4054,7 +4054,7 @@ static CommandCost TerraformTile_Town(TileIndex tile, DoCommandFlags flags, int 
 			hs = HouseSpec::Get(house);
 			if (hs->callback_mask.Test(HouseCallbackMask::Autoslope)) {
 				/* If the callback fails, allow autoslope. */
-				uint16_t res = GetHouseCallback(CBID_HOUSE_AUTOSLOPE, 0, 0, house, Town::GetByTile(tile), tile);
+				uint16_t res = GetHouseCallback(CBID_HOUSE_AUTOSLOPE, 0, 0, house, Town::GetByTile(tile), index);
 				if (res != CALLBACK_FAILED && ConvertBooleanCallback(hs->grf_prop.grffile, CBID_HOUSE_AUTOSLOPE, res)) allow_terraform = false;
 			}
 
@@ -4062,7 +4062,7 @@ static CommandCost TerraformTile_Town(TileIndex tile, DoCommandFlags flags, int 
 		}
 	}
 
-	return Command<CMD_LANDSCAPE_CLEAR>::Do(flags, tile);
+	return CommandCost(INVALID_STRING_ID); // Dummy error
 }
 
 /** Tile callback functions for a town */
