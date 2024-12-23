@@ -19,6 +19,7 @@
 #include "core/backup_type.hpp"
 #include "terraform_cmd.h"
 #include "landscape_cmd.h"
+#include "landscape.h"
 
 #include "table/strings.h"
 
@@ -261,11 +262,25 @@ std::tuple<CommandCost, Money, TileIndex> CmdTerraformLand(DoCommandFlags flags,
 				tile_flags.Reset(DoCommandFlag::Execute);
 				tile_flags.Set(DoCommandFlag::NoModifyTownRating);
 			}
-			CommandCost cost;
+			CommandCost cost(ExpensesType::Construction);
 			if (indirectly_cleared) {
 				cost = Command<Commands::LandscapeClear>::Do(tile_flags, t);
 			} else {
-				cost = _tile_type_procs[GetTileType(t)]->terraform_tile_proc(t, tile_flags, z_min, tileh);
+				bool do_clear_tile = true;
+				Tile cur = t;
+				while (cur) {
+					bool deleted = false;
+					auto res = _tile_type_procs[GetTileType(cur)]->terraform_tile_proc(t, cur, tile_flags, z_min, tileh);
+					if (res.Failed() && res.GetErrorMessage() == INVALID_STRING_ID) {
+						/* Try clearing the tile if terraforming failed. */
+						std::tie(res, deleted) = _tile_type_procs[GetTileType(cur)]->clear_tile_proc(t, cur, tile_flags); // Modifies cur if tile was deleted.
+					} else {
+						do_clear_tile = false;
+					}
+					cost.AddCost(std::move(res));
+					if (!deleted) ++cur;
+				}
+				if (do_clear_tile && tile_flags.Test(DoCommandFlag::Execute)) DoClearSquare(t);
 			}
 			old_generating_world.Restore();
 			if (cost.Failed()) {
