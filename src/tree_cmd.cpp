@@ -709,13 +709,6 @@ static void DrawTile_Trees(TileInfo *ti)
 }
 
 
-static int GetSlopePixelZ_Trees(TileIndex tile, uint x, uint y, bool)
-{
-	auto [tileh, z] = GetTilePixelSlope(tile);
-
-	return z + GetPartialPixelZ(x & 0xF, y & 0xF, tileh);
-}
-
 static Foundation GetFoundation_Trees(TileIndex, Slope)
 {
 	return FOUNDATION_NONE;
@@ -1018,7 +1011,6 @@ static CommandCost TerraformTile_Trees(TileIndex, Tile, DoCommandFlags, int, Slo
 
 extern const TileTypeProcs _tile_type_trees_procs = {
 	DrawTile_Trees,           // draw_tile_proc
-	GetSlopePixelZ_Trees,     // get_slope_z_proc
 	ClearTile_Trees,          // clear_tile_proc
 	nullptr,                     // add_accepted_cargo_proc
 	GetTileDesc_Trees,        // get_tile_desc_proc
