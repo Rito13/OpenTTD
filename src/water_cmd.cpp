@@ -587,18 +587,11 @@ static std::tuple<CommandCost, bool> ClearTile_Water(TileIndex index, Tile &tile
 			CommandCost ret = EnsureNoVehicleOnGround(index);
 			if (ret.Failed()) return {ret, false};
 
-<<<<<<< HEAD
 			if (flags.Test(DoCommandFlag::Execute)) {
-				DoClearSquare(tile);
-				MarkCanalsAndRiversAroundDirty(tile);
-				ClearNeighbourNonFloodingStates(tile);
-=======
-			if (flags & DC_EXEC) {
 				MakeClearGrass(index);
 				MarkTileDirtyByTile(index);
 				MarkCanalsAndRiversAroundDirty(index);
 				ClearNeighbourNonFloodingStates(index);
->>>>>>> f383acd301 (Codechange: Also clear all associated tiles when clearing a tile.)
 			}
 			if (IsSlopeWithOneCornerRaised(slope)) {
 				return {CommandCost(EXPENSES_CONSTRUCTION, _price[PR_CLEAR_WATER]), false};
@@ -615,25 +608,15 @@ static std::tuple<CommandCost, bool> ClearTile_Water(TileIndex index, Tile &tile
 				{ { 1,  0}, {0, -1}, {-1, 0}, {0,  1} }, // LOCK_PART_UPPER
 			};
 
-<<<<<<< HEAD
-			if (flags.Test(DoCommandFlag::Auto)) return CommandCost(STR_ERROR_BUILDING_MUST_BE_DEMOLISHED);
-			if (_current_company == OWNER_WATER) return CMD_ERROR;
-=======
-			if (flags & DC_AUTO) return {CommandCost(STR_ERROR_BUILDING_MUST_BE_DEMOLISHED), false};
+			if (flags.Test(DoCommandFlag::Auto)) return {CommandCost(STR_ERROR_BUILDING_MUST_BE_DEMOLISHED), false};
 			if (_current_company == OWNER_WATER) return {CMD_ERROR, false};
->>>>>>> f383acd301 (Codechange: Also clear all associated tiles when clearing a tile.)
 			/* move to the middle tile.. */
 			return {RemoveLock(index + ToTileIndexDiff(_lock_tomiddle_offs[GetLockPart(tile)][GetLockDirection(tile)]), flags), false};
 		}
 
 		case WATER_TILE_DEPOT:
-<<<<<<< HEAD
-			if (flags.Test(DoCommandFlag::Auto)) return CommandCost(STR_ERROR_BUILDING_MUST_BE_DEMOLISHED);
-			return RemoveShipDepot(tile, flags);
-=======
-			if (flags & DC_AUTO) return {CommandCost(STR_ERROR_BUILDING_MUST_BE_DEMOLISHED), false};
+			if (flags.Test(DoCommandFlag::Auto)) return {CommandCost(STR_ERROR_BUILDING_MUST_BE_DEMOLISHED), false};
 			return {RemoveShipDepot(index, flags), false};
->>>>>>> f383acd301 (Codechange: Also clear all associated tiles when clearing a tile.)
 
 		default:
 			NOT_REACHED();
@@ -1427,12 +1410,12 @@ static VehicleEnterTileStates VehicleEnter_Water(Vehicle *, TileIndex, int, int)
 	return {};
 }
 
-static CommandCost TerraformTile_Water(TileIndex tile, DoCommandFlags flags, int, Slope)
+static CommandCost TerraformTile_Water(TileIndex, Tile tile, DoCommandFlags, int, Slope)
 {
 	/* Canals can't be terraformed */
 	if (IsWaterTile(tile) && IsCanal(tile)) return CommandCost(STR_ERROR_MUST_DEMOLISH_CANAL_FIRST);
 
-	return Command<CMD_LANDSCAPE_CLEAR>::Do(flags, tile);
+	return CommandCost(INVALID_STRING_ID); // Dummy error
 }
 
 
