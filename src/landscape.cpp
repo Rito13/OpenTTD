@@ -603,7 +603,11 @@ TrackStatus GetTileTrackStatus(TileIndex tile, TransportType mode, RoadTramType 
  */
 void ChangeTileOwner(TileIndex tile, Owner old_owner, Owner new_owner)
 {
-	_tile_type_procs[GetTileType(tile)]->change_tile_owner_proc(tile, old_owner, new_owner);
+	Tile t(tile);
+	while (t.IsValid()) {
+		bool deleted = _tile_type_procs[t.GetTileType()]->change_tile_owner_proc(tile, t, old_owner, new_owner); // Modifies t if tile was deleted.
+		if (!deleted) ++t;
+	}
 }
 
 /**

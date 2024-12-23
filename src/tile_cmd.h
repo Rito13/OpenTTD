@@ -145,12 +145,14 @@ using TileLoopProc = bool(TileIndex index, Tile &tile);
 
 /**
  * Tile callback function signature for changing the owner of a tile.
- * @param tile The tile to process.
+ * @param index Index of the tile being operated on.
+ * @param[in,out] tile Tile where the owner is changed. If the tile is removed from the map array, this will return the after-delete tile pointer.
  * @param old_owner The owner to replace.
  * @param new_owner The owner to replace with.
+ * @return \c true iff the current associated tile was removed from the map array.
  * @see ChangeTileOwner
  */
-using ChangeTileOwnerProc = void(TileIndex tile, Owner old_owner, Owner new_owner);
+using ChangeTileOwnerProc = bool(TileIndex index, Tile &tile, Owner old_owner, Owner new_owner);
 
 /**
  * Tile callback function for a vehicle entering a tile.
@@ -214,7 +216,7 @@ struct TileTypeProcs {
 	ClickTileProc *click_tile_proc = nullptr; ///< Called when tile is clicked
 	AnimateTileProc *animate_tile_proc = nullptr; ///< Called to animate a tile.
 	TileLoopProc *tile_loop_proc; ///< Called to periodically update the tile.
-	ChangeTileOwnerProc *change_tile_owner_proc = [](TileIndex, CompanyID, CompanyID) {}; ///< Called to change the ownership of elements on a tile.
+	ChangeTileOwnerProc *change_tile_owner_proc = [](TileIndex, Tile&, CompanyID, CompanyID) { return false; }; ///< Called to change the ownership of elements on a tile.
 	AddProducedCargoProc *add_produced_cargo_proc = nullptr; ///< Adds produced cargo of the tile to cargo array supplied as parameter.
 	VehicleEnterTileProc *vehicle_enter_tile_proc = nullptr; ///< Called when a vehicle enters a tile.
 	GetFoundationProc *get_foundation_proc = [](TileIndex, Slope) { return Foundation::None; }; ///< Called to get the foundation.

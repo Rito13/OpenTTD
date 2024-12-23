@@ -1416,9 +1416,9 @@ static bool ClickTile_Water(TileIndex index, const Tile &tile)
 }
 
 /** @copydoc ChangeTileOwnerProc */
-static void ChangeTileOwner_Water(TileIndex tile, Owner old_owner, Owner new_owner)
+static bool ChangeTileOwner_Water(TileIndex index, Tile &tile, Owner old_owner, Owner new_owner)
 {
-	if (!IsTileOwner(tile, old_owner)) return;
+	if (!IsTileOwner(tile, old_owner)) return false;
 
 	bool is_lock_middle = IsLock(tile) && GetLockPart(tile) == LockPart::Middle;
 
@@ -1438,11 +1438,11 @@ static void ChangeTileOwner_Water(TileIndex tile, Owner old_owner, Owner new_own
 		}
 
 		SetTileOwner(tile, new_owner);
-		return;
+		return false;
 	}
 
 	/* Remove depot */
-	if (IsShipDepot(tile)) Command<Commands::LandscapeClear>::Do({DoCommandFlag::Execute, DoCommandFlag::Bankrupt}, tile);
+	if (IsShipDepot(tile)) Command<Commands::LandscapeClear>::Do({DoCommandFlag::Execute, DoCommandFlag::Bankrupt}, index);
 
 	/* Set owner of canals and locks ... and also canal under dock there was before.
 	 * Check if the new owner after removing depot isn't OWNER_WATER. */
@@ -1450,6 +1450,8 @@ static void ChangeTileOwner_Water(TileIndex tile, Owner old_owner, Owner new_own
 		if (GetWaterClass(tile) == WaterClass::Canal && !is_lock_middle) Company::Get(old_owner)->infrastructure.water--;
 		SetTileOwner(tile, OWNER_NONE);
 	}
+
+	return false;
 }
 
 /** @copydoc TerraformTileProc */
