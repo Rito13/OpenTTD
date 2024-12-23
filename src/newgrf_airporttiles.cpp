@@ -301,12 +301,12 @@ struct AirportTileAnimationBase : public AnimationBase<AirportTileAnimationBase,
  * Animate tile that is part of an airport.
  * @copydetails AnimateTileProc
  */
-void AnimateAirportTile(TileIndex tile)
+void AnimateAirportTile(TileIndex index, const Tile &tile)
 {
 	const AirportTileSpec *ats = AirportTileSpec::GetByTile(tile);
 	if (ats == nullptr) return;
 
-	AirportTileAnimationBase::AnimateTile(ats, Station::GetByTile(tile), tile, HasBit(ats->animation_special_flags, 0));
+	AirportTileAnimationBase::AnimateTile(ats, Station::GetByTile(tile), index, tile, HasBit(ats->animation_special_flags, 0));
 }
 
 static bool DoTriggerAirportTileAnimation(Station *st, TileIndex tile, AirportAnimationTrigger trigger, uint32_t random, uint32_t var18_extra = 0)
@@ -314,7 +314,7 @@ static bool DoTriggerAirportTileAnimation(Station *st, TileIndex tile, AirportAn
 	const AirportTileSpec *ats = AirportTileSpec::GetByTile(tile);
 	if (!ats->animation.triggers.Test(trigger)) return false;
 
-	AirportTileAnimationBase::ChangeAnimationFrame(CBID_AIRPTILE_ANIMATION_TRIGGER, ats, st, tile, random, to_underlying(trigger) | var18_extra);
+	AirportTileAnimationBase::ChangeAnimationFrame(CBID_AIRPTILE_ANIMATION_TRIGGER, ats, st, tile, Tile(tile), random, to_underlying(trigger) | var18_extra);
 	return true;
 }
 
