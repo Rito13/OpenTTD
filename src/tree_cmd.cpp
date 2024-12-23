@@ -1024,5 +1024,5 @@ extern const TileTypeProcs _tile_type_trees_procs = {
 	.clear_tile_proc = ClearTile_Trees,
 	.get_tile_desc_proc = GetTileDesc_Trees,
 	.tile_loop_proc = TileLoop_Trees,
-	.terraform_tile_proc = [](TileIndex tile, DoCommandFlags flags, int, Slope) { return Command<Commands::LandscapeClear>::Do(flags, tile); }
+	.terraform_tile_proc = [](TileIndex, const Tile&, DoCommandFlags, int, Slope) { return CommandCost(INVALID_STRING_ID); /* Dummy error */ }
 };

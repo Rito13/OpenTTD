@@ -3264,7 +3264,7 @@ bool IndustrySpec::UsesOriginalEconomy() const
 }
 
 /** @copydoc TerraformTileProc */
-static CommandCost TerraformTile_Industry(TileIndex tile, DoCommandFlags flags, int z_new, Slope tileh_new)
+static CommandCost TerraformTile_Industry(TileIndex index, const Tile &tile, [[maybe_unused]] DoCommandFlags flags, int z_new, Slope tileh_new)
 {
 	if (AutoslopeEnabled()) {
 		/* We imitate here TTDP's behaviour:
@@ -3273,16 +3273,16 @@ static CommandCost TerraformTile_Industry(TileIndex tile, DoCommandFlags flags, 
 		 *  - Allow autoslope by default.
 		 *  - Disallow autoslope if callback succeeds and returns non-zero.
 		 */
-		Slope tileh_old = GetTileSlope(tile);
+		Slope tileh_old = GetTileSlope(index);
 		/* TileMaxZ must not be changed. Slopes must not be steep. */
-		if (!IsSteepSlope(tileh_old) && !IsSteepSlope(tileh_new) && (GetTileMaxZ(tile) == z_new + GetSlopeMaxZ(tileh_new))) {
+		if (!IsSteepSlope(tileh_old) && !IsSteepSlope(tileh_new) && (GetTileMaxZ(index) == z_new + GetSlopeMaxZ(tileh_new))) {
 			const IndustryGfx gfx = GetIndustryGfx(tile);
 			const IndustryTileSpec *itspec = GetIndustryTileSpec(gfx);
 
 			/* Call callback 3C 'disable autosloping for industry tiles'. */
 			if (itspec->callback_mask.Test(IndustryTileCallbackMask::Autoslope)) {
 				/* If the callback fails, allow autoslope. */
-				uint16_t res = GetIndustryTileCallback(CBID_INDTILE_AUTOSLOPE, 0, 0, gfx, Industry::GetByTile(tile), tile);
+				uint16_t res = GetIndustryTileCallback(CBID_INDTILE_AUTOSLOPE, 0, 0, gfx, Industry::GetByTile(tile), index);
 				if (res == CALLBACK_FAILED || !ConvertBooleanCallback(itspec->grf_prop.grffile, CBID_INDTILE_AUTOSLOPE, res)) return CommandCost(ExpensesType::Construction, _price[Price::BuildFoundation]);
 			} else {
 				/* allow autoslope */
@@ -3290,7 +3290,7 @@ static CommandCost TerraformTile_Industry(TileIndex tile, DoCommandFlags flags, 
 			}
 		}
 	}
-	return Command<Commands::LandscapeClear>::Do(flags, tile);
+	return CommandCost(INVALID_STRING_ID); // Dummy error
 }
 
 /** TileTypeProcs definitions for TileType::Industry tiles. */
