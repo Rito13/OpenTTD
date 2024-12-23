@@ -1462,7 +1462,7 @@ static void ChangeTileOwner_Water(TileIndex tile, Owner old_owner, Owner new_own
 }
 
 /** @copydoc TerraformTileProc */
-static CommandCost TerraformTile_Water(TileIndex tile, DoCommandFlags flags, [[maybe_unused]] int z_new, [[maybe_unused]] Slope tileh_new)
+static CommandCost TerraformTile_Water([[maybe_unused]] TileIndex index, const Tile &tile, [[maybe_unused]] DoCommandFlags flags, [[maybe_unused]] int z_new, [[maybe_unused]] Slope tileh_new)
 {
 	/* Canals can't be terraformed */
 	if (IsWaterTile(tile) && IsCanal(tile)) return CommandCost(STR_ERROR_MUST_DEMOLISH_CANAL_FIRST);
@@ -1470,7 +1470,7 @@ static CommandCost TerraformTile_Water(TileIndex tile, DoCommandFlags flags, [[m
 	/* Rivers can't be terraformed */
 	if (IsWaterTile(tile) && IsRiver(tile)) return CommandCost(STR_ERROR_MUST_DEMOLISH_RIVER_FIRST);
 
-	return Command<Commands::LandscapeClear>::Do(flags, tile);
+	return CommandCost(INVALID_STRING_ID); // Dummy error
 }
 
 /** @copydoc CheckBuildAboveProc */
