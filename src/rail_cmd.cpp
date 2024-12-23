@@ -2929,9 +2929,9 @@ static void GetTileDesc_Rail([[maybe_unused]] TileIndex index, const Tile &tile,
 }
 
 /** @copydoc ChangeTileOwnerProc */
-static void ChangeTileOwner_Rail(TileIndex tile, Owner old_owner, Owner new_owner)
+static bool ChangeTileOwner_Rail(TileIndex index, Tile &tile, Owner old_owner, Owner new_owner)
 {
-	if (!IsTileOwner(tile, old_owner)) return;
+	if (!IsTileOwner(tile, old_owner)) return false;
 
 	if (new_owner != INVALID_OWNER) {
 		/* Update company infrastructure counts. No need to dirty windows here, we'll redraw the whole screen anyway. */
@@ -2952,8 +2952,9 @@ static void ChangeTileOwner_Rail(TileIndex tile, Owner old_owner, Owner new_owne
 		}
 
 		SetTileOwner(tile, new_owner);
+		return false;
 	} else {
-		Command<Commands::LandscapeClear>::Do({DoCommandFlag::Execute, DoCommandFlag::Bankrupt}, tile);
+		return std::get<bool>(ClearTile_Rail(index, tile, {DoCommandFlag::Execute, DoCommandFlag::Bankrupt}));
 	}
 }
 
