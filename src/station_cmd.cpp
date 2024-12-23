@@ -4554,7 +4554,7 @@ void DeleteOilRig(TileIndex tile)
 	delete st;
 }
 
-static void ChangeTileOwner_Station(TileIndex tile, Owner old_owner, Owner new_owner)
+static bool ChangeTileOwner_Station(TileIndex index, Tile &tile, Owner old_owner, Owner new_owner)
 {
 
 	if (IsAnyRoadStopTile(tile)) {
@@ -4572,7 +4572,7 @@ static void ChangeTileOwner_Station(TileIndex tile, Owner old_owner, Owner new_o
 		}
 	}
 
-	if (!IsTileOwner(tile, old_owner)) return;
+	if (!IsTileOwner(tile, old_owner)) return false;
 
 	if (new_owner != INVALID_OWNER) {
 		/* Update company infrastructure counts. Only do it here
@@ -4623,21 +4623,22 @@ static void ChangeTileOwner_Station(TileIndex tile, Owner old_owner, Owner new_o
 		if (IsDriveThroughStopTile(tile)) {
 			/* Remove the drive-through road stop */
 			if (IsRoadWaypoint(tile)) {
-				Command<CMD_REMOVE_FROM_ROAD_WAYPOINT>::Do({DoCommandFlag::Execute, DoCommandFlag::Bankrupt}, tile, tile);
+				Command<CMD_REMOVE_FROM_ROAD_WAYPOINT>::Do({DoCommandFlag::Execute, DoCommandFlag::Bankrupt}, index, index);
 			} else {
-				Command<CMD_REMOVE_ROAD_STOP>::Do({DoCommandFlag::Execute, DoCommandFlag::Bankrupt}, tile, 1, 1, (GetStationType(tile) == StationType::Truck) ? RoadStopType::Truck : RoadStopType::Bus, false);
+				Command<CMD_REMOVE_ROAD_STOP>::Do({DoCommandFlag::Execute, DoCommandFlag::Bankrupt}, index, 1, 1, (GetStationType(tile) == StationType::Truck) ? RoadStopType::Truck : RoadStopType::Bus, false);
 			}
 			assert(IsTileType(tile, MP_ROAD));
 			/* Change owner of tile and all roadtypes */
-			ChangeTileOwner(tile, old_owner, new_owner);
+			ChangeTileOwner(index, old_owner, new_owner);
 		} else {
-			Command<CMD_LANDSCAPE_CLEAR>::Do({DoCommandFlag::Execute, DoCommandFlag::Bankrupt}, tile);
+			Command<CMD_LANDSCAPE_CLEAR>::Do({DoCommandFlag::Execute, DoCommandFlag::Bankrupt}, index);
 			/* Set tile owner of water under (now removed) buoy and dock to OWNER_NONE.
 			 * Update owner of buoy if it was not removed (was in orders).
 			 * Do not update when owned by OWNER_WATER (sea and rivers). */
 			if ((IsTileType(tile, MP_WATER) || IsBuoyTile(tile)) && IsTileOwner(tile, old_owner)) SetTileOwner(tile, OWNER_NONE);
 		}
 	}
+	return false;
 }
 
 /**
