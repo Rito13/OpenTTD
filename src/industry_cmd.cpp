@@ -998,7 +998,7 @@ static bool ClickTile_Industry([[maybe_unused]] TileIndex index, const Tile &til
 }
 
 /** @copydoc ChangeTileOwnerProc */
-static void ChangeTileOwner_Industry(TileIndex tile, Owner old_owner, Owner new_owner)
+static bool ChangeTileOwner_Industry([[maybe_unused]] TileIndex index, Tile &tile, Owner old_owner, Owner new_owner)
 {
 	/* If the founder merges, the industry was created by the merged company */
 	Industry *i = Industry::GetByTile(tile);
@@ -1006,6 +1006,8 @@ static void ChangeTileOwner_Industry(TileIndex tile, Owner old_owner, Owner new_
 
 	if (i->exclusive_supplier == old_owner) i->exclusive_supplier = new_owner;
 	if (i->exclusive_consumer == old_owner) i->exclusive_consumer = new_owner;
+
+	return false;
 }
 
 /**
