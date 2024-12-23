@@ -2263,12 +2263,12 @@ static VehicleEnterTileStates VehicleEnter_Road(Vehicle *v, TileIndex tile, int,
 }
 
 
-static void ChangeTileOwner_Road(TileIndex tile, Owner old_owner, Owner new_owner)
+static bool ChangeTileOwner_Road(TileIndex index, Tile &tile, Owner old_owner, Owner new_owner)
 {
 	if (IsRoadDepot(tile)) {
 		if (GetTileOwner(tile) == old_owner) {
 			if (new_owner == INVALID_OWNER) {
-				Command<CMD_LANDSCAPE_CLEAR>::Do({DoCommandFlag::Execute, DoCommandFlag::Bankrupt}, tile);
+				Command<CMD_LANDSCAPE_CLEAR>::Do({DoCommandFlag::Execute, DoCommandFlag::Bankrupt}, index);
 			} else {
 				/* A road depot has two road bits. No need to dirty windows here, we'll redraw the whole screen anyway. */
 				RoadType rt = GetRoadTypeRoad(tile);
@@ -2284,7 +2284,7 @@ static void ChangeTileOwner_Road(TileIndex tile, Owner old_owner, Owner new_owne
 				}
 			}
 		}
-		return;
+		return false;
 	}
 
 	for (RoadTramType rtt : _roadtramtypes) {
@@ -2305,7 +2305,7 @@ static void ChangeTileOwner_Road(TileIndex tile, Owner old_owner, Owner new_owne
 	if (IsLevelCrossing(tile)) {
 		if (GetTileOwner(tile) == old_owner) {
 			if (new_owner == INVALID_OWNER) {
-				Command<CMD_REMOVE_SINGLE_RAIL>::Do({DoCommandFlag::Execute, DoCommandFlag::Bankrupt}, tile, GetCrossingRailTrack(tile));
+				Command<CMD_REMOVE_SINGLE_RAIL>::Do({DoCommandFlag::Execute, DoCommandFlag::Bankrupt}, index, GetCrossingRailTrack(tile));
 			} else {
 				/* Update infrastructure counts. No need to dirty windows here, we'll redraw the whole screen anyway. */
 				Company::Get(old_owner)->infrastructure.rail[GetRailType(tile)] -= LEVELCROSSING_TRACKBIT_FACTOR;
@@ -2315,6 +2315,8 @@ static void ChangeTileOwner_Road(TileIndex tile, Owner old_owner, Owner new_owne
 			}
 		}
 	}
+
+	return false;
 }
 
 static CommandCost TerraformTile_Road(TileIndex index, Tile tile, DoCommandFlags, int z_new, Slope tileh_new)
