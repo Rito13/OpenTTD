@@ -3296,7 +3296,6 @@ static CommandCost TerraformTile_Industry(TileIndex index, const Tile &tile, [[m
 /** TileTypeProcs definitions for TileType::Industry tiles. */
 extern const TileTypeProcs _tile_type_industry_procs = {
 	.draw_tile_proc = DrawTile_Industry,
-	.get_slope_pixel_z_proc = [](TileIndex tile, uint, uint, bool) { return GetTileMaxPixelZ(tile); },
 	.clear_tile_proc = ClearTile_Industry,
 	.add_accepted_cargo_proc = AddAcceptedCargo_Industry,
 	.get_tile_desc_proc = GetTileDesc_Industry,

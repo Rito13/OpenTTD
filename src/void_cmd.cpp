@@ -30,16 +30,6 @@ static void DrawTile_Void(TileInfo *ti)
 	}
 }
 
-/** @copydoc GetSlopePixelZProc */
-static int GetSlopePixelZ_Void([[maybe_unused]] TileIndex tile, uint x, uint y, [[maybe_unused]] bool ground_vehicle)
-{
-	/* This function may be called on tiles outside the map, don't assume
-	 * that 'tile' is a valid tile index. See GetSlopePixelZOutsideMap. */
-	auto [tileh, z] = GetTilePixelSlopeOutsideMap(x >> 4, y >> 4);
-
-	return z + GetPartialPixelZ(x & 0xF, y & 0xF, tileh);
-}
-
 /** @copydoc GetTileDescProc */
 static void GetTileDesc_Void([[maybe_unused]] TileIndex index, [[maybe_unused]] const Tile &tile, TileDesc &td)
 {
@@ -57,7 +47,6 @@ static bool TileLoop_Void(TileIndex index, Tile &tile)
 /** TileTypeProcs definitions for TileType::Void tiles. */
 extern const TileTypeProcs _tile_type_void_procs = {
 	.draw_tile_proc = DrawTile_Void,
-	.get_slope_pixel_z_proc = GetSlopePixelZ_Void,
 	.clear_tile_proc = [](TileIndex, Tile&, DoCommandFlags) { return std::tuple{CommandCost(STR_ERROR_OFF_EDGE_OF_MAP), false}; },
 	.get_tile_desc_proc = GetTileDesc_Void,
 	.tile_loop_proc = TileLoop_Void,

@@ -182,14 +182,6 @@ static void DrawTile_Clear(TileInfo *ti)
 	DrawBridgeMiddle(ti, {});
 }
 
-/** @copydoc GetSlopePixelZProc */
-static int GetSlopePixelZ_Clear(TileIndex tile, uint x, uint y, [[maybe_unused]] bool ground_vehicle)
-{
-	auto [tileh, z] = GetTilePixelSlope(tile);
-
-	return z + GetPartialPixelZ(x & 0xF, y & 0xF, tileh);
-}
-
 static void UpdateFences(TileIndex tile)
 {
 	assert(IsTileType(tile, TileType::Clear) && IsClearGround(tile, ClearGround::Fields));
@@ -413,7 +405,6 @@ static void GetTileDesc_Clear([[maybe_unused]] TileIndex index, const Tile &tile
 /** TileTypeProcs definitions for TileType::Clear tiles. */
 extern const TileTypeProcs _tile_type_clear_procs = {
 	.draw_tile_proc = DrawTile_Clear,
-	.get_slope_pixel_z_proc = GetSlopePixelZ_Clear,
 	.clear_tile_proc = ClearTile_Clear,
 	.get_tile_desc_proc = GetTileDesc_Clear,
 	.tile_loop_proc = TileLoop_Clear,
