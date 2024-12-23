@@ -1023,15 +1023,6 @@ void DrawShipDepotSprite(int x, int y, Axis axis, DepotPart part)
 	DrawOrigTileSeqInGUI(x, y, &dts, GetCompanyPalette(_local_company));
 }
 
-
-/** @copydoc GetSlopePixelZProc */
-static int GetSlopePixelZ_Water(TileIndex tile, uint x, uint y, [[maybe_unused]] bool ground_vehicle)
-{
-	auto [tileh, z] = GetTilePixelSlope(tile);
-
-	return z + GetPartialPixelZ(x & 0xF, y & 0xF, tileh);
-}
-
 /** @copydoc GetTileDescProc */
 static void GetTileDesc_Water([[maybe_unused]] TileIndex index, const Tile &tile, TileDesc &td)
 {
@@ -1505,7 +1496,6 @@ static CommandCost CheckBuildAbove_Water(TileIndex tile, [[maybe_unused]] DoComm
 /** TileTypeProcs definitions for TileType::Water tiles. */
 extern const TileTypeProcs _tile_type_water_procs = {
 	.draw_tile_proc = DrawTile_Water,
-	.get_slope_pixel_z_proc = GetSlopePixelZ_Water,
 	.clear_tile_proc = ClearTile_Water,
 	.get_tile_desc_proc = GetTileDesc_Water,
 	.get_tile_track_status_proc = GetTileTrackStatus_Water,
