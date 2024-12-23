@@ -141,10 +141,11 @@ using ClickTileProc = bool(TileIndex index, const Tile &tile);
 
 /**
  * Tile callback function signature for animating a tile.
+ * @param index The tile index to animate.
  * @param tile The tile to animate.
  * @see AnimateTile
  */
-using AnimateTileProc = void(TileIndex tile);
+using AnimateTileProc = void(TileIndex index, const Tile &tile);
 
 /**
  * Tile callback function signature for running periodic tile updates.
@@ -271,16 +272,17 @@ inline void AddProducedCargo(TileIndex tile, CargoArray &produced)
  * @param tile Tile to test.
  * @returns True iff the type of the tile has a handler for tile animation.
  */
-inline bool MayAnimateTile(TileIndex tile)
+inline bool MayAnimateTile(Tile tile)
 {
 	return _tile_type_procs[GetTileType(tile)]->animate_tile_proc != nullptr;
 }
 
 inline void AnimateTile(TileIndex tile)
 {
-	AnimateTileProc *proc = _tile_type_procs[GetTileType(tile)]->animate_tile_proc;
-	assert(proc != nullptr);
-	proc(tile);
+	for (Tile t = tile; t.IsValid(); ++t) {
+		AnimateTileProc *proc = _tile_type_procs[t.GetTileType()]->animate_tile_proc;
+		if (proc != nullptr) proc(tile, t);
+	}
 }
 
 inline bool ClickTile(TileIndex tile)
