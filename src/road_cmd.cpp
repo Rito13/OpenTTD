@@ -2375,16 +2375,16 @@ static void ChangeTileOwner_Road(TileIndex tile, Owner old_owner, Owner new_owne
 }
 
 /** @copydoc TerraformTileProc */
-static CommandCost TerraformTile_Road(TileIndex tile, DoCommandFlags flags, int z_new, Slope tileh_new)
+static CommandCost TerraformTile_Road(TileIndex index, const Tile &tile, [[maybe_unused]] DoCommandFlags flags, int z_new, Slope tileh_new)
 {
 	if (_settings_game.construction.build_on_slopes && AutoslopeEnabled()) {
 		switch (GetRoadTileType(tile)) {
 			case RoadTileType::Crossing:
-				if (!IsSteepSlope(tileh_new) && (GetTileMaxZ(tile) == z_new + GetSlopeMaxZ(tileh_new)) && HasBit(VALID_LEVEL_CROSSING_SLOPES, tileh_new.base())) return CommandCost(ExpensesType::Construction, _price[Price::BuildFoundation]);
+				if (!IsSteepSlope(tileh_new) && (GetTileMaxZ(index) == z_new + GetSlopeMaxZ(tileh_new)) && HasBit(VALID_LEVEL_CROSSING_SLOPES, tileh_new.base())) return CommandCost(ExpensesType::Construction, _price[Price::BuildFoundation]);
 				break;
 
 			case RoadTileType::Depot:
-				if (AutoslopeCheckForEntranceEdge(tile, z_new, tileh_new, GetRoadDepotDirection(tile))) return CommandCost(ExpensesType::Construction, _price[Price::BuildFoundation]);
+				if (AutoslopeCheckForEntranceEdge(index, z_new, tileh_new, GetRoadDepotDirection(tile))) return CommandCost(ExpensesType::Construction, _price[Price::BuildFoundation]);
 				break;
 
 			case RoadTileType::Normal: {
@@ -2394,7 +2394,7 @@ static CommandCost TerraformTile_Road(TileIndex tile, DoCommandFlags flags, int 
 				if (CheckRoadSlope(tileh_new, &bits_copy, {}, {}).Succeeded()) {
 					/* CheckRoadSlope() sometimes changes the road_bits, if it does not agree with them. */
 					if (bits == bits_copy) {
-						auto [tileh_old, z_old] = GetTileSlopeZ(tile);
+						auto [tileh_old, z_old] = GetTileSlopeZ(index);
 
 						/* Get the slope on top of the foundation */
 						z_old += ApplyFoundationToSlope(GetRoadFoundation(tileh_old, bits), tileh_old);
@@ -2411,7 +2411,7 @@ static CommandCost TerraformTile_Road(TileIndex tile, DoCommandFlags flags, int 
 		}
 	}
 
-	return Command<Commands::LandscapeClear>::Do(flags, tile);
+	return CommandCost(INVALID_STRING_ID); // Dummy error
 }
 
 /**

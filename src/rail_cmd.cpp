@@ -3130,21 +3130,21 @@ static CommandCost TestAutoslopeOnRailTile(TileIndex tile, DoCommandFlags flags,
 }
 
 /** @copydoc TerraformTileProc */
-static CommandCost TerraformTile_Rail(TileIndex tile, DoCommandFlags flags, int z_new, Slope tileh_new)
+static CommandCost TerraformTile_Rail(TileIndex index, const Tile &tile, DoCommandFlags flags, int z_new, Slope tileh_new)
 {
-	auto [tileh_old, z_old] = GetTileSlopeZ(tile);
+	auto [tileh_old, z_old] = GetTileSlopeZ(index);
 	if (IsPlainRail(tile)) {
 		TrackBits rail_bits = GetTrackBits(tile);
 		/* Is there flat water on the lower halftile that must be cleared expensively? */
 		bool was_water = (GetRailGroundType(tile) == RailGroundType::HalfTileWater && IsSlopeWithOneCornerRaised(tileh_old));
 
 		/* Allow clearing the water only if there is no ship */
-		if (was_water && HasVehicleOnTile(tile, [](const Vehicle *v) {
+		if (was_water && HasVehicleOnTile(index, [](const Vehicle *v) {
 				return v->type == VehicleType::Ship;
 			})) return CommandCost(STR_ERROR_SHIP_IN_THE_WAY);
 
 		/* First test autoslope. However if it succeeds we still have to test the rest, because non-autoslope terraforming is cheaper. */
-		CommandCost autoslope_result = TestAutoslopeOnRailTile(tile, flags, z_old, tileh_old, z_new, tileh_new, rail_bits);
+		CommandCost autoslope_result = TestAutoslopeOnRailTile(index, flags, z_old, tileh_old, z_new, tileh_new, rail_bits);
 
 		/* When there is only a single horizontal/vertical track, one corner can be terraformed. */
 		Corner allowed_corner;
@@ -3173,10 +3173,10 @@ static CommandCost TerraformTile_Rail(TileIndex tile, DoCommandFlags flags, int 
 		/* allow terraforming */
 		return CommandCost(ExpensesType::Construction, was_water ? _price[Price::ClearWater] : (Money)0);
 	} else if (_settings_game.construction.build_on_slopes && AutoslopeEnabled() &&
-			AutoslopeCheckForEntranceEdge(tile, z_new, tileh_new, GetRailDepotDirection(tile))) {
+			AutoslopeCheckForEntranceEdge(index, z_new, tileh_new, GetRailDepotDirection(tile))) {
 		return CommandCost(ExpensesType::Construction, _price[Price::BuildFoundation]);
 	}
-	return Command<Commands::LandscapeClear>::Do(flags, tile);
+	return CommandCost(INVALID_STRING_ID); // Dummy error
 }
 
 /** @copydoc CheckBuildAboveProc */
