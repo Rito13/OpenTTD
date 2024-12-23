@@ -292,12 +292,12 @@ struct AirportTileAnimationBase : public AnimationBase<AirportTileAnimationBase,
 	static constexpr AirportTileCallbackMask cbm_animation_next_frame = AirportTileCallbackMask::AnimationNextFrame;
 };
 
-void AnimateAirportTile(TileIndex tile)
+void AnimateAirportTile(TileIndex index, Tile tile)
 {
 	const AirportTileSpec *ats = AirportTileSpec::GetByTile(tile);
 	if (ats == nullptr) return;
 
-	AirportTileAnimationBase::AnimateTile(ats, Station::GetByTile(tile), tile, HasBit(ats->animation_special_flags, 0));
+	AirportTileAnimationBase::AnimateTile(ats, Station::GetByTile(tile), index, tile, HasBit(ats->animation_special_flags, 0));
 }
 
 void TriggerAirportTileAnimation(Station *st, TileIndex tile, AirportAnimationTrigger trigger, CargoType cargo_type)
@@ -305,7 +305,7 @@ void TriggerAirportTileAnimation(Station *st, TileIndex tile, AirportAnimationTr
 	const AirportTileSpec *ats = AirportTileSpec::GetByTile(tile);
 	if (!ats->animation.triggers.Test(trigger)) return;
 
-	AirportTileAnimationBase::ChangeAnimationFrame(CBID_AIRPTILE_ANIMATION_TRIGGER, ats, st, tile, Random(), to_underlying(trigger) | (cargo_type << 8));
+	AirportTileAnimationBase::ChangeAnimationFrame(CBID_AIRPTILE_ANIMATION_TRIGGER, ats, st, tile, Tile(tile), Random(), to_underlying(trigger) | (cargo_type << 8));
 }
 
 void TriggerAirportAnimation(Station *st, AirportAnimationTrigger trigger, CargoType cargo_type)

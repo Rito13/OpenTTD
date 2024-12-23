@@ -545,14 +545,15 @@ struct ObjectAnimationBase : public AnimationBase<ObjectAnimationBase, ObjectSpe
 
 /**
  * Handle the animation of the object tile.
+ * @param index The tile index the tile belongs to.
  * @param tile The tile to animate.
  */
-void AnimateNewObjectTile(TileIndex tile)
+void AnimateNewObjectTile(TileIndex index, Tile tile)
 {
 	const ObjectSpec *spec = ObjectSpec::GetByTile(tile);
 	if (spec == nullptr || !spec->flags.Test(ObjectFlag::Animation)) return;
 
-	ObjectAnimationBase::AnimateTile(spec, Object::GetByTile(tile), tile, spec->flags.Test(ObjectFlag::AnimRandomBits));
+	ObjectAnimationBase::AnimateTile(spec, Object::GetByTile(tile), index, tile, spec->flags.Test(ObjectFlag::AnimRandomBits));
 }
 
 /**
@@ -566,7 +567,7 @@ void TriggerObjectTileAnimation(Object *o, TileIndex tile, ObjectAnimationTrigge
 {
 	if (!spec->animation.triggers.Test(trigger)) return;
 
-	ObjectAnimationBase::ChangeAnimationFrame(CBID_OBJECT_ANIMATION_TRIGGER, spec, o, tile, Random(), to_underlying(trigger));
+	ObjectAnimationBase::ChangeAnimationFrame(CBID_OBJECT_ANIMATION_TRIGGER, spec, o, tile, Tile(tile), Random(), to_underlying(trigger));
 }
 
 /**
