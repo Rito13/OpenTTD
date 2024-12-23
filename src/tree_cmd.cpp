@@ -711,15 +711,6 @@ static void DrawTile_Trees(TileInfo *ti)
 	EndSpriteCombine();
 }
 
-
-/** @copydoc GetSlopePixelZProc */
-static int GetSlopePixelZ_Trees(TileIndex tile, uint x, uint y, [[maybe_unused]] bool ground_vehicle)
-{
-	auto [tileh, z] = GetTilePixelSlope(tile);
-
-	return z + GetPartialPixelZ(x & 0xF, y & 0xF, tileh);
-}
-
 /** @copydoc ClearTileProc */
 static std::tuple<CommandCost, bool> ClearTile_Trees(TileIndex index, Tile &tile, DoCommandFlags flags)
 {
@@ -1020,7 +1011,6 @@ void InitializeTrees()
 /** TileTypeProcs definitions for TileType::Trees tiles. */
 extern const TileTypeProcs _tile_type_trees_procs = {
 	.draw_tile_proc = DrawTile_Trees,
-	.get_slope_pixel_z_proc = GetSlopePixelZ_Trees,
 	.clear_tile_proc = ClearTile_Trees,
 	.get_tile_desc_proc = GetTileDesc_Trees,
 	.tile_loop_proc = TileLoop_Trees,
