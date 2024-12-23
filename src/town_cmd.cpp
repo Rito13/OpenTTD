@@ -326,10 +326,10 @@ static Foundation GetFoundation_Town(TileIndex tile, Slope tileh)
  * Only certain houses can be animated.
  * The newhouses animation supersedes regular ones.
  */
-static void AnimateTile_Town(TileIndex tile)
+static void AnimateTile_Town(TileIndex index, const Tile &tile)
 {
 	if (GetHouseType(tile) >= NEW_HOUSE_OFFSET) {
-		AnimateNewHouseTile(tile);
+		AnimateNewHouseTile(index, tile);
 		return;
 	}
 
@@ -340,7 +340,7 @@ static void AnimateTile_Town(TileIndex tile)
 	 * Before this was just a return...so it'd leak animated tiles..
 	 * That bug seems to have been here since day 1?? */
 	if (!HouseSpec::Get(GetHouseType(tile))->building_flags.Test(BuildingFlag::IsAnimated)) {
-		DeleteAnimatedTile(tile);
+		DeleteAnimatedTile(index);
 		return;
 	}
 
@@ -365,10 +365,10 @@ static void AnimateTile_Town(TileIndex tile)
 
 	if (pos == dest) {
 		HaltLift(tile);
-		DeleteAnimatedTile(tile);
+		DeleteAnimatedTile(index);
 	}
 
-	MarkTileDirtyByTile(tile);
+	MarkTileDirtyByTile(index);
 }
 
 /**
