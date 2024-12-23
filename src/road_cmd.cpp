@@ -1967,22 +1967,6 @@ bool UpdateNearestTownForRoadTiles(bool invalidate)
 	return found;
 }
 
-/** @copydoc GetSlopePixelZProc */
-static int GetSlopePixelZ_Road(TileIndex tile, uint x, uint y, [[maybe_unused]] bool ground_vehicle)
-{
-
-	if (IsNormalRoad(tile)) {
-		auto [tileh, z] = GetTilePixelSlope(tile);
-		if (tileh == SLOPE_FLAT) return z;
-
-		Foundation f = GetRoadFoundation(tileh, GetAllRoadBits(tile));
-		z += ApplyPixelFoundationToSlope(f, tileh);
-		return z + GetPartialPixelZ(x & 0xF, y & 0xF, tileh);
-	} else {
-		return GetTileMaxPixelZ(tile);
-	}
-}
-
 /** @copydoc GetFoundationProc */
 static Foundation GetFoundation_Road(TileIndex tile, Slope tileh)
 {
@@ -2680,7 +2664,6 @@ static CommandCost CheckBuildAbove_Road(TileIndex tile, [[maybe_unused]] DoComma
 /** TileTypeProcs definitions for TileType::Road tiles. */
 extern const TileTypeProcs _tile_type_road_procs = {
 	.draw_tile_proc = DrawTile_Road,
-	.get_slope_pixel_z_proc = GetSlopePixelZ_Road,
 	.clear_tile_proc = ClearTile_Road,
 	.get_tile_desc_proc = GetTileDesc_Road,
 	.get_tile_track_status_proc = GetTileTrackStatus_Road,
