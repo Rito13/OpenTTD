@@ -5412,7 +5412,6 @@ static CommandCost CheckBuildAbove_Station(TileIndex tile, [[maybe_unused]] DoCo
 /** TileTypeProcs definitions for TileType::Station tiles. */
 extern const TileTypeProcs _tile_type_station_procs = {
 	.draw_tile_proc = DrawTile_Station,
-	.get_slope_pixel_z_proc = [](TileIndex tile, uint, uint, bool) { return GetTileMaxPixelZ(tile); },
 	.clear_tile_proc = ClearTile_Station,
 	.get_tile_desc_proc = GetTileDesc_Station,
 	.get_tile_track_status_proc = GetTileTrackStatus_Station,

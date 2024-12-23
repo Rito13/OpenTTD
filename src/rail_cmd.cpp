@@ -2629,20 +2629,6 @@ void DrawTrainDepotSprite(int x, int y, DiagDirection dir, RailType railtype)
 	DrawRailTileSeqInGUI(x, y, dts, offset, 0, palette);
 }
 
-/** @copydoc GetSlopePixelZProc */
-static int GetSlopePixelZ_Rail(TileIndex tile, uint x, uint y, [[maybe_unused]] bool ground_vehicle)
-{
-	if (IsPlainRail(tile)) {
-		auto [tileh, z] = GetTilePixelSlope(tile);
-		if (tileh == SLOPE_FLAT) return z;
-
-		z += ApplyPixelFoundationToSlope(GetRailFoundation(tileh, GetTrackBits(tile)), tileh);
-		return z + GetPartialPixelZ(x & 0xF, y & 0xF, tileh);
-	} else {
-		return GetTileMaxPixelZ(tile);
-	}
-}
-
 /** @copydoc GetFoundationProc */
 static Foundation GetFoundation_Rail(TileIndex tile, Slope tileh)
 {
@@ -3189,7 +3175,6 @@ static CommandCost CheckBuildAbove_Rail(TileIndex tile, DoCommandFlags flags, [[
 /** TileTypeProcs definitions for TileType::Rail tiles. */
 extern const TileTypeProcs _tile_type_rail_procs = {
 	.draw_tile_proc = DrawTile_Rail,
-	.get_slope_pixel_z_proc = GetSlopePixelZ_Rail,
 	.clear_tile_proc = ClearTile_Rail,
 	.get_tile_desc_proc = GetTileDesc_Rail,
 	.get_tile_track_status_proc = GetTileTrackStatus_Rail,

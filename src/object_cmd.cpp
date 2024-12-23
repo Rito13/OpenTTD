@@ -496,18 +496,6 @@ static void DrawTile_Object(TileInfo *ti)
 	DrawBridgeMiddle(ti, {});
 }
 
-/** @copydoc GetSlopePixelZProc */
-static int GetSlopePixelZ_Object(TileIndex tile, uint x, uint y, [[maybe_unused]] bool ground_vehicle)
-{
-	if (IsObjectType(tile, OBJECT_OWNED_LAND)) {
-		auto [tileh, z] = GetTilePixelSlope(tile);
-
-		return z + GetPartialPixelZ(x & 0xF, y & 0xF, tileh);
-	} else {
-		return GetTileMaxPixelZ(tile);
-	}
-}
-
 /**
  * Perform the actual removal of the object from the map.
  * @param o The object to really clear.
@@ -1024,7 +1012,6 @@ static CommandCost CheckBuildAbove_Object(TileIndex tile, DoCommandFlags flags, 
 /** TileTypeProcs definitions for TileType::Object tiles. */
 extern const TileTypeProcs _tile_type_object_procs = {
 	.draw_tile_proc = DrawTile_Object,
-	.get_slope_pixel_z_proc = GetSlopePixelZ_Object,
 	.clear_tile_proc = ClearTile_Object,
 	.add_accepted_cargo_proc = AddAcceptedCargo_Object,
 	.get_tile_desc_proc = GetTileDesc_Object,

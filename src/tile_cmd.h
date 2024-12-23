@@ -65,19 +65,6 @@ struct TileDesc {
 using DrawTileProc = void(TileInfo *ti);
 
 /**
- * Tile callback function signature for obtaining the world \c Z coordinate of a given
- * point of a tile.
- *
- * @param tile The queries tile for the Z coordinate.
- * @param x World X coordinate in tile "units".
- * @param y World Y coordinate in tile "units".
- * @param ground_vehicle Whether to get the Z coordinate of the ground vehicle, or the ground.
- * @return World Z coordinate at tile ground (vehicle) level, including slopes and foundations.
- * @see GetSlopePixelZ
- */
-using GetSlopePixelZProc = int(TileIndex tile, uint x, uint y, bool ground_vehicle);
-
-/**
  * Tile callback function signature for clearing a tile.
  * @param index Tile index that is being cleared.
  * @param[in,out] tile The associated tile that is to be cleared.
@@ -220,7 +207,6 @@ using CheckBuildAboveProc = CommandCost(TileIndex tile, DoCommandFlags flags, Ax
  */
 struct TileTypeProcs {
 	DrawTileProc *draw_tile_proc; ///< Called to render the tile and its contents to the screen.
-	GetSlopePixelZProc *get_slope_pixel_z_proc; ///< Called to get the world Z coordinate for a given location within the tile.
 	ClearTileProc *clear_tile_proc; ////< Called to clear a tile.
 	AddAcceptedCargoProc *add_accepted_cargo_proc = nullptr; ///< Adds accepted cargo of the tile to cargo array supplied as parameter.
 	GetTileDescProc *get_tile_desc_proc; ///< Get a description of a tile (for the 'land area information' tool).

@@ -4235,7 +4235,6 @@ static CommandCost TerraformTile_Town(TileIndex index, const Tile &tile, [[maybe
 /** TileTypeProcs definitions for TileType::Town tiles. */
 extern const TileTypeProcs _tile_type_town_procs = {
 	.draw_tile_proc = DrawTile_Town,
-	.get_slope_pixel_z_proc = [](TileIndex tile, uint, uint, bool) { return GetTileMaxPixelZ(tile); },
 	.clear_tile_proc = ClearTile_Town,
 	.add_accepted_cargo_proc = AddAcceptedCargo_Town,
 	.get_tile_desc_proc = GetTileDesc_Town,

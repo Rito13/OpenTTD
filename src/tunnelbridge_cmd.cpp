@@ -1714,9 +1714,18 @@ void DrawBridgeMiddle(const TileInfo *ti, BridgePillarFlags blocked_pillars)
 	DrawBridgePillars(psid[2], ti, axis, drawfarpillar, x, y, z);
 }
 
-
-/** @copydoc GetSlopePixelZProc */
-static int GetSlopePixelZ_TunnelBridge(TileIndex tile, uint x, uint y, bool ground_vehicle)
+/**
+ * Tile callback function signature for obtaining the world \c Z coordinate of a given
+ * point of a tile with a tunnel entrance or bridge head.
+ *
+ * @param tile The queries tile for the Z coordinate.
+ * @param x World X coordinate in tile "units".
+ * @param y World Y coordinate in tile "units".
+ * @param ground_vehicle Whether to get the Z coordinate of the ground vehicle, or the ground.
+ * @return World Z coordinate at tile ground (vehicle) level, including slopes and foundations.
+ * @see GetSlopePixelZ
+ */
+int GetTunnelBridgeSlopePixelZ(TileIndex tile, uint x, uint y, bool ground_vehicle)
 {
 	auto [tileh, z] = GetTilePixelSlope(tile);
 
@@ -2137,7 +2146,6 @@ static CommandCost CheckBuildAbove_TunnelBridge(TileIndex tile, DoCommandFlags f
 /** TileTypeProcs definitions for TileType::TunnelBridge tiles. */
 extern const TileTypeProcs _tile_type_tunnelbridge_procs = {
 	.draw_tile_proc = DrawTile_TunnelBridge,
-	.get_slope_pixel_z_proc = GetSlopePixelZ_TunnelBridge,
 	.clear_tile_proc = ClearTile_TunnelBridge,
 	.get_tile_desc_proc = GetTileDesc_TunnelBridge,
 	.get_tile_track_status_proc = GetTileTrackStatus_TunnelBridge,
