@@ -581,12 +581,12 @@ struct HouseAnimationBase : public AnimationBase<HouseAnimationBase, HouseSpec, 
 	static constexpr HouseCallbackMask cbm_animation_next_frame = HouseCallbackMask::AnimationNextFrame;
 };
 
-void AnimateNewHouseTile(TileIndex tile)
+void AnimateNewHouseTile(TileIndex index, const Tile &tile)
 {
 	const HouseSpec *hs = HouseSpec::Get(GetHouseType(tile));
 	if (hs == nullptr) return;
 
-	HouseAnimationBase::AnimateTile(hs, Town::GetByTile(tile), tile, hs->extra_flags.Test(HouseExtraFlag::Callback1ARandomBits));
+	HouseAnimationBase::AnimateTile(hs, Town::GetByTile(tile), index, tile, hs->extra_flags.Test(HouseExtraFlag::Callback1ARandomBits));
 }
 
 void TriggerHouseAnimation_ConstructionStageChanged(TileIndex tile, bool first_call)
@@ -594,7 +594,7 @@ void TriggerHouseAnimation_ConstructionStageChanged(TileIndex tile, bool first_c
 	const HouseSpec *hs = HouseSpec::Get(GetHouseType(tile));
 
 	if (hs->callback_mask.Test(HouseCallbackMask::AnimationTriggerConstructionStageChanged)) {
-		HouseAnimationBase::ChangeAnimationFrame(CBID_HOUSE_ANIMATION_TRIGGER_CONSTRUCTION_STAGE_CHANGED, hs, Town::GetByTile(tile), tile, Random(), first_call ? 1 : 0);
+		HouseAnimationBase::ChangeAnimationFrame(CBID_HOUSE_ANIMATION_TRIGGER_CONSTRUCTION_STAGE_CHANGED, hs, Town::GetByTile(tile), tile, Tile(tile), Random(), first_call ? 1 : 0);
 	}
 }
 
@@ -637,7 +637,7 @@ static void TriggerHouseAnimation_TileLoop(TileIndex tile, bool sync, uint16_t r
 	if (hs->callback_mask.Test(HouseCallbackMask::AnimationTriggerTileLoop) &&
 			hs->extra_flags.Test(HouseExtraFlag::SynchronisedCallback1B) == sync) {
 		uint32_t param = sync ? (GB(Random(), 0, 16) | random_bits << 16) : Random();
-		HouseAnimationBase::ChangeAnimationFrame(CBID_HOUSE_ANIMATION_TRIGGER_TILE_LOOP, hs, Town::GetByTile(tile), tile, param, 0);
+		HouseAnimationBase::ChangeAnimationFrame(CBID_HOUSE_ANIMATION_TRIGGER_TILE_LOOP, hs, Town::GetByTile(tile), tile, Tile(tile), param, 0);
 	}
 }
 
@@ -744,7 +744,7 @@ static void DoTriggerHouseAnimation_WatchedCargoAccepted(TileIndex tile, TileInd
 {
 	TileIndexDiffC diff = TileIndexToTileIndexDiffC(origin, tile);
 	uint32_t cb_info = random << 16 | (uint8_t)diff.y << 8 | (uint8_t)diff.x;
-	HouseAnimationBase::ChangeAnimationFrame(CBID_HOUSE_ANIMATION_TRIGGER_WATCHED_CARGO_ACCEPTED, HouseSpec::Get(GetHouseType(tile)), Town::GetByTile(tile), tile, 0, cb_info, trigger_cargoes);
+	HouseAnimationBase::ChangeAnimationFrame(CBID_HOUSE_ANIMATION_TRIGGER_WATCHED_CARGO_ACCEPTED, HouseSpec::Get(GetHouseType(tile)), Town::GetByTile(tile), tile, Tile(tile), 0, cb_info, trigger_cargoes);
 }
 
 /**

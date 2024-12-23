@@ -3823,20 +3823,20 @@ static bool TileLoop_Station(TileIndex index, Tile &tile)
 
 
 /** @copydoc AnimateTileProc */
-static void AnimateTile_Station(TileIndex tile)
+static void AnimateTile_Station(TileIndex index, const Tile &tile)
 {
 	if (HasStationRail(tile)) {
-		AnimateStationTile(tile);
+		AnimateStationTile(index, tile);
 		return;
 	}
 
 	if (IsAirport(tile)) {
-		AnimateAirportTile(tile);
+		AnimateAirportTile(index, tile);
 		return;
 	}
 
 	if (IsAnyRoadStopTile(tile)) {
-		AnimateRoadStopTile(tile);
+		AnimateRoadStopTile(index, tile);
 		return;
 	}
 }

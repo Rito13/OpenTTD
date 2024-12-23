@@ -11,6 +11,7 @@
 #define NEWGRF_AIRPORTTILES_H
 
 #include "airport.h"
+#include "map_func.h"
 #include "station_map.h"
 #include "newgrf_animation_type.h"
 #include "newgrf_badge_type.h"
@@ -88,7 +89,7 @@ private:
 	friend void AirportTileOverrideManager::SetEntitySpec(AirportTileSpec &&airpts);
 };
 
-void AnimateAirportTile(TileIndex tile);
+void AnimateAirportTile(TileIndex index, const Tile &tile);
 bool TriggerAirportTileAnimation(Station *st, TileIndex tile, AirportAnimationTrigger trigger);
 bool TriggerAirportAnimation(Station *st, AirportAnimationTrigger trigger, CargoType cargo_type = INVALID_CARGO);
 bool DrawNewAirportTile(TileInfo *ti, Station *st, const AirportTileSpec *airts);
