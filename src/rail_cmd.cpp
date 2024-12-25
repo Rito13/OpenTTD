@@ -2077,15 +2077,6 @@ static void DrawTrackDetails(const TileInfo *ti, const RailTypeInfo *rti, Palett
 	}
 }
 
-static const int INF = 1000; ///< Big number compared to tilesprite size.
-/** SubSprite for drawing the track halftile of 'three-corners-raised'-sloped rail sprites. */
-static constexpr CornerIndexArray<SubSprite> _halftile_sub_sprite = {{{
-	{ -INF    , -INF  , 32 - 33, INF     }, // Corner::W, clip 33 pixels from right
-	{ -INF    ,  0 + 7, INF    , INF     }, // Corner::S, clip 7 pixels from top
-	{ -31 + 33, -INF  , INF    , INF     }, // Corner::E, clip 33 pixels from left
-	{ -INF    , -INF  , INF    , 30 - 23 }  // Corner::N, clip 23 pixels from bottom
-}}};
-
 static inline void DrawTrackSprite(SpriteID sprite, PaletteID pal, const TileInfo *ti, Slope s)
 {
 	DrawGroundSprite(sprite, pal, nullptr, 0, (ti->tileh.Any(s)) ? -8 : 0);
@@ -2241,7 +2232,7 @@ static void DrawTrackBitsOverlay(TileInfo *ti, TrackBits track, const RailTypeIn
 
 		image += SlopeToSpriteOffset(fake_slope);
 
-		DrawGroundSprite(image, PAL_NONE, &(_halftile_sub_sprite[halftile_corner]));
+		DrawGroundSprite(image, PAL_NONE, GetHalftileSubSprite(halftile_corner));
 
 		track = CornerToTrackBits(halftile_corner);
 
@@ -2367,7 +2358,7 @@ static void DrawTrackBits(TileInfo *ti, TrackBits track)
 				/* three-corner-raised slope */
 				DrawShoreTile(ti->tileh);
 				Corner track_corner = OppositeCorner(GetHighestSlopeCorner(ComplementSlope(ti->tileh)));
-				sub = &(_halftile_sub_sprite[track_corner]);
+				sub = GetHalftileSubSprite(track_corner);
 				break;
 			}
 			default: break;
@@ -2423,7 +2414,7 @@ static void DrawTrackBits(TileInfo *ti, TrackBits track)
 			case RailGroundType::HalfTileSnow: image += rti->snow_offset; break; // higher part has snow in this case too
 			default: break;
 		}
-		DrawGroundSprite(image, pal, &(_halftile_sub_sprite[halftile_corner]));
+		DrawGroundSprite(image, pal, GetHalftileSubSprite(halftile_corner));
 
 		if (_game_mode != GameMode::Menu && _settings_client.gui.show_track_reservation && HasReservedTracks(ti->tile, CornerToTrackBits(halftile_corner))) {
 			static constexpr CornerIndexArray<uint8_t> corner_to_track_sprite = {3, 1, 2, 0};
