@@ -1486,7 +1486,7 @@ extern const TileTypeProcs _tile_type_water_procs = {
 	.click_tile_proc = ClickTile_Water,
 	.tile_loop_proc = TileLoop_Water,
 	.change_tile_owner_proc = ChangeTileOwner_Water,
-	.vehicle_enter_tile_proc = [](Vehicle *, TileIndex, int, int) -> VehicleEnterTileStates { return {}; },
+	.vehicle_enter_tile_proc = [](Vehicle *, TileIndex, const Tile&, int, int) -> VehicleEnterTileStates { return {}; },
 	.terraform_tile_proc = TerraformTile_Water,
 	.check_build_above_proc = CheckBuildAbove_Water,
 };

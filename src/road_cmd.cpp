@@ -2276,7 +2276,7 @@ static constexpr DiagDirectionIndexArray<Trackdir> _roadveh_enter_depot_dir{
 };
 
 /** @copydoc VehicleEnterTileProc */
-static VehicleEnterTileStates VehicleEnterTile_Road(Vehicle *v, TileIndex tile, [[maybe_unused]] int x, [[maybe_unused]] int y)
+static VehicleEnterTileStates VehicleEnterTile_Road(Vehicle *v, TileIndex index, const Tile &tile, [[maybe_unused]] int x, [[maybe_unused]] int y)
 {
 	switch (GetRoadTileType(tile)) {
 		case RoadTileType::Depot: {
@@ -2289,7 +2289,7 @@ static VehicleEnterTileStates VehicleEnterTile_Road(Vehicle *v, TileIndex tile, 
 				rv->vehstatus.Set(VehState::Hidden);
 				rv->direction = ReverseDir(rv->direction);
 				if (rv->Next() == nullptr) VehicleEnterDepot(rv->First());
-				rv->tile = tile;
+				rv->tile = index;
 
 				InvalidateWindowData(WindowClass::VehicleDepot, rv->tile);
 				return VehicleEnterTileState::EnteredWormhole;
