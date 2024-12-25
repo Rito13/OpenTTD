@@ -87,6 +87,22 @@ const EnumIndexArray<const TileTypeProcs *, TileType, TileType::MaxSize> _tile_t
 	nullptr,
 };
 
+static constexpr int INF = 1000; ///< Big number compared to tilesprite size.
+/** SubSprite for drawing the track halftile of 'three-corners-raised'-sloped rail sprites. @see _halftile_sub_sprite_offset */
+extern const CornerIndexArray<SubSprite> _halftile_sub_sprite = {{{
+	{-INF, -INF, 32 - 33, INF}, // Corner::W, clip 33 pixels from right.
+	{-INF, 0 + 7, INF, INF}, // Corner::S, clip 7 pixels from top.
+	{-31 + 33, -INF, INF, INF}, // Corner::E, clip 33 pixels from left.
+	{-INF, -INF, INF, 30 - 23} // Corner::N, clip 23 pixels from bottom.
+}}};
+/** Same as #_halftile_sub_sprite but for sprites that are offset by -TILE_HEIGHT, for example track sprites. */
+extern const CornerIndexArray<SubSprite> _halftile_sub_sprite_offset = {{{
+	{-INF, -INF, 32 - 33, INF}, // Corner::W, clip 33 pixels from right.
+	{-INF, 0 + 15, INF, INF}, // Corner::S, clip 15 pixels from top.
+	{-31 + 33, -INF, INF, INF}, // Corner::E, clip 33 pixels from left.
+	{-INF, -INF, INF, 30 - 15}, // Corner::N, clip 15 pixels from bottom.
+}}};
+
 static const uint TILE_UPDATE_FREQUENCY_LOG = 8;  ///< The logarithm of how many ticks it takes between tile updates (log base 2).
 static const uint TILE_UPDATE_FREQUENCY = 1 << TILE_UPDATE_FREQUENCY_LOG;  ///< How many ticks it takes between tile updates (has to be a power of 2).
 
