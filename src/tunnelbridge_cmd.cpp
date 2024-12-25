@@ -1968,7 +1968,7 @@ static const uint8_t TUNNEL_SOUND_FRAME = 1;
 extern const DiagDirectionIndexArray<uint8_t> _tunnel_visibility_frame{12, 8, 8, 12};
 
 /** @copydoc VehicleEnterTileProc */
-static VehicleEnterTileStates VehicleEnterTile_TunnelBridge(Vehicle *v, TileIndex tile, int x, int y)
+static VehicleEnterTileStates VehicleEnterTile_TunnelBridge(Vehicle *v, TileIndex index, const Tile &tile, int x, int y)
 {
 	int z = GetSlopePixelZ(x, y, true) - v->z_pos;
 
@@ -1994,7 +1994,7 @@ static VehicleEnterTileStates VehicleEnterTile_TunnelBridge(Vehicle *v, TileInde
 					return {};
 				}
 				if (frame == _tunnel_visibility_frame[dir]) {
-					t->tile = tile;
+					t->tile = index;
 					t->track = Track::Wormhole;
 					t->vehstatus.Set(VehState::Hidden);
 					return VehicleEnterTileState::EnteredWormhole;
@@ -2003,7 +2003,7 @@ static VehicleEnterTileStates VehicleEnterTile_TunnelBridge(Vehicle *v, TileInde
 
 			if (dir == ReverseDiagDir(vdir) && frame == TILE_SIZE - _tunnel_visibility_frame[dir] && z == 0) {
 				/* We're at the tunnel exit ?? */
-				t->tile = tile;
+				t->tile = index;
 				t->track = DiagDirToDiagTrack(vdir);
 				assert(t->track.Any());
 				t->vehstatus.Reset(VehState::Hidden);
@@ -2017,7 +2017,7 @@ static VehicleEnterTileStates VehicleEnterTile_TunnelBridge(Vehicle *v, TileInde
 				if (frame == _tunnel_visibility_frame[dir]) {
 					/* Frame should be equal to the next frame number in the RV's movement */
 					assert(frame == rv->frame + 1);
-					rv->tile = tile;
+					rv->tile = index;
 					rv->state = RVSB_WORMHOLE;
 					rv->vehstatus.Set(VehState::Hidden);
 					return VehicleEnterTileState::EnteredWormhole;
@@ -2028,7 +2028,7 @@ static VehicleEnterTileStates VehicleEnterTile_TunnelBridge(Vehicle *v, TileInde
 
 			/* We're at the tunnel exit ?? */
 			if (dir == ReverseDiagDir(vdir) && frame == TILE_SIZE - _tunnel_visibility_frame[dir] && z == 0) {
-				rv->tile = tile;
+				rv->tile = index;
 				rv->state = to_underlying(DiagDirToDiagTrackdir(vdir));
 				rv->frame = frame;
 				rv->vehstatus.Reset(VehState::Hidden);
@@ -2071,7 +2071,7 @@ static VehicleEnterTileStates VehicleEnterTile_TunnelBridge(Vehicle *v, TileInde
 			}
 			return VehicleEnterTileState::EnteredWormhole;
 		} else if (vdir == ReverseDiagDir(dir)) {
-			v->tile = tile;
+			v->tile = index;
 			switch (v->type) {
 				case VehicleType::Train: {
 					Train *t = Train::From(v);
