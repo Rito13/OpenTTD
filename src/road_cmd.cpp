@@ -2236,7 +2236,7 @@ static const uint8_t _roadveh_enter_depot_dir[4] = {
 	TRACKDIR_X_SW, TRACKDIR_Y_NW, TRACKDIR_X_NE, TRACKDIR_Y_SE
 };
 
-static VehicleEnterTileStates VehicleEnter_Road(Vehicle *v, TileIndex tile, int, int)
+static VehicleEnterTileStates VehicleEnter_Road(Vehicle *v, TileIndex index, Tile tile, int, int)
 {
 	switch (GetRoadTileType(tile)) {
 		case ROAD_TILE_DEPOT: {
@@ -2249,7 +2249,7 @@ static VehicleEnterTileStates VehicleEnter_Road(Vehicle *v, TileIndex tile, int,
 				rv->vehstatus.Set(VehState::Hidden);
 				rv->direction = ReverseDir(rv->direction);
 				if (rv->Next() == nullptr) VehicleEnterDepot(rv->First());
-				rv->tile = tile;
+				rv->tile = index;
 
 				InvalidateWindowData(WC_VEHICLE_DEPOT, rv->tile);
 				return VehicleEnterTileState::EnteredWormhole;

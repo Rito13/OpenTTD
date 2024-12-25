@@ -1790,7 +1790,16 @@ Direction GetDirectionTowards(const Vehicle *v, int x, int y)
  */
 VehicleEnterTileStates VehicleEnterTile(Vehicle *v, TileIndex tile, int x, int y)
 {
-	return _tile_type_procs[GetTileType(tile)]->vehicle_enter_tile_proc(v, tile, x, y);
+	VehicleEnterTileStates vets = {};
+
+	/* Loop through all associated tiles until we get a non-continue result. */
+	for (Tile t = tile; t.IsValid() && vets.None(); ++t) {
+		if (auto proc = _tile_type_procs[t.tile_type()]->vehicle_enter_tile_proc; proc != nullptr) {
+			vets.Set(proc(v, tile, t, x, y));
+		}
+	}
+
+	return vets;
 }
 
 /**
