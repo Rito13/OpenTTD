@@ -609,7 +609,7 @@ static std::tuple<CommandCost, bool> ClearTile_Object(TileIndex index, Tile &til
 	return {cost, false};
 }
 
-static void AddAcceptedCargo_Object(TileIndex tile, CargoArray &acceptance, CargoTypes &always_accepted)
+static void AddAcceptedCargo_Object(TileIndex index, Tile tile, CargoArray &acceptance, CargoTypes &always_accepted)
 {
 	if (!IsObjectType(tile, OBJECT_HQ)) return;
 
@@ -617,7 +617,7 @@ static void AddAcceptedCargo_Object(TileIndex tile, CargoArray &acceptance, Carg
 	 * between 4 tiles it occupies! */
 
 	/* HQ level (depends on company performance) in the range 1..5. */
-	uint level = GetCompanyHQSize(tile) + 1;
+	uint level = GetCompanyHQSize(index) + 1;
 
 	/* Top town building generates 10, so to make HQ interesting, the top
 	 * type makes 20. */
@@ -638,7 +638,7 @@ static void AddAcceptedCargo_Object(TileIndex tile, CargoArray &acceptance, Carg
 	}
 }
 
-static void AddProducedCargo_Object(TileIndex tile, CargoArray &produced)
+static void AddProducedCargo_Object(TileIndex, Tile tile, CargoArray &produced)
 {
 	if (!IsObjectType(tile, OBJECT_HQ)) return;
 
@@ -677,7 +677,7 @@ static bool TileLoop_Object(TileIndex index, Tile &tile)
 	 * between 4 tiles it occupies! */
 
 	/* HQ level (depends on company performance) in the range 1..5. */
-	uint level = GetCompanyHQSize(tile) + 1;
+	uint level = GetCompanyHQSize(index) + 1;
 	assert(level < 6);
 
 	StationFinder stations(TileArea(index, 2, 2));
