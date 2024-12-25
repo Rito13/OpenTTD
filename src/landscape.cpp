@@ -592,7 +592,13 @@ void DoClearSquare(TileIndex index)
  */
 TrackStatus GetTileTrackStatus(TileIndex tile, TransportType mode, RoadTramType sub_mode, DiagDirection side)
 {
-	return _tile_type_procs[GetTileType(tile)]->get_tile_track_status_proc(tile, mode, sub_mode, side);
+	TrackStatus result{};
+	for (Tile t(tile); t.IsValid(); ++t) {
+		TrackStatus ts = _tile_type_procs[t.GetTileType()]->get_tile_track_status_proc(tile, t, mode, sub_mode, side);
+		result.trackdirs |= ts.trackdirs;
+		result.signals |= ts.signals;
+	}
+	return result;
 }
 
 /**

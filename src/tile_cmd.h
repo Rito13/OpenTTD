@@ -101,6 +101,7 @@ using GetTileDescProc = void(TileIndex index, const Tile &tile, TileDesc &td);
  *
  * see track_func.h for usage of TrackStatus.
  *
+ * @param index The index of the tile to get the track status from.
  * @param tile     the tile to get the track status from
  * @param mode     the mode of transportation
  * @param sub_mode used to differentiate between different kinds within the mode
@@ -108,7 +109,7 @@ using GetTileDescProc = void(TileIndex index, const Tile &tile, TileDesc &td);
  * @return the track status information
  * @see GetTileTrackStatus
  */
-using GetTileTrackStatusProc = TrackStatus(TileIndex tile, TransportType mode, RoadTramType sub_mode, DiagDirection side);
+using GetTileTrackStatusProc = TrackStatus(TileIndex index, const Tile &tile, TransportType mode, RoadTramType sub_mode, DiagDirection side);
 
 /**
  * Tile callback function signature for obtaining the produced cargo of a tile.
@@ -213,7 +214,7 @@ struct TileTypeProcs {
 	ClearTileProc *clear_tile_proc; ////< Called to clear a tile.
 	AddAcceptedCargoProc *add_accepted_cargo_proc = nullptr; ///< Adds accepted cargo of the tile to cargo array supplied as parameter.
 	GetTileDescProc *get_tile_desc_proc; ///< Get a description of a tile (for the 'land area information' tool).
-	GetTileTrackStatusProc *get_tile_track_status_proc = [](TileIndex, TransportType, RoadTramType, DiagDirection) -> TrackStatus { return {}; }; ///< Get available tracks and status of a tile.
+	GetTileTrackStatusProc *get_tile_track_status_proc = [](TileIndex, const Tile&, TransportType, RoadTramType, DiagDirection) -> TrackStatus { return {}; }; ///< Get available tracks and status of a tile.
 	ClickTileProc *click_tile_proc = nullptr; ///< Called when tile is clicked
 	AnimateTileProc *animate_tile_proc = nullptr; ///< Called to animate a tile.
 	TileLoopProc *tile_loop_proc; ///< Called to periodically update the tile.
