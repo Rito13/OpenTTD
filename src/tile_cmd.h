@@ -158,13 +158,14 @@ using ChangeTileOwnerProc = bool(TileIndex index, Tile &tile, Owner old_owner, O
 /**
  * Tile callback function for a vehicle entering a tile.
  * @param v Vehicle entering the tile.
+ * @param index Tile index entered.
  * @param tile Tile entered.
  * @param x X position in world coordinates.
  * @param y Y position in world coordinates.
  * @return Some meta-data over the to be entered tile.
  * @see VehicleEnterTile
  */
-using VehicleEnterTileProc = VehicleEnterTileStates(Vehicle *v, TileIndex tile, int x, int y);
+using VehicleEnterTileProc = VehicleEnterTileStates(Vehicle *v, TileIndex index, const Tile &tile, int x, int y);
 
 /**
  * Tile callback function signature for getting the foundation of a tile.

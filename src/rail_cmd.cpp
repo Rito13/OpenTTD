@@ -3005,7 +3005,7 @@ int TicksToLeaveDepot(const Train *v)
 }
 
 /** @copydoc VehicleEnterTileProc */
-static VehicleEnterTileStates VehicleEnterTile_Rail(Vehicle *v, TileIndex tile, int x, int y)
+static VehicleEnterTileStates VehicleEnterTile_Rail(Vehicle *v, TileIndex index, const Tile &tile, int x, int y)
 {
 	/* This routine applies only to trains in depot tiles. */
 	if (v->type != VehicleType::Train || !IsRailDepotTile(tile)) return {};
@@ -3055,7 +3055,7 @@ static VehicleEnterTileStates VehicleEnterTile_Rail(Vehicle *v, TileIndex tile, 
 			}
 			VehicleEnterDepot(consist);
 		}
-		v->tile = tile;
+		v->tile = index;
 
 		InvalidateWindowData(WindowClass::VehicleDepot, v->tile);
 		return VehicleEnterTileState::EnteredWormhole;

@@ -3858,7 +3858,7 @@ static bool ClickTile_Station(TileIndex index, const Tile &tile)
 }
 
 /** @copydoc VehicleEnterTileProc */
-static VehicleEnterTileStates VehicleEnterTile_Station(Vehicle *v, TileIndex tile, int x, int y)
+static VehicleEnterTileStates VehicleEnterTile_Station(Vehicle *v, TileIndex index, const Tile &tile, int x, int y)
 {
 	if (v->type == VehicleType::Train) {
 		StationID station_id = GetStationIndex(tile);
@@ -3868,7 +3868,7 @@ static VehicleEnterTileStates VehicleEnterTile_Station(Vehicle *v, TileIndex til
 
 		int station_ahead;
 		int station_length;
-		int stop = GetTrainStopLocation(station_id, tile, Train::From(v), &station_ahead, &station_length);
+		int stop = GetTrainStopLocation(station_id, index, Train::From(v), &station_ahead, &station_length);
 
 		/* Stop whenever that amount of station ahead + the distance from the
 		 * begin of the platform to the stop location is longer than the length
@@ -3899,7 +3899,7 @@ static VehicleEnterTileStates VehicleEnterTile_Station(Vehicle *v, TileIndex til
 		if (rv->state < RVSB_IN_ROAD_STOP && !IsReversingRoadTrackdir(static_cast<Trackdir>(rv->state)) && rv->frame == 0) {
 			if (IsStationRoadStop(tile) && rv->IsFrontEngine()) {
 				/* Attempt to allocate a parking bay in a road stop */
-				if (RoadStop::GetByTile(tile, GetRoadStopType(tile))->Enter(rv)) return {};
+				if (RoadStop::GetByTile(index, GetRoadStopType(tile))->Enter(rv)) return {};
 				return VehicleEnterTileState::CannotEnter;
 			}
 		}
