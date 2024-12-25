@@ -151,7 +151,7 @@ static void IncreaseCompanyHQSize(TileIndex tile)
  * @param tile The (northern) tile of the company HQ.
  * @return HQ size.
  */
-static uint8_t GetCompanyHQSize(TileIndex tile)
+static uint8_t GetCompanyHQSize(const Tile &tile)
 {
 	/* We encode the company HQ size in the animation state. */
 	return GetAnimationFrame(tile);
@@ -610,7 +610,7 @@ static std::tuple<CommandCost, bool> ClearTile_Object(TileIndex index, Tile &til
 }
 
 /** @copydoc AddAcceptedCargoProc */
-static void AddAcceptedCargo_Object(TileIndex tile, CargoArray &acceptance, CargoTypes &always_accepted)
+static void AddAcceptedCargo_Object([[maybe_unused]] TileIndex index, const Tile &tile, CargoArray &acceptance, CargoTypes &always_accepted)
 {
 	if (!IsObjectType(tile, OBJECT_HQ)) return;
 
@@ -640,7 +640,7 @@ static void AddAcceptedCargo_Object(TileIndex tile, CargoArray &acceptance, Carg
 }
 
 /** @copydoc AddProducedCargoProc */
-static void AddProducedCargo_Object(TileIndex tile, CargoArray &produced)
+static void AddProducedCargo_Object([[maybe_unused]] TileIndex index, const Tile &tile, CargoArray &produced)
 {
 	if (!IsObjectType(tile, OBJECT_HQ)) return;
 
