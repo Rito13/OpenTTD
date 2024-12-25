@@ -721,7 +721,6 @@ static bool TileLoop_Object(TileIndex index, Tile &tile)
 	return false;
 }
 
-
 /** @copydoc ClickTileProc */
 static bool ClickTile_Object([[maybe_unused]] TileIndex index, const Tile &tile)
 {

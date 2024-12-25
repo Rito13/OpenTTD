@@ -2125,7 +2125,7 @@ static const TrackBits _road_trackbits[16] = {
 };
 
 /** @copydoc GetTileTrackStatusProc */
-static TrackStatus GetTileTrackStatus_Road(TileIndex tile, TransportType mode, RoadTramType sub_mode, DiagDirection side)
+static TrackStatus GetTileTrackStatus_Road(TileIndex index, const Tile &tile, TransportType mode, RoadTramType sub_mode, DiagDirection side)
 {
 	TrackdirBits trackdirbits{};
 	TrackdirBits red_signals{}; // crossing barred
@@ -2158,15 +2158,15 @@ static TrackStatus GetTileTrackStatus_Road(TileIndex tile, TransportType mode, R
 					trackdirbits = TrackBitsToTrackdirBits(AxisToTrack(axis));
 					if (IsCrossingBarred(tile)) {
 						red_signals = trackdirbits;
-						if (TrainOnCrossing(tile)) break;
+						if (TrainOnCrossing(index)) break;
 
 						auto mask_red_signal_bits_if_crossing_barred = [&](TileIndex t, TrackdirBits mask) {
 							if (IsLevelCrossingTile(t) && IsCrossingBarred(t)) red_signals &= mask;
 						};
 						/* Check for blocked adjacent crossing to south, keep only southbound red signal trackdirs, allow northbound traffic */
-						mask_red_signal_bits_if_crossing_barred(TileAddByDiagDir(tile, AxisToDiagDir(axis)), {Trackdir::X_SW, Trackdir::Y_SE});
+						mask_red_signal_bits_if_crossing_barred(TileAddByDiagDir(index, AxisToDiagDir(axis)), {Trackdir::X_SW, Trackdir::Y_SE});
 						/* Check for blocked adjacent crossing to north, keep only northbound red signal trackdirs, allow southbound traffic */
-						mask_red_signal_bits_if_crossing_barred(TileAddByDiagDir(tile, ReverseDiagDir(AxisToDiagDir(axis))), {Trackdir::X_NE, Trackdir::Y_NW});
+						mask_red_signal_bits_if_crossing_barred(TileAddByDiagDir(index, ReverseDiagDir(AxisToDiagDir(axis))), {Trackdir::X_NE, Trackdir::Y_NW});
 					}
 					break;
 				}

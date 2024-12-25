@@ -3702,9 +3702,8 @@ static void GetTileDesc_Station([[maybe_unused]] TileIndex index, const Tile &ti
 	td.str = str;
 }
 
-
 /** @copydoc GetTileTrackStatusProc */
-static TrackStatus GetTileTrackStatus_Station(TileIndex tile, TransportType mode, RoadTramType sub_mode, DiagDirection side)
+static TrackStatus GetTileTrackStatus_Station(TileIndex index, const Tile &tile, TransportType mode, RoadTramType sub_mode, DiagDirection side)
 {
 	TrackBits trackbits{};
 
@@ -3720,9 +3719,9 @@ static TrackStatus GetTileTrackStatus_Station(TileIndex tile, TransportType mode
 			if (IsBuoy(tile)) {
 				trackbits = TRACK_BIT_ALL;
 				/* remove tracks that connect NE map edge */
-				if (TileX(tile) == 0) trackbits.Reset(TRACK_BIT_3WAY_NE);
+				if (TileX(index) == 0) trackbits.Reset(TRACK_BIT_3WAY_NE);
 				/* remove tracks that connect NW map edge */
-				if (TileY(tile) == 0) trackbits.Reset({Track::Y, Track::Left, Track::Upper});
+				if (TileY(index) == 0) trackbits.Reset({Track::Y, Track::Left, Track::Upper});
 			}
 			break;
 

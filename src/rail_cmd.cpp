@@ -2761,12 +2761,11 @@ set_ground:
 	return false;
 }
 
-
 /** @copydoc GetTileTrackStatusProc */
-static TrackStatus GetTileTrackStatus_Rail(TileIndex tile, TransportType mode, [[maybe_unused]] RoadTramType sub_mode, DiagDirection side)
+static TrackStatus GetTileTrackStatus_Rail(TileIndex index, const Tile &tile, TransportType mode, [[maybe_unused]] RoadTramType sub_mode, DiagDirection side)
 {
 	/* Case of half tile slope with water. */
-	if (mode == TRANSPORT_WATER && IsPlainRail(tile) && GetRailGroundType(tile) == RailGroundType::HalfTileWater && IsSlopeWithOneCornerRaised(GetTileSlope(tile))) {
+	if (mode == TRANSPORT_WATER && IsPlainRail(tile) && GetRailGroundType(tile) == RailGroundType::HalfTileWater && IsSlopeWithOneCornerRaised(GetTileSlope(index))) {
 		TrackBits tb = GetTrackBits(tile);
 		switch (tb.base()) {
 			default: NOT_REACHED();

@@ -1379,7 +1379,7 @@ void ConvertGroundTilesIntoWaterTiles()
 }
 
 /** @copydoc GetTileTrackStatusProc */
-static TrackStatus GetTileTrackStatus_Water(TileIndex tile, TransportType mode, [[maybe_unused]] RoadTramType sub_mode, [[maybe_unused]] DiagDirection side)
+static TrackStatus GetTileTrackStatus_Water(TileIndex index, const Tile &tile, TransportType mode, [[maybe_unused]] RoadTramType sub_mode, [[maybe_unused]] DiagDirection side)
 {
 	static constexpr TypedIndexContainer<std::array<TrackBits, 16>, Slope> coast_tracks = {{{{}, Track::Right, Track::Upper, {}, Track::Left, {}, {}, {}, Track::Lower, {}, {}, {}, {}, {}, {}, {}}}};
 
@@ -1388,17 +1388,17 @@ static TrackStatus GetTileTrackStatus_Water(TileIndex tile, TransportType mode, 
 	if (mode != TRANSPORT_WATER) return {};
 
 	switch (GetWaterTileType(tile)) {
-		case WaterTileType::Clear: ts = IsTileFlat(tile) ? TRACK_BIT_ALL : TrackBits{}; break;
-		case WaterTileType::Coast: ts = coast_tracks[GetTileSlope(tile) & SLOPE_ELEVATED]; break;
+		case WaterTileType::Clear: ts = IsTileFlat(index) ? TRACK_BIT_ALL : TrackBits{}; break;
+		case WaterTileType::Coast: ts = coast_tracks[GetTileSlope(index) & SLOPE_ELEVATED]; break;
 		case WaterTileType::Lock: ts = DiagDirToDiagTrack(GetLockDirection(tile)); break;
 		case WaterTileType::Depot: ts = AxisToTrack(GetShipDepotAxis(tile)); break;
 		default: return {};
 	}
-	if (TileX(tile) == 0) {
+	if (TileX(index) == 0) {
 		/* NE border: remove tracks that connects NE tile edge */
 		ts.Reset({Track::X, Track::Upper, Track::Right});
 	}
-	if (TileY(tile) == 0) {
+	if (TileY(index) == 0) {
 		/* NW border: remove tracks that connects NW tile edge */
 		ts.Reset({Track::Y, Track::Left, Track::Upper});
 	}
