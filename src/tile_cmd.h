@@ -125,7 +125,8 @@ typedef bool TileLoopProc(TileIndex index, Tile &tile);
  */
 typedef bool ChangeTileOwnerProc(TileIndex index, Tile &tile, Owner old_owner, Owner new_owner);
 
-typedef VehicleEnterTileStates VehicleEnterTileProc(Vehicle *v, TileIndex tile, int x, int y);
+/** @see VehicleEnterTileStatus to see what the return values mean */
+typedef VehicleEnterTileStates VehicleEnterTileProc(Vehicle *v, TileIndex index, Tile tile, int x, int y);
 typedef Foundation GetFoundationProc(TileIndex tile, Slope tileh);
 
 /**

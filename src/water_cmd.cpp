@@ -1400,7 +1400,7 @@ static bool ChangeTileOwner_Water(TileIndex index, Tile &tile, Owner old_owner, 
 	return false;
 }
 
-static VehicleEnterTileStates VehicleEnter_Water(Vehicle *, TileIndex, int, int)
+static VehicleEnterTileStates VehicleEnter_Water(Vehicle *, TileIndex, Tile, int, int)
 {
 	return {};
 }
