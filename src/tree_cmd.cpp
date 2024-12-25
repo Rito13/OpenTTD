@@ -988,7 +988,7 @@ void OnTick_Trees()
 	PlantRandomTree(false);
 }
 
-static TrackStatus GetTileTrackStatus_Trees(TileIndex, TransportType, uint, DiagDirection)
+static TrackStatus GetTileTrackStatus_Trees(TileIndex, Tile, TransportType, uint, DiagDirection)
 {
 	return 0;
 }
