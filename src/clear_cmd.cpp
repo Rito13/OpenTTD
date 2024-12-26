@@ -34,15 +34,16 @@ static std::tuple<CommandCost, bool> ClearTile_Clear(TileIndex index, Tile &tile
 		PR_CLEAR_ROUGH,
 		PR_CLEAR_ROUGH,
 	};
-	CommandCost price(EXPENSES_CONSTRUCTION);
 
+	CommandCost price(EXPENSES_CONSTRUCTION);
 	ClearGround ground = GetClearGround(tile);
 	uint8_t density = GetClearDensity(tile);
-	if (IsSnowTile(tile)) {
+
+	if (!Tile::HasType(index, MP_TREES) && IsSnowTile(tile)) {
 		price.AddCost(_price[clear_price_table[ground]]);
 		/* Add a little more for removing snow. */
 		price.AddCost(std::abs(_price[PR_CLEAR_ROUGH] - _price[PR_CLEAR_GRASS]));
-	} else if (ground != CLEAR_GRASS || density != 0) {
+	} else if (!Tile::HasType(index, MP_TREES) && (ground != CLEAR_GRASS || density != 0)) {
 		price.AddCost(_price[clear_price_table[ground]]);
 	}
 
