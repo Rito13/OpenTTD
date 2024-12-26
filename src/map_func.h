@@ -35,6 +35,7 @@ static inline bool MayHaveAssociatedTile(TileType tt)
 struct Map {
 private:
 	friend class Tile;
+	friend void DecomposeTile(TileIndex index);
 	friend struct MAPRChunkHandler;
 	friend struct RawMapIterator;
 	friend struct M8ORChunkHandler;
@@ -330,6 +331,7 @@ TileIndex TileVirtXYClampedToMap(int x, int y);
  */
 class Tile : TileIndex {
 	friend struct RawMapIterator;
+	friend void DecomposeTile(TileIndex index);
 
 	MapOffsetType sub_tile = 0;
 
@@ -477,6 +479,30 @@ public:
 	}
 
 	/**
+	 * Get the tile with a specific tile type associated with a tile index.
+	 * @param tile Tile index to query.
+	 * @param type Tile type to search for.
+	 * @return The associated tile having the asked tile type or an invalid \c Tile if no such tile exists.
+	 */
+	inline static Tile GetByType(TileIndex tile, TileType type)
+	{
+		Tile t(tile);
+		while (t.IsValid() && t.GetTileType() != type) ++t;
+		return t;
+	}
+
+	/**
+	 * Check if a tile index has an associated tile with a given type.
+	 * @param tile Tile index to query.
+	 * @param type Tile type to search for.
+	 * @return Whether such a tile exists.
+	 */
+	inline static bool HasType(TileIndex tile, TileType type)
+	{
+		return GetByType(tile, type).IsValid();
+	}
+
+	/**
 	 * Check if this tile has an associated tile following.
 	 * @return \c true iff the next tile is associated with this tile.
 	 */
@@ -484,6 +510,16 @@ public:
 	{
 		assert(MayHaveAssociatedTile(this->GetTileType()) || !HasBit(this->m8(), M8_ASSOCIATED_TILE_BIT));
 		return HasBit(this->m8(), M8_ASSOCIATED_TILE_BIT);
+	}
+
+	/**
+	 * Check if this tile index has any associated tiles.
+	 * @param index The tile index to check.
+	 * @return \c true iff the tile under index has any associated tiles.
+	 */
+	inline static bool HasAssociated(TileIndex index)
+	{
+		return Tile(index).HasAssociated();
 	}
 
 	/**
@@ -534,7 +570,10 @@ public:
 	/** Bool conversion operator. Converts this tile into a boolean. */
 	explicit operator bool() const { return this->IsValid(); }
 
+	static Tile RawNew(TileIndex index, Tile insert_after = INVALID_TILE);
+	static Tile New(TileIndex index, TileType type, Tile insert_after = INVALID_TILE);
 	static Tile Remove(TileIndex index, Tile tile);
+	bool BelongsToIndex(TileIndex index) const;
 };
 
 /**
