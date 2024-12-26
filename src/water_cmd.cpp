@@ -637,7 +637,9 @@ static std::tuple<CommandCost, bool> ClearTile_Water(TileIndex index, Tile &tile
 				MarkCanalsAndRiversAroundDirty(index);
 				ClearNeighbourNonFloodingStates(index);
 			}
-			if (IsSlopeWithOneCornerRaised(slope)) {
+			if (Tile::HasType(index, TileType::Trees)) {
+				return {CommandCost(ExpensesType::Construction), false};
+			} else if (IsSlopeWithOneCornerRaised(slope)) {
 				return {CommandCost(ExpensesType::Construction, _price[Price::ClearWater]), false};
 			} else {
 				return {CommandCost(ExpensesType::Construction, _price[Price::ClearRough]), false};
@@ -1164,9 +1166,6 @@ FloodingBehaviour GetFloodingBehaviour(TileIndex tile)
 			}
 			return FloodingBehaviour::None;
 
-		case TileType::Trees:
-			return GetTreeGround(tile) == TreeGround::Shore ? FloodingBehaviour::DryOut : FloodingBehaviour::None;
-
 		case TileType::Void:
 			return FloodingBehaviour::Active;
 
@@ -1198,17 +1197,9 @@ static void DoFloodTile(TileIndex target)
 				break;
 			}
 
-			case TileType::Trees:
-				if (!IsSlopeWithOneCornerRaised(tileh)) {
-					SetTreeGroundDensity(target, TreeGround::Shore, 3);
-					MarkTileDirtyByTile(target);
-					flooded = true;
-					break;
-				}
-				[[fallthrough]];
-
 			case TileType::Clear:
-				if (Command<Commands::LandscapeClear>::Do(DoCommandFlag::Execute, target).Succeeded()) {
+				/* Don't clear trees on coastal tiles. */
+				if ((Tile::HasType(target, TileType::Trees) && !IsSlopeWithOneCornerRaised(tileh)) || Command<Commands::LandscapeClear>::Do(DoCommandFlag::Execute, target).Succeeded()) {
 					MakeShore(target);
 					MarkTileDirtyByTile(target);
 					flooded = true;
@@ -1267,15 +1258,11 @@ static void DoDryUp(TileIndex tile)
 			MarkTileDirtyByTile(tile);
 			break;
 
-		case TileType::Trees:
-			SetTreeGroundDensity(tile, TreeGround::Grass, 3);
-			MarkTileDirtyByTile(tile);
-			break;
-
 		case TileType::Water:
 			assert(IsCoast(tile));
 
-			if (Command<Commands::LandscapeClear>::Do(DoCommandFlag::Execute, tile).Succeeded()) {
+			/* Don't clear trees on coastal tiles. */
+			if (Tile::HasType(tile, TileType::Trees) || Command<Commands::LandscapeClear>::Do(DoCommandFlag::Execute, tile).Succeeded()) {
 				MakeClear(tile, ClearGround::Grass, 3);
 				MarkTileDirtyByTile(tile);
 			}
@@ -1313,9 +1300,6 @@ bool TileLoop_Water(TileIndex index, Tile &tile)
 
 				/* This neighbour tile might be floodable later if the tile is cleared, so allow flooding to continue. */
 				continue_flooding = true;
-
-				/* TreeGround::Shore is the sign of a previous flood. */
-				if (IsTileType(dest, TileType::Trees) && GetTreeGround(dest) == TreeGround::Shore) continue;
 
 				auto [slope_dest, z_dest] = GetFoundationSlope(dest);
 				if (z_dest > 0) continue;

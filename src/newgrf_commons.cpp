@@ -357,14 +357,6 @@ uint32_t GetTerrainType(TileIndex tile, TileContext context)
 					has_snow = IsOnSnowOrDesert(tile);
 					break;
 
-				case TileType::Trees: {
-					/* During map generation the snowstate may not be valid yet, as the tileloop may not have run yet. */
-					if (_generating_world) goto genworld;
-					TreeGround ground = GetTreeGround(tile);
-					has_snow = (ground == TreeGround::SnowOrDesert || ground == TreeGround::RoughSnow) && GetTreeDensity(tile) >= 2;
-					break;
-				}
-
 				case TileType::TunnelBridge:
 					if (context == TCX_ON_BRIDGE) {
 						has_snow = (GetBridgeHeight(tile) > GetSnowLine());
@@ -432,8 +424,8 @@ uint32_t GetNearbyTileInformation(TileIndex tile, bool grf_version8)
 {
 	TileType tile_type = GetTileType(tile);
 
-	/* Fake tile type for trees on shore */
-	if (IsTileType(tile, TileType::Trees) && GetTreeGround(tile) == TreeGround::Shore) tile_type = TileType::Water;
+	/* Only consider trees not on shore as a tree tile. */
+	if (tile_type != TileType::Water && Tile::HasType(tile, TileType::Trees)) tile_type = TileType::Trees;
 
 	/* Fake tile type for road waypoints */
 	if (IsRoadWaypointTile(tile)) tile_type = TileType::Road;

@@ -102,7 +102,7 @@ inline void SetWaterTileType(const Tile &t, WaterTileType type)
  */
 inline bool HasTileWaterClass(const Tile &t)
 {
-	return IsTileType(t, TileType::Water) || IsTileType(t, TileType::Station) || IsTileType(t, TileType::Industry) || IsTileType(t, TileType::Object) || IsTileType(t, TileType::Trees);
+	return IsTileType(t, TileType::Water) || IsTileType(t, TileType::Station) || IsTileType(t, TileType::Industry) || IsTileType(t, TileType::Object);
 }
 
 /**
@@ -212,7 +212,7 @@ inline bool IsCoast(const Tile &t)
  */
 inline bool IsCoastTile(const Tile &t)
 {
-	return (IsTileType(t, TileType::Water) && IsCoast(t)) || (IsTileType(t, TileType::Trees) && GetWaterClass(t) != WaterClass::Invalid);
+	return (IsTileType(t, TileType::Water) && IsCoast(t));
 }
 
 /**

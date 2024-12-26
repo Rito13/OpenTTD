@@ -31,7 +31,6 @@
 	switch (::GetTileType(tile)) {
 		default: return false;
 		case TileType::Clear: return true;
-		case TileType::Trees: return true;
 		case TileType::Water: return IsCoast(tile);
 		case TileType::Road:
 			/* Tram bits aren't considered buildable */
@@ -81,9 +80,7 @@
 /* static */ bool ScriptTile::IsCoastTile(TileIndex tile)
 {
 	if (!::IsValidTile(tile)) return false;
-
-	return (::IsTileType(tile, TileType::Water) && ::IsCoast(tile)) ||
-		(::IsTileType(tile, TileType::Trees) && ::GetTreeGround(tile) == TreeGround::Shore);
+	return ::IsCoastTile(tile);
 }
 
 /* static */ bool ScriptTile::IsStationTile(TileIndex tile)
@@ -113,8 +110,7 @@
 /* static */ bool ScriptTile::HasTreeOnTile(TileIndex tile)
 {
 	if (!::IsValidTile(tile)) return false;
-
-	return ::IsTileType(tile, TileType::Trees);
+	return ::Tile::HasType(tile, TileType::Trees);
 }
 
 /* static */ bool ScriptTile::IsFarmTile(TileIndex tile)
