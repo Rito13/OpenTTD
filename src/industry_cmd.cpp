@@ -1000,11 +1000,10 @@ static const uint8_t _plantfarmfield_type[] = {1, 1, 1, 1, 1, 3, 3, 4, 4, 4, 5, 
  */
 static bool IsSuitableForFarmField(TileIndex tile, bool allow_fields)
 {
-	switch (GetTileType(tile)) {
-		case MP_CLEAR: return !IsSnowTile(tile) && !IsClearGround(tile, CLEAR_DESERT) && (allow_fields || !IsClearGround(tile, CLEAR_FIELDS));
-		case MP_TREES: return GetTreeGround(tile) != TREE_GROUND_SHORE;
-		default:       return false;
+	if (IsTileType(tile, MP_CLEAR)) {
+		return !IsSnowTile(tile) && !IsClearGround(tile, CLEAR_DESERT) && (allow_fields || !IsClearGround(tile, CLEAR_FIELDS));
 	}
+	return false;
 }
 
 /**
@@ -1117,7 +1116,8 @@ static void ChopLumberMillTrees(Industry *i)
 	}
 
 	for (auto tile : SpiralTileSequence(i->location.tile, 40)) { // 40x40 tiles  to search.
-		if (!IsTileType(tile, MP_TREES) || GetTreeGrowth(tile) < TreeGrowthStage::Grown) continue;
+		Tile tree_tile = Tile::GetByType(tile, MP_TREES);
+		if (!tree_tile || GetTreeGrowth(tree_tile) < TreeGrowthStage::Grown) continue;
 
 		/* found a tree */
 		_industry_sound_ctr = 1;
@@ -1584,7 +1584,7 @@ static bool CheckCanTerraformSurroundingTiles(TileIndex tile, uint height, int i
 	for (TileIndex tile_walk : ta) {
 		uint curh = TileHeight(tile_walk);
 		/* Is the tile clear? */
-		if ((GetTileType(tile_walk) != MP_CLEAR) && (GetTileType(tile_walk) != MP_TREES)) return false;
+		if (GetTileType(tile_walk) != MP_CLEAR) return false;
 
 		/* Don't allow too big of a change if this is the sub-tile check */
 		if (internal != 0 && Delta(curh, height) > 1) return false;

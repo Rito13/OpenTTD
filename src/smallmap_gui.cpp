@@ -558,8 +558,12 @@ static inline uint32_t GetSmallMapVegetationPixels(TileIndex tile, TileType t)
 			return IsTileForestIndustry(tile) ? MKCOLOUR_XXXX(PC_GREEN) : MKCOLOUR_XXXX(PC_DARK_RED);
 
 		case MP_TREES:
-			if (GetTreeGround(tile) == TREE_GROUND_SNOW_DESERT || GetTreeGround(tile) == TREE_GROUND_ROUGH_SNOW) {
-				return (_settings_game.game_creation.landscape == LandscapeType::Arctic) ? MKCOLOUR_XYYX(PC_LIGHT_BLUE, PC_TREES) : MKCOLOUR_XYYX(PC_ORANGE, PC_TREES);
+			if (IsTileType(tile, MP_CLEAR)) {
+				switch (GetClearGround(tile)) {
+					case CLEAR_SNOW: return MKCOLOUR_XYYX(PC_LIGHT_BLUE, PC_TREES);
+					case CLEAR_DESERT: return MKCOLOUR_XYYX(PC_ORANGE, PC_TREES);
+					default: break;
+				}
 			}
 			return (GetTropicZone(tile) == TROPICZONE_RAINFOREST) ? MKCOLOUR_XYYX(PC_RAINFOREST, PC_TREES) : MKCOLOUR_XYYX(PC_GRASS_LAND, PC_TREES);
 
@@ -1325,6 +1329,8 @@ protected:
 
 		for (TileIndex ti : ta) {
 			TileType ttype = GetTileType(ti);
+
+			if (Tile::HasType(ti, MP_TREES)) ttype = MP_TREES;
 
 			switch (ttype) {
 				case MP_TUNNELBRIDGE: {
