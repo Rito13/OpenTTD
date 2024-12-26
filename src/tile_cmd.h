@@ -19,6 +19,7 @@
 #include "track_type.h"
 #include "tile_map.h"
 #include "timer/timer_game_calendar.h"
+#include "bridge_type.h"
 
 /** Flags to describe several special states upon entering a tile. */
 enum class VehicleEnterTileState : uint8_t {
@@ -63,8 +64,9 @@ struct TileDesc {
  * @param ti Information about the tile to draw
  * @param draw_halftile Whether the halftile part of the tile should be drawn.
  * @param halftile_corner A valid corner if the tile has a halftile foundation.
+ * @return Mask of pillar corners and edges blocked by tile below the bridge.
  */
-using DrawTileProc = void(TileInfo *ti, bool draw_halftile, Corner halftile_corner);
+using DrawTileProc = BridgePillarFlags(TileInfo *ti, bool draw_halftile, Corner halftile_corner);
 
 /**
  * Tile callback function signature for clearing a tile.

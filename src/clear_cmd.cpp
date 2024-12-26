@@ -214,12 +214,11 @@ static void DrawClearLandFence(const TileInfo *ti, bool draw_halftile, Corner ha
 }
 
 /** @copydoc DrawTileProc */
-static void DrawTile_Clear(TileInfo *ti, bool draw_halftile, Corner halftile_corner)
+static BridgePillarFlags DrawTile_Clear(TileInfo *ti, bool draw_halftile, Corner halftile_corner)
 {
 	if (IsSnowTile(ti->tile)) {
 		DrawSnowTile(ti, draw_halftile, halftile_corner);
-		DrawBridgeMiddle(ti, {});
-		return;
+		return {};
 	}
 
 	switch (GetClearGround(ti->tile)) {
@@ -248,7 +247,7 @@ static void DrawTile_Clear(TileInfo *ti, bool draw_halftile, Corner halftile_cor
 			NOT_REACHED();
 	}
 
-	DrawBridgeMiddle(ti, {});
+	return {};
 }
 
 static void UpdateFences(TileIndex tile)

@@ -1287,7 +1287,7 @@ static void DrawBridgeRoadBits(TileIndex head_tile, int x, int y, int z, int off
  * @param draw_halftile Are we drawing the upper part of a half-tile?
  * @param halftile_corner The corner where the upper half-tile is or CORNER_INVALID if no half-tile.
  */
-static void DrawTile_TunnelBridge(TileInfo *ti, bool draw_halftile, Corner halftile_corner)
+static BridgePillarFlags DrawTile_TunnelBridge(TileInfo *ti, bool draw_halftile, Corner halftile_corner)
 {
 	TransportType transport_type = GetTunnelBridgeTransportType(ti->tile);
 	DiagDirection tunnelbridge_direction = GetTunnelBridgeDirection(ti->tile);
@@ -1445,7 +1445,7 @@ static void DrawTile_TunnelBridge(TileInfo *ti, bool draw_halftile, Corner halft
 		AddSortableSpriteToDraw(SPR_EMPTY_BOUNDING_BOX, PAL_NONE, *ti, rear_sep[tunnelbridge_direction]);
 		AddSortableSpriteToDraw(SPR_EMPTY_BOUNDING_BOX, PAL_NONE, *ti, front_sep[tunnelbridge_direction]);
 
-		DrawBridgeMiddle(ti, BridgePillarFlag::EdgeNE + tunnelbridge_direction);
+		return BridgePillarFlag::EdgeNE + tunnelbridge_direction;
 	} else { // IsBridge(ti->tile)
 		bool is_custom_layout = false; // Set if rail/road bridge uses a custom layout.
 
@@ -1542,7 +1542,8 @@ static void DrawTile_TunnelBridge(TileInfo *ti, bool draw_halftile, Corner halft
 		} else {
 			blocked_pillars = {BridgePillarFlag::EdgeNW, BridgePillarFlag::EdgeSE};
 		}
-		DrawBridgeMiddle(ti, blocked_pillars);
+
+		return blocked_pillars;
 	}
 }
 

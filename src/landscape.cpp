@@ -590,9 +590,10 @@ void DrawTile(TileInfo *ti)
 	/* Draw foundation and landscape of lower part */
 	if (f != Foundation::Special) DrawFoundation(ti, f); // Modifies ti.
 
+	BridgePillarFlags blocked_pillars;
 	do {
 		TileType tt = ti->tile ? ti->tile.GetTileType() : TileType::Void;
-		_tile_type_procs[tt]->draw_tile_proc(ti, false, halftile_corner);
+		blocked_pillars.Set(_tile_type_procs[tt]->draw_tile_proc(ti, false, halftile_corner));
 	} while (++ti->tile);
 
 	/* Draw upper halftile part if present. */
@@ -602,8 +603,13 @@ void DrawTile(TileInfo *ti)
 		DrawFoundation(ti, HalftileFoundation(halftile_corner));
 		do {
 			TileType tt = ti->tile ? ti->tile.GetTileType() : TileType::Void;
-			_tile_type_procs[tt]->draw_tile_proc(ti, true, halftile_corner);
+			blocked_pillars.Set(_tile_type_procs[tt]->draw_tile_proc(ti, true, halftile_corner));
 		} while (++ti->tile);
+	}
+
+	if (ti->index != INVALID_TILE) {
+		ti->tile = ti->index;
+		DrawBridgeMiddle(ti, blocked_pillars);
 	}
 }
 

@@ -987,33 +987,32 @@ void DrawWaterClassGround(const TileInfo *ti)
 }
 
 /** @copydoc DrawTileProc */
-static void DrawTile_Water(TileInfo *ti, bool draw_halftile, Corner halftile_corner)
+static BridgePillarFlags DrawTile_Water(TileInfo *ti, bool draw_halftile, Corner halftile_corner)
 {
 	switch (GetWaterTileType(ti->tile)) {
 		case WaterTileType::Clear:
 			DrawWaterClassGround(ti);
 			/* A plain water tile can be traversed in any direction, so setting blocked pillars here would mean all bridges
 			 * with edges would have no pillars above water. Instead prefer current behaviour of ships passing through. */
-			DrawBridgeMiddle(ti, {});
 			break;
 
-		case WaterTileType::Coast: {
+		case WaterTileType::Coast:
 			DrawShoreTile(ti, draw_halftile, halftile_corner);
-			DrawBridgeMiddle(ti, {});
 			break;
-		}
 
 		case WaterTileType::Lock:
 			DrawWaterLock(ti);
-			DrawBridgeMiddle(ti, DiagDirToAxis(GetLockDirection(ti->tile)) == Axis::X
-				? BridgePillarFlags{BridgePillarFlag::EdgeNE, BridgePillarFlag::EdgeSW}
-				: BridgePillarFlags{BridgePillarFlag::EdgeNW, BridgePillarFlag::EdgeSE});
-			break;
+			if (DiagDirToAxis(GetLockDirection(ti->tile)) == Axis::X) {
+				return BridgePillarFlags{BridgePillarFlag::EdgeNE, BridgePillarFlag::EdgeSW};
+			}
+			return BridgePillarFlags{BridgePillarFlag::EdgeNW, BridgePillarFlag::EdgeSE};
 
 		case WaterTileType::Depot:
 			DrawWaterDepot(ti);
 			break;
 	}
+
+	return {};
 }
 
 void DrawShipDepotSprite(int x, int y, Axis axis, DepotPart part)

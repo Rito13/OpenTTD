@@ -328,7 +328,7 @@ static IndustryDrawTileProc * const _industry_draw_tile_procs[5] = {
 };
 
 /** @copydoc DrawTileProc */
-static void DrawTile_Industry(TileInfo *ti, [[maybe_unused]] bool draw_halftile, [[maybe_unused]] Corner halftile_corner)
+static BridgePillarFlags DrawTile_Industry(TileInfo *ti, [[maybe_unused]] bool draw_halftile, [[maybe_unused]] Corner halftile_corner)
 {
 	IndustryGfx gfx = GetIndustryGfx(ti->tile);
 	Industry *ind = Industry::GetByTile(ti->tile);
@@ -341,7 +341,7 @@ static void DrawTile_Industry(TileInfo *ti, [[maybe_unused]] bool draw_halftile,
 		 * find any sprite to display.  So in this case, we will jump on the
 		 * substitute gfx instead. */
 		if (indts->grf_prop.HasSpriteGroups() && DrawNewIndustryTile(ti, ind, gfx)) {
-			return;
+			return {};
 		} else {
 			/* No sprite group (or no valid one) found, meaning no graphics associated.
 			 * Use the substitute one instead */
@@ -368,7 +368,7 @@ static void DrawTile_Industry(TileInfo *ti, [[maybe_unused]] bool draw_halftile,
 	}
 
 	/* If industries are transparent and invisible, do not draw the upper part */
-	if (IsInvisibilitySet(TransparencyOption::Industries)) return;
+	if (IsInvisibilitySet(TransparencyOption::Industries)) return {};
 
 	/* Add industry on top of the ground? */
 	image = dits->building.sprite;
@@ -376,13 +376,14 @@ static void DrawTile_Industry(TileInfo *ti, [[maybe_unused]] bool draw_halftile,
 		AddSortableSpriteToDraw(image, SpriteLayoutPaletteTransform(image, dits->building.pal, GetColourPalette(ind->random_colour)),
 			*ti, *dits, IsTransparencySet(TransparencyOption::Industries));
 
-		if (IsTransparencySet(TransparencyOption::Industries)) return;
+		if (IsTransparencySet(TransparencyOption::Industries)) return {};
 	}
 
 	{
 		int proc = dits->draw_proc - 1;
 		if (proc >= 0) _industry_draw_tile_procs[proc](ti);
 	}
+	return {};
 }
 
 /** @copydoc GetFoundationProc */

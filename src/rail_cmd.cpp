@@ -2431,7 +2431,7 @@ static void DrawSignals(TileIndex tile, TrackBits rails, const RailTypeInfo *rti
 }
 
 /** @copydoc DrawTileProc */
-static void DrawTile_Rail(TileInfo *ti, bool draw_halftile, Corner halftile_corner)
+static BridgePillarFlags DrawTile_Rail(TileInfo *ti, bool draw_halftile, Corner halftile_corner)
 {
 	const RailTypeInfo *rti = GetRailTypeInfo(GetRailType(ti->tile));
 	BridgePillarFlags blocked_pillars{};
@@ -2558,7 +2558,8 @@ static void DrawTile_Rail(TileInfo *ti, bool draw_halftile, Corner halftile_corn
 		DrawRailTileSeq(ti, dts, TransparencyOption::Buildings, relocation, 0, pal);
 		/* Depots can't have bridges above so no blocked pillars. */
 	}
-	DrawBridgeMiddle(ti, blocked_pillars);
+
+	return blocked_pillars;
 }
 
 /**
