@@ -448,7 +448,7 @@ static Foundation GetFoundation_Object([[maybe_unused]] TileIndex index, const T
 }
 
 /** @copydoc DrawTileProc */
-static void DrawTile_Object(TileInfo *ti, bool draw_halftile, Corner halftile_corner)
+static BridgePillarFlags DrawTile_Object(TileInfo *ti, bool draw_halftile, Corner halftile_corner)
 {
 	ObjectType type = GetObjectType(ti->tile);
 	const ObjectSpec *spec = ObjectSpec::Get(type);
@@ -491,7 +491,7 @@ static void DrawTile_Object(TileInfo *ti, bool draw_halftile, Corner halftile_co
 		DrawNewObjectTile(ti, spec);
 	}
 
-	DrawBridgeMiddle(ti, {});
+	return {};
 }
 
 /**

@@ -20,7 +20,7 @@
 #include "safeguards.h"
 
 /** @copydoc DrawTileProc */
-static void DrawTile_Void(TileInfo *ti, [[maybe_unused]] bool draw_halftile, [[maybe_unused]] Corner halftile_corner)
+static BridgePillarFlags DrawTile_Void(TileInfo *ti, [[maybe_unused]] bool draw_halftile, [[maybe_unused]] Corner halftile_corner)
 {
 	/* If freeform edges are off, draw infinite water off the edges of the map. */
 	if (!_settings_game.construction.freeform_edges) {
@@ -28,6 +28,7 @@ static void DrawTile_Void(TileInfo *ti, [[maybe_unused]] bool draw_halftile, [[m
 	} else {
 		DrawGroundSprite(SPR_FLAT_BARE_LAND + SlopeToSpriteOffset(ti->tileh), PALETTE_ALL_BLACK);
 	}
+	return {};
 }
 
 /** @copydoc GetTileDescProc */
