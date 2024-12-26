@@ -250,7 +250,7 @@ static TownDrawTileProc * const _town_draw_tile_procs[1] = {
 };
 
 /** @copydoc DrawTileProc */
-static void DrawTile_Town(TileInfo *ti, [[maybe_unused]] bool draw_halftile, [[maybe_unused]] Corner halftile_corner)
+static BridgePillarFlags DrawTile_Town(TileInfo *ti, [[maybe_unused]] bool draw_halftile, [[maybe_unused]] Corner halftile_corner)
 {
 	HouseID house_id = GetHouseType(ti->tile);
 
@@ -260,7 +260,7 @@ static void DrawTile_Town(TileInfo *ti, [[maybe_unused]] bool draw_halftile, [[m
 		 * house id is drawn instead. */
 		if (HouseSpec::Get(house_id)->grf_prop.HasSpriteGroups()) {
 			DrawNewHouseTile(ti, house_id);
-			return;
+			return {};
 		} else {
 			house_id = HouseSpec::Get(house_id)->grf_prop.subst_id;
 		}
@@ -272,14 +272,14 @@ static void DrawTile_Town(TileInfo *ti, [[maybe_unused]] bool draw_halftile, [[m
 	DrawGroundSprite(dcts->ground.sprite, dcts->ground.pal);
 
 	/* If houses are invisible, do not draw the upper part */
-	if (IsInvisibilitySet(TransparencyOption::Houses)) return;
+	if (IsInvisibilitySet(TransparencyOption::Houses)) return {};
 
 	/* Add a house on top of the ground? */
 	SpriteID image = dcts->building.sprite;
 	if (image != 0) {
 		AddSortableSpriteToDraw(image, dcts->building.pal, *ti, *dcts, IsTransparencySet(TransparencyOption::Houses));
 
-		if (IsTransparencySet(TransparencyOption::Houses)) return;
+		if (IsTransparencySet(TransparencyOption::Houses)) return {};
 	}
 
 	{
@@ -287,6 +287,7 @@ static void DrawTile_Town(TileInfo *ti, [[maybe_unused]] bool draw_halftile, [[m
 
 		if (proc >= 0) _town_draw_tile_procs[proc](ti);
 	}
+	return {};
 }
 
 /** @copydoc GetFoundationProc */

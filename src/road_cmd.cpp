@@ -1704,7 +1704,7 @@ static void DrawRoadBits(TileInfo *ti)
 }
 
 /** @copydoc DrawTileProc */
-static void DrawTile_Road(TileInfo *ti, [[maybe_unused]] bool draw_halftile, [[maybe_unused]] Corner halftile_corner)
+static BridgePillarFlags DrawTile_Road(TileInfo *ti, [[maybe_unused]] bool draw_halftile, [[maybe_unused]] Corner halftile_corner)
 {
 	BridgePillarFlags blocked_pillars{};
 	switch (GetRoadTileType(ti->tile)) {
@@ -1883,7 +1883,8 @@ static void DrawTile_Road(TileInfo *ti, [[maybe_unused]] bool draw_halftile, [[m
 			break;
 		}
 	}
-	DrawBridgeMiddle(ti, blocked_pillars);
+
+	return blocked_pillars;
 }
 
 /**
