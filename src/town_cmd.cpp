@@ -2101,7 +2101,7 @@ static CommandCost TownCanBePlacedHere(TileIndex tile, bool check_surrounding)
 	}
 
 	/* Can only build on clear flat areas, possibly with trees. */
-	if ((!IsTileType(tile, TileType::Clear) && !IsTileType(tile, TileType::Trees)) || !IsTileFlat(tile)) {
+	if (!IsTileType(tile, TileType::Clear) || !IsTileFlat(tile)) {
 		return CommandCost(STR_ERROR_SITE_UNSUITABLE);
 	}
 
@@ -2119,11 +2119,6 @@ static CommandCost TownCanBePlacedHere(TileIndex tile, bool check_surrounding)
 				case TileType::Clear:
 					/* Don't allow rough tiles, as they are likely wetlands. */
 					if (GetClearGround(t) == ClearGround::Rough) continue;
-					break;
-
-				case TileType::Trees:
-					/* Don't allow rough trees, as they are likely wetlands. */
-					if (GetTreeGround(t) == TreeGround::Rough) continue;
 					break;
 
 				default:
@@ -2309,12 +2304,12 @@ static TileIndex FindNearestGoodCoastalTownSpot(TileIndex tile, TownLayout layou
 {
 	for (auto coast : SpiralTileSequence(tile, 40)) {
 		/* Find nearest land tile */
-		if (!IsTileType(coast, TileType::Clear)) continue;
+		if (!IsTileType(coast, TileType::Clear) || Tile::HasAssociated(tile)) continue;
 
 		TileIndex furthest = INVALID_TILE;
 		uint max_dist = 0;
 		for (auto test : SpiralTileSequence(coast, 10)) {
-			if (!IsTileType(test, TileType::Clear) || !IsTileFlat(test) || !IsTileAlignedToGrid(test, layout)) continue;
+			if (!IsTileType(test, TileType::Clear) || Tile::HasAssociated(tile) || !IsTileFlat(test) || !IsTileAlignedToGrid(test, layout)) continue;
 			if (TownCanBePlacedHere(test, true).Failed()) continue;
 
 			uint dist = GetClosestWaterDistance(test, true);
@@ -3536,7 +3531,7 @@ static CommandCost TownActionBuildStatue(Town *t, DoCommandFlags flags)
 		if (IsBridgeAbove(tile)) continue;
 
 		/* A clear-able open space is always preferred. */
-		if ((IsTileType(tile, TileType::Clear) || IsTileType(tile, TileType::Trees)) && CheckClearTile(tile)) {
+		if (IsTileType(tile, TileType::Clear) && CheckClearTile(tile)) {
 			best_position = tile;
 			break;
 		}

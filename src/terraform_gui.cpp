@@ -89,30 +89,23 @@ static void GenerateRockyArea(TileIndex end, TileIndex start, bool remove)
 	bool success = false;
 	TileArea ta(start, end);
 
-	for (TileIndex tile : ta) {
-		switch (GetTileType(tile)) {
-			case TileType::Trees:
-				if (GetTreeGround(tile) == TreeGround::Shore) continue;
-				if (!remove) {
-					MakeClear(tile, ClearGround::Rocks, 3);
-				}
-				break;
+	for (TileIndex index : ta) {
+		if (IsTileType(index, TileType::Clear)) {
+			Tile trees = Tile::GetByType(index, TileType::Trees);
+			if (trees && !remove) Tile::Remove(index, trees);
 
-			case TileType::Clear:
-				if (remove) {
-					if (GetClearGround(tile) == ClearGround::Rocks) {
-						MakeClear(tile, ClearGround::Grass, 3);
-					}
-				} else {
-					MakeClear(tile, ClearGround::Rocks, 3);
+			if (remove) {
+				Tile tile = index;
+				if (GetClearGround(tile) == ClearGround::Rocks) {
+					MakeClear(tile, ClearGround::Grass, 3);
 				}
-				break;
+			} else {
+				MakeClear(index, ClearGround::Rocks, 3);
+			}
 
-			default:
-				continue;
+			MarkTileDirtyByTile(index);
+			success = !trees || !remove || success;
 		}
-		MarkTileDirtyByTile(tile);
-		success = true;
 	}
 
 	if (success && _settings_client.sound.confirm) SndPlayTileFx(SND_1F_CONSTRUCTION_OTHER, end);

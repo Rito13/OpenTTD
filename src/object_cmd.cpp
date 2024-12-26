@@ -750,6 +750,8 @@ static bool TryBuildLighthouseNearTile(TileIndex coast_tile)
 	/* Find a suitable tile nearby to build. */
 	for (TileIndex build_tile : SpiralTileSequence(coast_tile, 3)) {
 		if (!IsTileType(build_tile, TileType::Clear) || !IsTileFlat(build_tile) || IsBridgeAbove(build_tile)) continue;
+		Tile trees = Tile::GetByType(build_tile, TileType::Trees);
+		if (trees.IsValid()) Tile::Remove(build_tile, trees);
 		BuildObject(OBJECT_LIGHTHOUSE, build_tile);
 		return true;
 	}
@@ -851,6 +853,8 @@ static bool TryBuildTransmitter()
 		for (auto t : SpiralTileSequence(tile, 9)) {
 			if (IsObjectTypeTile(t, OBJECT_TRANSMITTER)) return false;
 		}
+		Tile trees = Tile::GetByType(tile, TileType::Trees);
+		if (trees.IsValid()) Tile::Remove(tile, trees);
 		BuildObject(OBJECT_TRANSMITTER, tile);
 		return true;
 	}

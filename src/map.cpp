@@ -105,6 +105,77 @@ TileIndex TileVirtXYClampedToMap(int x, int y)
 }
 
 /**
+ * Check if the tile belongs to the tile index.
+ * @param index The tile index to check.
+ * @return \c true iff the tile belongs to the tile index.
+ */
+bool Tile::BelongsToIndex(TileIndex index) const
+{
+	for (Tile t(index); t.IsValid(); ++t) {
+		if (this->operator==(t)) return true;
+	}
+	return false;
+}
+
+/**
+ * Add a new raw (with empty storage) tile to the map. Consider using #Tile::New instead.
+ * @param index Tile index where to add a tile to.
+ * @param insert_after Associated sub-tile to insert the new tile after.
+ * @return Newly added tile.
+ * @pre \c insert_after is associated with the tile index.
+ * @pre There is still space for a new tile associated with this tile index.
+ */
+/* static */ Tile Tile::RawNew(TileIndex index, Tile insert_after)
+{
+	assert(insert_after.IsValid() && insert_after.BelongsToIndex(index));
+
+	/* Fixup tile offsets. */
+	size_t count = TILE_INDEXES_PER_CHUNK - (index.base() & (TILE_INDEXES_PER_CHUNK - 1));
+	assert(count == 1 || (static_cast<size_t>(Map::offsets[index.base() + 1]) - static_cast<size_t>(Map::offsets[index.base()]) < TILES_PER_TILE_INDEX)); // Don't allow to add tiles over the limit.
+	for (size_t i = 1; i < count; ++i) {
+		++Map::offsets[index.base() + i];
+	}
+
+	/* Insert new tile. */
+	auto &line = Map::base_tiles[index.base() >> LOG_2_OF_TILE_INDEXES_PER_CHUNK];
+	auto &line_extended = Map::extended_tiles[index.base() >> LOG_2_OF_TILE_INDEXES_PER_CHUNK];
+	auto tile = std::addressof(*line.emplace(line.begin() + (insert_after.tile - line.data() + 1)));
+	auto tile_extended = std::addressof(*line_extended.emplace(line_extended.begin() + (insert_after.tile_extended - line_extended.data() + 1)));
+	return Tile(tile, tile_extended);
+}
+
+/**
+ * Add a new tile to the map.
+ * @param index Tile index where to add a tile to.
+ * @param type Type of the new tile.
+ * @param insert_after Associated sub-tile to insert the new tile after, or an invalid tile to insert after the last sub-tile.
+ * @return Newly added tile.
+ * @pre \c insert_after is either invalid or associated with the tile index.
+ */
+/* static */ Tile Tile::New(TileIndex index, TileType type, Tile insert_after)
+{
+	assert(!insert_after.IsValid() || insert_after.BelongsToIndex(index));
+
+	/* Insert at the end if nothing is specified. */
+	if (!insert_after.IsValid()) {
+		insert_after = Tile(index);
+		while (insert_after.HasAssociated()) ++insert_after;
+	}
+
+	bool has_next = insert_after.HasAssociated();
+	uint8_t height = insert_after.height();
+	insert_after.SetAssociated(true);
+
+	Tile new_tile = Tile::RawNew(index, insert_after);
+
+	SetTileType(new_tile, type);
+	new_tile.height() = height;
+	if (has_next) new_tile.SetAssociated(true);
+
+	return new_tile;
+}
+
+/**
  * Remove a tile from the map.
  * @param index Tile index from where to remove a tile.
  * @param to_remove Associated sub-tile to remove.

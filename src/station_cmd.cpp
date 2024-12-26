@@ -212,7 +212,7 @@ static bool CMSAWater(TileIndex tile)
  */
 static bool CMSATree(TileIndex tile)
 {
-	return IsTileType(tile, TileType::Trees);
+	return Tile::HasType(tile, TileType::Trees);
 }
 
 /** Station types a station could be named after. */
