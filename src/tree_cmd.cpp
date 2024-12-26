@@ -640,7 +640,7 @@ CommandCost CmdPlantTree(DoCommandFlags flags, TileIndex tile, TileIndex start_t
 struct TreeListEnt : PalSpriteID, Coord2D<int8_t> {};
 
 /** @copydoc DrawTileProc */
-static void DrawTile_Trees(TileInfo *ti, bool draw_halftile, Corner halftile_corner)
+static BridgePillarFlags DrawTile_Trees(TileInfo *ti, bool draw_halftile, Corner halftile_corner)
 {
 	switch (GetTreeGround(ti->tile)) {
 		case TreeGround::Shore: DrawShoreTile(ti, draw_halftile, halftile_corner); break;
@@ -650,7 +650,7 @@ static void DrawTile_Trees(TileInfo *ti, bool draw_halftile, Corner halftile_cor
 	}
 
 	/* Do not draw trees when the invisible trees setting is set */
-	if (IsInvisibilitySet(TransparencyOption::Trees)) return;
+	if (IsInvisibilitySet(TransparencyOption::Trees)) return{};
 
 	uint tmp = CountBits(ti->index.base() + ti->x + ti->y);
 	uint index = GB(tmp, 0, 2) + (GetTreeType(ti->tile) << 2);
@@ -709,6 +709,7 @@ static void DrawTile_Trees(TileInfo *ti, bool draw_halftile, Corner halftile_cor
 	}
 
 	EndSpriteCombine();
+	return {};
 }
 
 /** @copydoc ClearTileProc */
