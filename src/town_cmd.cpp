@@ -2106,7 +2106,7 @@ static CommandCost TownCanBePlacedHere(TileIndex tile)
 	}
 
 	/* Can only build on clear flat areas, possibly with trees. */
-	if ((!IsTileType(tile, MP_CLEAR) && !IsTileType(tile, MP_TREES)) || !IsTileFlat(tile)) {
+	if (!IsTileType(tile, MP_CLEAR) || !IsTileFlat(tile)) {
 		return CommandCost(STR_ERROR_SITE_UNSUITABLE);
 	}
 
@@ -2266,6 +2266,10 @@ static bool IsTileAlignedToGrid(TileIndex tile, TownLayout layout)
 		default:          return true;
 	}
 }
+
+/* TODO: recomplete (Codechange: Split tree information from ground information.) 
+ *       after the b956af631e86890ab9b4e66318418cd3b7a983e8
+ */
 
 /**
  * Given a spot on the map (presumed to be a water tile), find a good
