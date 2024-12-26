@@ -78,7 +78,6 @@ static void DisasterClearSquare(TileIndex tile)
 			break;
 		}
 
-		case TileType::Trees:
 		case TileType::Clear:
 			DoClearSquare(tile);
 			break;
