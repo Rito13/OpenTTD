@@ -1038,17 +1038,13 @@ static const uint8_t _plantfarmfield_type[] = {1, 1, 1, 1, 1, 3, 3, 4, 4, 4, 5, 
  */
 static bool IsSuitableForFarmField(TileIndex tile, bool allow_fields, bool allow_rough)
 {
-	switch (GetTileType(tile)) {
-		case TileType::Clear:
-			if (IsSnowTile(tile)) return false;
-			switch (GetClearGround(tile)) {
-				case ClearGround::Desert: return false;
-				case ClearGround::Rough: return allow_rough;
-				case ClearGround::Fields: return allow_fields;
-				default: return true;
-			}
-		case TileType::Trees: return GetTreeGround(tile) != TreeGround::Shore && (allow_rough || GetTreeGround(tile) != TreeGround::Rough);
-		default:       return false;
+	if (!IsTileType(tile, TileType::Clear)) return false;
+	if (IsSnowTile(tile)) return false;
+	switch (GetClearGround(tile)) {
+		case ClearGround::Desert: return false;
+		case ClearGround::Rough: return allow_rough;
+		case ClearGround::Fields: return allow_fields;
+		default: return true;
 	}
 }
 
@@ -1117,6 +1113,7 @@ static void PlantFarmField(TileIndex tile, IndustryID industry)
 	for (TileIndex cur_tile : ta) {
 		assert(cur_tile < Map::Size());
 		if (IsSuitableForFarmField(cur_tile, true, true)) {
+			DoClearSquare(cur_tile);
 			MakeField(cur_tile, field_type, industry);
 			SetClearCounter(cur_tile, counter);
 			MarkTileDirtyByTile(cur_tile);
@@ -1162,7 +1159,8 @@ static void ChopLumberMillTrees(Industry *i)
 	}
 
 	for (auto tile : SpiralTileSequence(i->location.tile, 40)) { // 40x40 tiles  to search.
-		if (!IsTileType(tile, TileType::Trees) || GetTreeGrowth(tile) < TreeGrowthStage::Grown) continue;
+		Tile tree_tile = Tile::GetByType(tile, TileType::Trees);
+		if (!tree_tile.IsValid() || GetTreeGrowth(tile) < TreeGrowthStage::Grown) continue;
 
 		/* found a tree */
 		_industry_sound_ctr = 1;
@@ -1632,7 +1630,7 @@ static bool CheckCanTerraformSurroundingTiles(TileIndex tile, uint height, int i
 	for (TileIndex tile_walk : ta) {
 		uint curh = TileHeight(tile_walk);
 		/* Is the tile clear? */
-		if ((GetTileType(tile_walk) != TileType::Clear) && (GetTileType(tile_walk) != TileType::Trees)) return false;
+		if (GetTileType(tile_walk) != TileType::Clear) return false;
 
 		/* Don't allow too big of a change if this is the sub-tile check */
 		if (internal != 0 && Delta(curh, height) > 1) return false;
