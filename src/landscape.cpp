@@ -571,7 +571,7 @@ void DrawFoundation(TileInfo *ti, Foundation f)
 void DrawTile(TileInfo *ti)
 {
 	/* Get the foundations of the tile. */
-	Tile t = ti->tile;
+	Tile t(ti->index);
 	Foundation f = Foundation::None;
 	do {
 		TileType tt = t ? t.GetTileType() : TileType::Void;
@@ -637,7 +637,7 @@ void DoClearSquare(TileIndex index)
 	while (tile) {
 		can_animate |= MayAnimateTile(tile);
 		is_docking |= IsDockingTile(tile);
-		tile = Tile::Remove(index, tile);
+		tile = Tile::Remove(index, std::move(tile));
 	}
 
 	/* If the tile can have animation and we clear it, delete it from the animated tile list. */

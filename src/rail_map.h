@@ -63,7 +63,6 @@ enum class RailTileType : uint8_t {
 	return t.IsValid() && IsTileType(t, TileType::Railway) && IsPlainRail(t);
 }
 
-
 /**
  * Checks if a rail tile has signals.
  * @param t the tile to get the information from
@@ -105,7 +104,7 @@ inline void SetHasSignals(const Tile &tile, bool signals)
  */
 [[debug_inline]] inline static bool IsRailDepotTile(const Tile &t)
 {
-	return IsTileType(t, TileType::Railway) && IsRailDepot(t);
+	return t.IsValid() && IsTileType(t, TileType::Railway) && IsRailDepot(t);
 }
 
 /**
@@ -183,6 +182,19 @@ inline DiagDirection GetRailDepotDirection(const Tile &t)
 inline Track GetRailDepotTrack(const Tile &t)
 {
 	return DiagDirToDiagTrack(GetRailDepotDirection(t));
+}
+
+/**
+ * Get the actual associated sub-tile of a rail depot.
+ * @pre IsRailDepotTile(index)
+ * @param index The tile index to get the depot tile for.
+ * @return The depot sub-tile.
+ */
+inline Tile GetRailDepotTile(TileIndex index)
+{
+	Tile tile = Tile::GetByType(index, TileType::Railway);
+	assert(IsRailDepotTile(tile));
+	return tile;
 }
 
 

@@ -330,11 +330,13 @@ protected:
 				return false;
 			}
 		}
-		if (IsRailTT() && IsDepotTypeTile(this->new_tile, TT())) {
-			DiagDirection exitdir = GetRailDepotDirection(this->new_tile);
-			if (ReverseDiagDir(exitdir) != this->exitdir) {
-				this->err = EC_NO_WAY;
-				return false;
+		if (IsRailTT()) {
+			if (Tile rail = Tile::GetByType(this->new_tile, TileType::Railway); IsRailDepotTile(rail)) {
+				DiagDirection exitdir = GetRailDepotDirection(rail);
+				if (ReverseDiagDir(exitdir) != this->exitdir) {
+					this->err = EC_NO_WAY;
+					return false;
+				}
 			}
 		}
 
@@ -412,7 +414,7 @@ protected:
 	{
 		/* rail and road depots cause reversing */
 		if (!IsWaterTT() && IsDepotTypeTile(this->old_tile, TT())) {
-			DiagDirection exitdir = IsRailTT() ? GetRailDepotDirection(this->old_tile) : GetRoadDepotDirection(this->old_tile);
+			DiagDirection exitdir = IsRailTT() ? GetRailDepotDirection(GetRailDepotTile(this->old_tile)) : GetRoadDepotDirection(this->old_tile);
 			if (exitdir != this->exitdir) {
 				/* reverse */
 				this->new_tile = this->old_tile;

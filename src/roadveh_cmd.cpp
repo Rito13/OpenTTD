@@ -353,7 +353,7 @@ ClosestDepot RoadVehicle::FindClosestDepot()
 	FindDepotData rfdd = FindClosestRoadDepot(this, 0);
 	if (rfdd.best_length == UINT_MAX) return ClosestDepot();
 
-	return ClosestDepot(rfdd.tile, GetDepotIndex(rfdd.tile));
+	return ClosestDepot(rfdd.index, GetDepotIndex(rfdd.tile));
 }
 
 /**
@@ -1702,7 +1702,7 @@ static void CheckIfRoadVehNeedsService(RoadVehicle *v)
 
 	SetBit(v->gv_flags, GVF_SUPPRESS_IMPLICIT_ORDERS);
 	v->current_order.MakeGoToDepot(depot, OrderDepotTypeFlag::Service);
-	v->SetDestTile(rfdd.tile);
+	v->SetDestTile(rfdd.index);
 	SetWindowWidgetDirty(WindowClass::VehicleView, v->index, WID_VV_START_STOP);
 }
 

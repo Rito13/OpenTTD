@@ -275,7 +275,7 @@ inline void AddProducedCargo(TileIndex tile, CargoArray &produced)
  * @param tile Tile to test.
  * @returns True iff the type of the tile has a handler for tile animation.
  */
-inline bool MayAnimateTile(Tile tile)
+inline bool MayAnimateTile(const Tile &tile)
 {
 	return _tile_type_procs[GetTileType(tile)]->animate_tile_proc != nullptr;
 }

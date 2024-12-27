@@ -580,7 +580,7 @@ bool GetIfStopIsForType(const RoadStopSpec *roadstopspec, RoadStopType rs, RoadT
 	return false;
 }
 
-const RoadStopSpec *GetRoadStopSpec(Tile t)
+const RoadStopSpec *GetRoadStopSpec(const Tile &t)
 {
 	if (!IsCustomRoadStopSpecIndex(t)) return nullptr;
 

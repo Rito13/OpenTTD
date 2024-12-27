@@ -29,7 +29,9 @@ Depot::~Depot()
 {
 	if (CleaningPool()) return;
 
-	if (!IsDepotTile(this->xy) || GetDepotIndex(this->xy) != this->index) {
+	DepotTile tile = AsDepotTile(this->xy);
+
+	if (!IsDepotTile(tile) || GetDepotIndex(tile) != this->index) {
 		/* It can happen there is no depot here anymore (TTO/TTD savegames) */
 		return;
 	}
@@ -44,6 +46,6 @@ Depot::~Depot()
 	CloseWindowById(WindowClass::VehicleDepot, this->xy);
 
 	/* Delete the depot list */
-	VehicleType vt = GetDepotVehicleType(this->xy);
-	CloseWindowById(GetWindowClassForVehicleType(vt), VehicleListIdentifier(VL_DEPOT_LIST, vt, GetTileOwner(this->xy), this->index).ToWindowNumber());
+	VehicleType vt = GetDepotVehicleType(tile);
+	CloseWindowById(GetWindowClassForVehicleType(vt), VehicleListIdentifier(VL_DEPOT_LIST, vt, GetTileOwner(tile), this->index).ToWindowNumber());
 }

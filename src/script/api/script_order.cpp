@@ -31,19 +31,9 @@
 static OrderType GetOrderTypeByTile(TileIndex t)
 {
 	if (!::IsValidTile(t)) return OT_END;
-
-	switch (::GetTileType(t)) {
-		default: break;
-		case TileType::Station:
-			if (IsBuoy(t) || IsRailWaypoint(t) || IsRoadWaypoint(t)) return OT_GOTO_WAYPOINT;
-			if (IsHangar(t)) return OT_GOTO_DEPOT;
-			return OT_GOTO_STATION;
-
-		case TileType::Water:   if (::IsShipDepot(t)) return OT_GOTO_DEPOT; break;
-		case TileType::Road:    if (::GetRoadTileType(t) == RoadTileType::Depot) return OT_GOTO_DEPOT; break;
-		case TileType::Railway:
-			if (IsRailDepot(t)) return OT_GOTO_DEPOT;
-			break;
+	if (::IsDepotTile(AsDepotTile(t))) return OT_GOTO_DEPOT;
+	if (::IsTileType(t, TileType::Station)) {
+		return IsBuoy(t) || IsRailWaypoint(t) || IsRoadWaypoint(t) ? OT_GOTO_WAYPOINT : OT_GOTO_STATION;
 	}
 
 	return OT_END;
@@ -503,7 +493,7 @@ static ScriptOrder::OrderPosition RealOrderPositionToScriptOrderPosition(Vehicle
 					order.MakeGoToDepot(::GetStationIndex(destination), odtf, onsf, odaf);
 				} else {
 					if (::IsTileType(destination, TileType::Station)) return false;
-					order.MakeGoToDepot(::GetDepotIndex(destination), odtf, onsf, odaf);
+					order.MakeGoToDepot(::GetDepotIndex(GetDepotTile(destination)), odtf, onsf, odaf);
 				}
 			}
 			break;

@@ -84,42 +84,17 @@ ScriptVehicleList_Waypoint::ScriptVehicleList_Waypoint(StationID waypoint_id)
 	);
 }
 
-ScriptVehicleList_Depot::ScriptVehicleList_Depot(TileIndex tile)
+ScriptVehicleList_Depot::ScriptVehicleList_Depot(TileIndex index)
 {
 	EnforceDeityOrCompanyModeValid_Void();
-	if (!ScriptMap::IsValidTile(tile)) return;
+	if (!ScriptMap::IsValidTile(index)) return;
 
-	DestinationID dest;
-	VehicleType type;
+	DepotTile depot_tile = AsDepotTile(index);
 
-	switch (GetTileType(tile)) {
-		case TileType::Station: // Aircraft
-			if (!IsAirport(tile)) return;
-			type = VehicleType::Aircraft;
-			dest = GetStationIndex(tile);
-			break;
+	if (!IsDepotTile(depot_tile)) return; // No depot.
 
-		case TileType::Railway:
-			if (!IsRailDepot(tile)) return;
-			type = VehicleType::Train;
-			dest = GetDepotIndex(tile);
-			break;
-
-		case TileType::Road:
-			if (!IsRoadDepot(tile)) return;
-			type = VehicleType::Road;
-			dest = GetDepotIndex(tile);
-			break;
-
-		case TileType::Water:
-			if (!IsShipDepot(tile)) return;
-			type = VehicleType::Ship;
-			dest = GetDepotIndex(tile);
-			break;
-
-		default: // No depot
-			return;
-	}
+	DestinationID dest = GetDepotDestinationIndex(depot_tile);
+	VehicleType type = GetDepotVehicleType(depot_tile);
 
 	bool is_deity = ScriptCompanyMode::IsDeity();
 	::CompanyID owner = ScriptObject::GetCompany();

@@ -173,7 +173,7 @@ bool GetIfNewStopsByType(RoadStopType rs, RoadType roadtype);
 bool GetIfClassHasNewStopsByType(const RoadStopClass *roadstopclass, RoadStopType rs, RoadType roadtype);
 bool GetIfStopIsForType(const RoadStopSpec *roadstopspec, RoadStopType rs, RoadType roadtype);
 
-const RoadStopSpec *GetRoadStopSpec(Tile t);
+const RoadStopSpec *GetRoadStopSpec(const Tile &t);
 std::optional<uint8_t> AllocateSpecToRoadStop(const RoadStopSpec *spec, BaseStation *st);
 void AssignSpecToRoadStop(const RoadStopSpec *spec, BaseStation *st, uint8_t specindex);
 void DeallocateSpecFromRoadStop(BaseStation *st, uint8_t specindex);
