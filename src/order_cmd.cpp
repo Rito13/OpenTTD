@@ -710,12 +710,12 @@ CommandCost CmdInsertOrder(DoCommandFlags flags, VehicleID veh, VehicleOrderID s
 
 					if (dp == nullptr) return CMD_ERROR;
 
-					ret = CheckOwnership(GetTileOwner(dp->xy));
+					ret = CheckOwnership(GetTileOwnerIfDepot(dp->xy));
 					if (ret.Failed()) return ret;
 
 					switch (v->type) {
 						case VehicleType::Train:
-							if (!IsRailDepotTile(dp->xy)) return CMD_ERROR;
+							if (!IsRailDepotTile(Tile::GetByType(dp->xy, TileType::Railway))) return CMD_ERROR;
 							break;
 
 						case VehicleType::Road:

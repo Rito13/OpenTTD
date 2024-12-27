@@ -753,7 +753,7 @@ static bool TryBuildLighthouseNearTile(TileIndex coast_tile)
 	for (TileIndex build_tile : SpiralTileSequence(coast_tile, 3)) {
 		if (!IsTileType(build_tile, TileType::Clear) || !IsTileFlat(build_tile) || IsBridgeAbove(build_tile)) continue;
 		Tile trees = Tile::GetByType(build_tile, TileType::Trees);
-		if (trees.IsValid()) Tile::Remove(build_tile, trees);
+		if (trees.IsValid()) Tile::Remove(build_tile, std::move(trees));
 		BuildObject(OBJECT_LIGHTHOUSE, build_tile);
 
 		/* Generate rocks from each coast tile surrounding the chosen coast tile. This is done because we don't have
@@ -866,7 +866,7 @@ static bool TryBuildTransmitter()
 			if (IsObjectTypeTile(t, OBJECT_TRANSMITTER)) return false;
 		}
 		Tile trees = Tile::GetByType(tile, TileType::Trees);
-		if (trees.IsValid()) Tile::Remove(tile, trees);
+		if (trees.IsValid()) Tile::Remove(tile, std::move(trees));
 		BuildObject(OBJECT_TRANSMITTER, tile);
 		return true;
 	}
