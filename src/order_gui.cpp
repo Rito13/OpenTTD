@@ -376,7 +376,7 @@ static Order GetOrderCmdFromTile(const Vehicle *v, TileIndex tile)
 	order.index = OrderID::Begin();
 
 	/* check depot first */
-	if (IsDepotTypeTile(tile, (TransportType)(uint)v->type) && IsTileOwner(tile, _local_company)) {
+	if (IsDepotTypeTile(tile, (TransportType)(uint)v->type) && IsDepotOwner(tile, _local_company)) {
 		order.MakeGoToDepot(GetDepotDestinationIndex(tile),
 				ODTFB_PART_OF_ORDERS,
 				(_settings_client.gui.new_nonstop && v->IsGroundVehicle()) ? ONSF_NO_STOP_AT_INTERMEDIATE_STATIONS : ONSF_STOP_EVERYWHERE);
