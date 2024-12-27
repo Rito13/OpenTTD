@@ -105,9 +105,9 @@ public:
 class ScriptVehicleList_Depot : public ScriptList {
 public:
 	/**
-	 * @param tile The tile of the depot to get the list of vehicles from, which have orders to it.
+	 * @param index The tile of the depot to get the list of vehicles from, which have orders to it.
 	 */
-	ScriptVehicleList_Depot(TileIndex tile);
+	ScriptVehicleList_Depot(TileIndex index);
 };
 
 /**

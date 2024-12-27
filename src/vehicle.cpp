@@ -1569,7 +1569,7 @@ void VehicleEnterDepot(Vehicle *v)
 			Train *t = Train::From(v);
 			SetWindowClassesDirty(WindowClass::TrainList);
 			/* Clear path reservation */
-			SetDepotReservation(t->tile, false);
+			SetDepotReservation(GetRailDepotTile(t->tile), false);
 			if (_settings_client.gui.show_track_reservation) MarkTileDirtyByTile(t->tile);
 
 			UpdateSignalsOnSegment(t->tile, DiagDirection::Invalid, t->owner);
@@ -2900,7 +2900,7 @@ void Vehicle::ShowVisualEffect() const
 		if (effect_model == VisualEffectSpawnModel::None ||
 				v->vehstatus.Test(VehState::Hidden) ||
 				IsBridgeAboveVehicle(v) ||
-				IsDepotTile(v->tile) ||
+				IsDepotTile(AsDepotTile(v->tile)) ||
 				IsTunnelTile(v->tile) ||
 				(v->type == VehicleType::Train &&
 				!HasPowerOnRail(Train::From(v)->railtypes, GetTileRailType(v->tile)))) {

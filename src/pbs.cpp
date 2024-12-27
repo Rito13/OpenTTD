@@ -307,7 +307,7 @@ PBSTileInfo FollowTrainReservation(const Train *consist, Vehicle **train_on_res)
 	TileIndex tile = moving_front->tile;
 	Trackdir trackdir = moving_front->GetVehicleTrackdir();
 
-	if (IsRailDepotTile(tile) && GetDepotReservationTrackBits(tile).None()) return PBSTileInfo(tile, trackdir, false);
+	if (IsRailDepotTile(tile) && GetDepotReservationTrackBits(GetDepotTile(tile)).None()) return PBSTileInfo(tile, trackdir, false);
 
 	FindTrainOnTrackInfo ftoti;
 	ftoti.res = FollowReservation(consist->owner, GetAllCompatibleRailTypes(consist->railtypes), tile, trackdir);

@@ -277,9 +277,21 @@ private:
 	 * @param tile_extended Pointer to the same tile but inside the map extended array.
 	 */
 	Tile(Map::TileBase *tile, Map::TileExtended *tile_extended) : tile(tile), tile_extended(tile_extended) {}
+protected:
+	/**
+	 * Duplicate the tile wrapper.
+	 * @param other The tile to duplicate.
+	 */
+	Tile(const Tile &other) : tile(other.tile), tile_extended(other.tile_extended) {}
 public:
 	/** Create an invalid tile wrapper. */
 	[[debug_inline]] inline Tile() : tile(nullptr), tile_extended(nullptr) {}
+
+	/**
+	 * Move the tile wrapper.
+	 * @param other The tile to move.
+	 */
+	Tile(Tile &&other) : tile(std::move(other.tile)), tile_extended(std::move(other.tile_extended)) {}
 
 	/**
 	 * Create the tile wrapper for the given tile.
@@ -294,6 +306,13 @@ public:
 			this->tile = nullptr;
 			this->tile_extended = nullptr;
 		}
+	}
+
+	inline constexpr Tile& operator=(const Tile &other)
+	{
+		tile = other.tile;
+		tile_extended = other.tile_extended;
+		return *this;
 	}
 
 	/**

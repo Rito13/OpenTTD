@@ -92,19 +92,18 @@ static void GenerateRockyArea(TileIndex end, TileIndex start, bool remove)
 	for (TileIndex index : ta) {
 		if (IsTileType(index, TileType::Clear)) {
 			Tile trees = Tile::GetByType(index, TileType::Trees);
-			if (trees && !remove) Tile::Remove(index, trees);
+			if (trees && !remove) Tile::Remove(index, std::move(trees));
 
 			if (remove) {
 				Tile tile = index;
-				if (GetClearGround(tile) == ClearGround::Rocks) {
-					MakeClear(tile, ClearGround::Grass, 3);
-				}
+				if (GetClearGround(tile) != ClearGround::Rocks) continue;
+				MakeClear(tile, ClearGround::Grass, 3);
 			} else {
 				MakeClear(index, ClearGround::Rocks, 3);
 			}
 
 			MarkTileDirtyByTile(index);
-			success = !trees || !remove || success;
+			success = true;
 		}
 	}
 
