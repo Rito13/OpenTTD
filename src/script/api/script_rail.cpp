@@ -36,7 +36,8 @@
 {
 	if (!::IsValidTile(tile)) return false;
 
-	return (::IsTileType(tile, TileType::Railway) && !::IsRailDepot(tile)) ||
+	::Tile rail_tile = ::Tile::GetByType(tile, TileType::Railway);
+	return (rail_tile.IsValid() && !::IsRailDepot(rail_tile)) ||
 			(::HasStationTileRail(tile) && !::IsStationTileBlocked(tile)) || ::IsLevelCrossingTile(tile);
 }
 
@@ -51,7 +52,7 @@
 {
 	if (!::IsValidTile(tile)) return false;
 
-	return ::IsRailDepotTile(tile);
+	return ::IsRailDepotTile(::Tile::GetByType(tile, TileType::Railway));
 }
 
 /* static */ bool ScriptRail::IsRailStationTile(TileIndex tile)
@@ -125,7 +126,7 @@
 {
 	if (!IsRailDepotTile(depot)) return INVALID_TILE;
 
-	return depot + ::TileOffsByDiagDir(::GetRailDepotDirection(depot));
+	return depot + ::TileOffsByDiagDir(::GetRailDepotDirection(::GetRailDepotTile(depot)));
 }
 
 /* static */ ScriptRail::RailTrack ScriptRail::GetRailStationDirection(TileIndex tile)

@@ -252,7 +252,7 @@ static PBSTileInfo FollowReservation(Owner o, RailTypes rts, TileIndex tile, Tra
 			if (tile == start_tile && trackdir == start_trackdir) break;
 		}
 		/* Depot tile? Can't continue. */
-		if (IsRailDepotTile(tile)) break;
+		if (IsRailDepotTile(Tile::GetByType(tile, TileType::Railway))) break;
 		/* Non-pbs signal? Reservation can't continue. */
 		if (HasBlockSignalOnTrackdir(tile, trackdir)) break;
 	}
@@ -307,7 +307,7 @@ PBSTileInfo FollowTrainReservation(const Train *consist, Vehicle **train_on_res)
 	TileIndex tile = moving_front->tile;
 	Trackdir trackdir = moving_front->GetVehicleTrackdir();
 
-	if (IsRailDepotTile(tile) && GetDepotReservationTrackBits(tile).None()) return PBSTileInfo(tile, trackdir, false);
+	if (Tile rail = Tile::GetByType(tile, TileType::Railway); IsRailDepotTile(rail) && GetDepotReservationTrackBits(rail).None()) return PBSTileInfo(tile, trackdir, false);
 
 	FindTrainOnTrackInfo ftoti;
 	ftoti.res = FollowReservation(consist->owner, GetAllCompatibleRailTypes(consist->railtypes), tile, trackdir);
@@ -394,7 +394,7 @@ Train *GetTrainForReservation(TileIndex tile, Track track)
  */
 bool IsSafeWaitingPosition(const Train *v, TileIndex tile, Trackdir trackdir, bool include_line_end, bool forbid_90deg)
 {
-	if (IsRailDepotTile(tile)) return true;
+	if (Tile rail = Tile::GetByType(tile, TileType::Railway); IsRailDepotTile(rail)) return true;
 
 	/* For non-pbs signals, stop on the signal tile. */
 	if (HasBlockSignalOnTrackdir(tile, trackdir)) return true;
@@ -445,8 +445,9 @@ bool IsWaitingPositionFree(const Train *v, TileIndex tile, Trackdir trackdir, bo
 	if (TrackOverlapsTracks(reserved, track)) return false;
 
 	/* Not reserved and depot or not a pbs signal -> free. */
-	if (IsRailDepotTile(tile)) return true;
-	if (HasBlockSignalOnTrackdir(tile, trackdir)) return true;
+	Tile rail = Tile::GetByType(tile, TileType::Railway);
+	if (IsRailDepotTile(rail)) return true;
+	if (HasBlockSignalOnTrackdir(rail, trackdir)) return true;
 
 	/* Check the next tile, it has to be free as well. Do not filter for compatible railtypes
 	 * to make sure we never accidentally join up reservations. */

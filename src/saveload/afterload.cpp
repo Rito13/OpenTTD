@@ -2459,7 +2459,7 @@ bool AfterLoadGame()
 			TileIndex tile = d->xy;
 			/* At some point, invalid depots were saved into the game (possibly those removed in the past?)
 			 * Remove them here, so they don't cause issues further down the line */
-			if (!IsDepotTile(tile)) {
+			if (!IsDepotTile(AsDepotTile(tile))) {
 				Debug(Facility::Sl, Severity::Critical, "Removing invalid depot {} at {}, {}", d->index, TileX(d->xy), TileY(d->xy));
 				delete d;
 				d = nullptr;

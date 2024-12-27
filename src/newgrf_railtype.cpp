@@ -48,12 +48,12 @@
 		case 0x41: return 0;
 		case 0x42: return IsLevelCrossingTile(this->tile) && IsCrossingBarred(this->tile);
 		case 0x43:
-			if (IsRailDepotTile(this->tile)) return Depot::GetByTile(this->tile)->build_date.base();
+			if (Tile rail = Tile::GetByType(this->tile, TileType::Railway); IsRailDepotTile(rail)) return Depot::GetByTile(rail)->build_date.base();
 			return TimerGameCalendar::date.base();
 		case 0x44: {
 			const Town *t = nullptr;
-			if (IsRailDepotTile(this->tile)) {
-				t = Depot::GetByTile(this->tile)->town;
+			if (Tile rail = Tile::GetByType(this->tile, TileType::Railway); IsRailDepotTile(rail)) {
+				t = Depot::GetByTile(rail)->town;
 			} else if (IsLevelCrossingTile(this->tile)) {
 				t = ClosestTownFromTile(this->tile, UINT_MAX);
 			}

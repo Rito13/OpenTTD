@@ -697,7 +697,7 @@ static std::tuple<CommandCost, bool> ClearTile_Trees(TileIndex index, Tile &tile
 
 	bool deleted = false;
 	if (flags.Test(DoCommandFlag::Execute)) {
-		tile = Tile::Remove(index, tile);
+		tile = Tile::Remove(index, std::move(tile));
 		deleted = true;
 	}
 
@@ -852,7 +852,7 @@ static bool TileLoop_Trees(TileIndex index, Tile &tile)
 				SetTreeGrowth(tile, TreeGrowthStage::Grown);
 			} else {
 				/* Last tree, obliterate tree tile. */
-				tile = Tile::Remove(index, tile);
+				tile = Tile::Remove(index, std::move(tile));
 				MarkTileDirtyByTile(index);
 				return true; // Tile was deleted.
 			}

@@ -614,7 +614,7 @@ static bool DisasterTick_Big_Ufo(DisasterVehicle *v)
 		const auto is_valid_target = [](const Train *t) {
 			return t->IsFrontEngine() // Only the engines
 				&& Company::IsHumanID(t->owner) // Don't break AIs
-				&& IsPlainRailTile(t->tile) // No tunnels
+				&& IsPlainRailTile(Tile::GetByType(t->tile, TileType::Railway)) // No tunnels
 				&& !t->vehstatus.Test(VehState::Crashed); // Not crashed
 		};
 
