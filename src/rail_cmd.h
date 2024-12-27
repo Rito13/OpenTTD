@@ -21,8 +21,8 @@ CommandCost CmdRemoveRailroadTrack(DoCommandFlags flags, TileIndex end_tile, Til
 CommandCost CmdBuildSingleRail(DoCommandFlags flags, TileIndex tile, RailType railtype, Track track, bool auto_remove_signals);
 CommandCost CmdRemoveSingleRail(DoCommandFlags flags, TileIndex tile, Track track);
 CommandCost CmdBuildTrainDepot(DoCommandFlags flags, TileIndex tile, RailType railtype, DiagDirection dir);
-CommandCost CmdBuildSingleSignal(DoCommandFlags flags, TileIndex tile, Track track, SignalType sigtype, SignalVariant sigvar, bool convert_signal, bool skip_existing_signals, bool ctrl_pressed, SignalType cycle_start, SignalType cycle_stop, uint8_t num_dir_cycle, uint8_t signals_copy);
-CommandCost CmdRemoveSingleSignal(DoCommandFlags flags, TileIndex tile, Track track);
+CommandCost CmdBuildSingleSignal(DoCommandFlags flags, TileIndex tile_index, Track track, SignalType sigtype, SignalVariant sigvar, bool convert_signal, bool skip_existing_signals, bool ctrl_pressed, SignalType cycle_start, SignalType cycle_stop, uint8_t num_dir_cycle, uint8_t signals_copy);
+CommandCost CmdRemoveSingleSignal(DoCommandFlags flags, TileIndex tile_index, Track track);
 CommandCost CmdConvertRail(DoCommandFlags flags, TileIndex tile, TileIndex area_start, RailType totype, bool diagonal);
 CommandCost CmdBuildSignalTrack(DoCommandFlags flags, TileIndex tile, TileIndex end_tile, Track track, SignalType sigtype, SignalVariant sigvar, bool mode, bool autofill, bool minimise_gaps, uint8_t signal_density);
 CommandCost CmdRemoveSignalTrack(DoCommandFlags flags, TileIndex tile, TileIndex end_tile, Track track, bool autofill);
