@@ -426,7 +426,8 @@ CommandCost CheckOwnership(Owner owner, TileIndex tile)
  */
 CommandCost CheckTileOwnership(TileIndex index, const Tile &tile)
 {
-	return CheckOwnership(GetTileOwner(tile.IsValid() ? tile : index), index);
+	if (tile.IsValid()) return CheckOwnership(GetTileOwner(tile), index);
+	return CheckOwnership(GetTileOwner(index), index);
 }
 
 /**

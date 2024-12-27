@@ -39,7 +39,7 @@ protected:
 
 		TILE(TileIndex tile, Trackdir td) : tile(tile), rail_tile(Tile::GetByType(tile, TileType::Railway)), td(td)
 		{
-			rail_type = GetTileRailType(rail_tile ? rail_tile : tile);
+			rail_type = rail_tile.IsValid() ? GetTileRailType(rail_tile) : GetTileRailType(tile);
 		}
 	};
 
@@ -417,7 +417,7 @@ no_entry_cost: // jump here at the beginning if the node has no parent (it is th
 			/* Tests for 'potential target' reasons to close the segment. */
 			if (cur.tile == prev.tile) {
 				/* Penalty for reversing in a depot. */
-				assert(IsRailDepot(cur.tile));
+				assert(IsRailDepotTile(cur.tile));
 				segment_cost += Yapf().PfGetSettings().rail_depot_reverse_penalty;
 
 			} else if (IsRailDepotTile(cur.tile)) {
