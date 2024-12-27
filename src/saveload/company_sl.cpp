@@ -137,22 +137,22 @@ void AfterLoadCompanyStats()
 
 	Company *c;
 	for (const auto tile : Map::IterateIndex()) {
-		switch (GetTileType(tile)) {
-			case TileType::Railway:
-				c = Company::GetIfValid(GetTileOwner(tile));
-				if (c != nullptr) {
-					uint pieces = 1;
-					if (IsPlainRail(tile)) {
-						TrackBits bits = GetTrackBits(tile);
-						pieces = bits.Count();
-						if (TracksOverlap(bits)) pieces *= pieces;
-					}
-					c->infrastructure.rail[GetRailType(tile)] += pieces;
-
-					if (HasSignals(tile)) c->infrastructure.signal += CountBits(GetPresentSignals(tile));
+		if (Tile rail_tile = Tile::GetByType(tile, TileType::Railway); rail_tile.IsValid()) {
+			c = Company::GetIfValid(GetTileOwner(rail_tile));
+			if (c != nullptr) {
+				uint pieces = 1;
+				if (IsPlainRail(rail_tile)) {
+					TrackBits bits = GetTrackBits(rail_tile);
+					pieces = bits.Count();
+					if (TracksOverlap(bits)) pieces *= pieces;
 				}
-				break;
+				c->infrastructure.rail[GetRailType(rail_tile)] += pieces;
 
+				if (HasSignals(rail_tile)) c->infrastructure.signal += CountBits(GetPresentSignals(rail_tile));
+			}
+		}
+
+		switch (GetTileType(tile)) {
 			case TileType::Road: {
 				if (IsLevelCrossing(tile)) {
 					c = Company::GetIfValid(GetTileOwner(tile));
