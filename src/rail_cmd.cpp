@@ -1041,7 +1041,7 @@ CommandCost CmdBuildTrainDepot(DoCommandFlags flags, TileIndex tile, RailType ra
  * pre/exit/combo-signals, and what-else not. If the rail piece does not
  * have any signals, signal cycling is ignored
  * @param flags operation to perform
- * @param tile tile where to build the signals
+ * @param tile_index Tile where to build the signals.
  * @param track track-orientation
  * @param sigtype type of the signal
  * @param sigvar variant of signal type (normal/semaphore)
@@ -1054,7 +1054,7 @@ CommandCost CmdBuildTrainDepot(DoCommandFlags flags, TileIndex tile, RailType ra
  * @param signals_copy used for CmdBuildManySignals() to copy direction of first signal
  * @return the cost of this operation or an error
  */
-CommandCost CmdBuildSingleSignal(DoCommandFlags flags, TileIndex tile, Track track, SignalType sigtype, SignalVariant sigvar, bool convert_signal, bool skip_existing_signals, bool ctrl_pressed, SignalType cycle_start, SignalType cycle_stop, uint8_t num_dir_cycle, uint8_t signals_copy)
+CommandCost CmdBuildSingleSignal(DoCommandFlags flags, TileIndex tile_index, Track track, SignalType sigtype, SignalVariant sigvar, bool convert_signal, bool skip_existing_signals, bool ctrl_pressed, SignalType cycle_start, SignalType cycle_stop, uint8_t num_dir_cycle, uint8_t signals_copy)
 {
 	if (sigtype >= SignalType::End || sigvar >= SignalVariant::End) return CMD_ERROR;
 	if (cycle_start > cycle_stop || cycle_stop >= SignalType::End) return CMD_ERROR;
@@ -1062,6 +1062,7 @@ CommandCost CmdBuildSingleSignal(DoCommandFlags flags, TileIndex tile, Track tra
 	if (ctrl_pressed) sigvar = (sigvar == SignalVariant::Electric ? SignalVariant::Semaphore : SignalVariant::Electric);
 
 	/* You can only build signals on plain rail tiles, and the selected track must exist */
+	Tile tile = Tile::GetByType(tile_index, TileType::Railway);
 	if (!ValParamTrackOrientation(track) || !IsPlainRailTile(tile) ||
 			!HasTrack(tile, track)) {
 		return CommandCost(STR_ERROR_THERE_IS_NO_RAILROAD_TRACK);
@@ -1069,7 +1070,7 @@ CommandCost CmdBuildSingleSignal(DoCommandFlags flags, TileIndex tile, Track tra
 	/* Protect against invalid signal copying */
 	if (signals_copy != 0 && (signals_copy & SignalOnTrack(track)) == 0) return CMD_ERROR;
 
-	CommandCost ret = CheckTileOwnership(tile);
+	CommandCost ret = CheckTileOwnership(tile_index, tile);
 	if (ret.Failed()) return ret;
 
 	/* See if this is a valid track combination for signals (no overlap) */
@@ -1112,7 +1113,7 @@ CommandCost CmdBuildSingleSignal(DoCommandFlags flags, TileIndex tile, Track tra
 		 * stale reservations, we clear the path reservation here and try
 		 * to redo it later on. */
 		if (HasReservedTracks(tile, track)) {
-			v = GetTrainForReservation(tile, track);
+			v = GetTrainForReservation(tile_index, track);
 			if (v != nullptr) FreeTrainTrackReservation(v);
 		}
 
@@ -1184,11 +1185,11 @@ CommandCost CmdBuildSingleSignal(DoCommandFlags flags, TileIndex tile, Track tra
 		if (IsPbsSignal(sigtype)) {
 			/* PBS signals should show red unless they are on reserved tiles without a train. */
 			uint mask = GetPresentSignals(tile) & SignalOnTrack(track);
-			SetSignalStates(tile, (GetSignalStates(tile) & ~mask) | ((GetRailReservationTrackBits(tile).Test(track) && EnsureNoVehicleOnGround(tile).Succeeded() ? UINT_MAX : 0) & mask));
+			SetSignalStates(tile, (GetSignalStates(tile) & ~mask) | ((GetRailReservationTrackBits(tile).Test(track) && EnsureNoVehicleOnGround(tile_index).Succeeded() ? UINT_MAX : 0) & mask));
 		}
-		MarkTileDirtyByTile(tile);
-		AddTrackToSignalBuffer(tile, track, _current_company);
-		YapfNotifyTrackLayoutChange(tile, track);
+		MarkTileDirtyByTile(tile_index);
+		AddTrackToSignalBuffer(tile_index, track, _current_company);
+		YapfNotifyTrackLayoutChange(tile_index, track);
 		if (v != nullptr && v->track != Track::Depot) {
 			Train *moving_front = v->GetMovingFront();
 			/* Extend the train's path if it's not stopped or loading, or not at a safe position. */
@@ -1225,23 +1226,22 @@ static bool AdvanceSignalAutoFill(TileIndex &tile, Trackdir &trackdir, bool remo
 	/* Any left? It's a junction so we stop */
 	if (trackdirbits.Any()) return false;
 
-	switch (GetTileType(tile)) {
-		case TileType::Railway:
-			if (IsRailDepot(tile)) return false;
-			if (!remove && HasSignalOnTrack(tile, TrackdirToTrack(trackdir))) return false;
-			break;
+	if (Tile rail_tile = Tile::GetByType(tile, TileType::Railway); rail_tile.IsValid()) {
+		if (IsRailDepot(rail_tile)) return false;
+		if (!remove && HasSignalOnTrack(rail_tile, TrackdirToTrack(trackdir))) return false;
+	} else {
+		switch (GetTileType(tile)) {
+			case TileType::Road:
+				if (!IsLevelCrossing(tile)) return false;
+				break;
 
-		case TileType::Road:
-			if (!IsLevelCrossing(tile)) return false;
-			break;
-
-		case TileType::TunnelBridge: {
-			if (GetTunnelBridgeTransportType(tile) != TRANSPORT_RAIL) return false;
-			if (GetTunnelBridgeDirection(tile) != TrackdirToExitdir(trackdir)) return false;
-			break;
+			case TileType::TunnelBridge: {
+				if (GetTunnelBridgeTransportType(tile) != TRANSPORT_RAIL) return false;
+				if (GetTunnelBridgeDirection(tile) != TrackdirToExitdir(trackdir)) return false;
+				break;
+			}
+			default: return false;
 		}
-
-		default: return false;
 	}
 	return true;
 }
@@ -1269,7 +1269,8 @@ static CommandCost CmdSignalTrackHelper(DoCommandFlags flags, TileIndex tile, Ti
 	if (signal_density == 0 || signal_density > 20) return CMD_ERROR;
 	if (!remove && (sigtype >= SignalType::End || sigvar >= SignalVariant::End)) return CMD_ERROR;
 
-	if (!IsPlainRailTile(tile)) return CommandCost(STR_ERROR_THERE_IS_NO_RAILROAD_TRACK);
+	Tile rail_tile = Tile::GetByType(tile, TileType::Railway);
+	if (!IsPlainRailTile(rail_tile)) return CommandCost(STR_ERROR_THERE_IS_NO_RAILROAD_TRACK);
 	TileIndex start_tile = tile;
 
 	/* Interpret signal_density as the logical length of said amount of tiles in X/Y direction. */
@@ -1283,18 +1284,18 @@ static CommandCost CmdSignalTrackHelper(DoCommandFlags flags, TileIndex tile, Ti
 	Trackdir start_trackdir = trackdir;
 
 	/* Must start on a valid track to be able to avoid loops */
-	if (!HasTrack(tile, track)) return CMD_ERROR;
+	if (!HasTrack(rail_tile, track)) return CMD_ERROR;
 
 	uint8_t signals;
 	/* copy the signal-style of the first rail-piece if existing */
-	if (HasSignalOnTrack(tile, track)) {
-		signals = GetPresentSignals(tile) & SignalOnTrack(track);
+	if (HasSignalOnTrack(rail_tile, track)) {
+		signals = GetPresentSignals(rail_tile) & SignalOnTrack(track);
 		assert(signals != 0);
 
 		/* copy signal/semaphores style (independent of CTRL) */
-		sigvar = GetSignalVariant(tile, track);
+		sigvar = GetSignalVariant(rail_tile, track);
 
-		sigtype = GetSignalType(tile, track);
+		sigtype = GetSignalType(rail_tile, track);
 		/* Don't but copy entry or exit-signal type */
 		if (sigtype == SignalType::Entry || sigtype == SignalType::Exit) sigtype = SignalType::Block;
 	} else { // no signals exist, drag a two-way signal stretch
@@ -1385,11 +1386,11 @@ static CommandCost CmdSignalTrackHelper(DoCommandFlags flags, TileIndex tile, Ti
 		}
 
 		if (autofill) {
-			switch (GetTileType(tile)) {
-				case TileType::Railway:
-					signal_ctr += (IsDiagonalTrackdir(trackdir) ? TILE_AXIAL_DISTANCE : TILE_CORNER_DISTANCE);
-					break;
+			if (Tile::HasType(tile, TileType::Railway)) {
+				signal_ctr += (IsDiagonalTrackdir(trackdir) ? TILE_AXIAL_DISTANCE : TILE_CORNER_DISTANCE);
+			}
 
+			switch (GetTileType(tile)) {
 				case TileType::Road:
 					signal_ctr += TILE_AXIAL_DISTANCE;
 					break;
@@ -1460,12 +1461,14 @@ CommandCost CmdBuildSignalTrack(DoCommandFlags flags, TileIndex tile, TileIndex 
 /**
  * Remove signals
  * @param flags operation to perform
- * @param tile coordinates where signal is being deleted from
+ * @param tile_index Coordinates where signal is being deleted from.
  * @param track track-orientation
  * @return the cost of this operation or an error
  */
-CommandCost CmdRemoveSingleSignal(DoCommandFlags flags, TileIndex tile, Track track)
+CommandCost CmdRemoveSingleSignal(DoCommandFlags flags, TileIndex tile_index, Track track)
 {
+	Tile tile = Tile::GetByType(tile_index, TileType::Railway);
+
 	if (!ValParamTrackOrientation(track) || !IsPlainRailTile(tile) || !HasTrack(tile, track)) {
 		return CommandCost(STR_ERROR_THERE_IS_NO_RAILROAD_TRACK);
 	}
@@ -1475,7 +1478,7 @@ CommandCost CmdRemoveSingleSignal(DoCommandFlags flags, TileIndex tile, Track tr
 
 	/* Only water can remove signals from anyone */
 	if (_current_company != OWNER_WATER) {
-		CommandCost ret = CheckTileOwnership(tile);
+		CommandCost ret = CheckTileOwnership(tile_index, tile);
 		if (ret.Failed()) return ret;
 	}
 
@@ -1483,14 +1486,14 @@ CommandCost CmdRemoveSingleSignal(DoCommandFlags flags, TileIndex tile, Track tr
 	if (flags.Test(DoCommandFlag::Execute)) {
 		Train *v = nullptr;
 		if (HasReservedTracks(tile, track)) {
-			v = GetTrainForReservation(tile, track);
+			v = GetTrainForReservation(tile_index, track);
 		} else if (IsPbsSignal(GetSignalType(tile, track))) {
 			/* PBS signal, might be the end of a path reservation. */
 			Trackdir td = TrackToTrackdir(track);
 			for (int i = 0; v == nullptr && i < 2; i++, td = ReverseTrackdir(td)) {
 				/* Only test the active signal side. */
 				if (!HasSignalOnTrackdir(tile, ReverseTrackdir(td))) continue;
-				TileIndex next = TileAddByDiagDir(tile, TrackdirToExitdir(td));
+				TileIndex next = TileAddByDiagDir(tile_index, TrackdirToExitdir(td));
 				TrackBits tracks = TrackdirBitsToTrackBits(TrackdirReachesTrackdirs(td));
 				if (HasReservedTracks(next, tracks)) {
 					v = GetTrainForReservation(next, TrackBitsToTrack(GetReservedTrackbits(next) & tracks));
@@ -1509,11 +1512,11 @@ CommandCost CmdRemoveSingleSignal(DoCommandFlags flags, TileIndex tile, Track tr
 			SetSignalVariant(tile, Track::Invalid, SignalVariant::Electric); // remove any possible semaphores
 		}
 
-		AddTrackToSignalBuffer(tile, track, GetTileOwner(tile));
-		YapfNotifyTrackLayoutChange(tile, track);
+		AddTrackToSignalBuffer(tile_index, track, GetTileOwner(tile));
+		YapfNotifyTrackLayoutChange(tile_index, track);
 		if (v != nullptr) TryPathReserve(v, false);
 
-		MarkTileDirtyByTile(tile);
+		MarkTileDirtyByTile(tile_index);
 	}
 
 	return CommandCost(ExpensesType::Construction, _price[Price::ClearSignals]);
@@ -1889,7 +1892,7 @@ static bool IsTrainSignalSideRight()
 	}
 }
 
-static void DrawSingleSignal(TileIndex tile, const RailTypeInfo *rti, Track track, SignalState condition, SignalOffsets image, uint pos)
+static void DrawSingleSignal(TileIndex index, const Tile &tile, const RailTypeInfo *rti, Track track, SignalState condition, SignalOffsets image, uint pos)
 {
 	static const Point SignalPositions[2][12] = {
 		{ // Signals on the left side
@@ -1906,13 +1909,13 @@ static void DrawSingleSignal(TileIndex tile, const RailTypeInfo *rti, Track trac
 	};
 
 	bool signal_on_right = IsTrainSignalSideRight();
-	uint x = TileX(tile) * TILE_SIZE + SignalPositions[signal_on_right][pos].x;
-	uint y = TileY(tile) * TILE_SIZE + SignalPositions[signal_on_right][pos].y;
+	uint x = TileX(index) * TILE_SIZE + SignalPositions[signal_on_right][pos].x;
+	uint y = TileY(index) * TILE_SIZE + SignalPositions[signal_on_right][pos].y;
 
 	SignalType type       = GetSignalType(tile, track);
 	SignalVariant variant = GetSignalVariant(tile, track);
 
-	SpriteID sprite = GetCustomSignalSprite(rti, tile, type, variant, condition);
+	SpriteID sprite = GetCustomSignalSprite(rti, index, type, variant, condition);
 	if (sprite != 0) {
 		sprite += image;
 	} else {
@@ -2396,10 +2399,10 @@ static void DrawTrackBits(TileInfo *ti, TrackBits track, bool draw_halftile, Cor
 	}
 }
 
-static void DrawSignals(TileIndex tile, TrackBits rails, const RailTypeInfo *rti)
+static void DrawSignals(TileIndex index, const Tile &tile, TrackBits rails, const RailTypeInfo *rti)
 {
 	auto MAYBE_DRAW_SIGNAL = [&](uint8_t signalbit, SignalOffsets image, uint pos, Track track) {
-		if (IsSignalPresent(tile, signalbit)) DrawSingleSignal(tile, rti, track, GetSingleSignalState(tile, signalbit), image, pos);
+		if (IsSignalPresent(tile, signalbit)) DrawSingleSignal(index, tile, rti, track, GetSingleSignalState(tile, signalbit), image, pos);
 	};
 
 	if (!rails.Test(Track::Y)) {
@@ -2449,7 +2452,7 @@ static BridgePillarFlags DrawTile_Rail(TileInfo *ti, bool draw_halftile, Corner 
 		if (rails.Any()) {
 			if (_display_opt.Test(DisplayOption::FullDetail)) DrawTrackDetails(ti, rti, pal, draw_halftile, halftile_corner);
 			if (HasRailCatenaryDrawn(GetRailType(ti->tile))) DrawRailCatenary(ti, draw_halftile, halftile_corner);
-			if (HasSignals(ti->tile)) DrawSignals(ti->index, rails, rti);
+			if (HasSignals(ti->tile)) DrawSignals(ti->index, ti->tile, rails, rti);
 		}
 
 		if (IsBridgeAbove(ti->tile)) {
