@@ -415,11 +415,11 @@ bool IsSafeWaitingPosition(const Train *v, TileIndex tile, Trackdir trackdir, bo
 
 	if (ft.new_td_bits.Count() == 1) {
 		Trackdir td = FindFirstTrackdir(ft.new_td_bits);
+		Tile rail_tile = Tile::GetByType(ft.new_tile, TileType::Railway);
 		/* PBS signal on next trackdir? Safe position. */
-		if (HasPbsSignalOnTrackdir(ft.new_tile, td)) return true;
+		if (HasPbsSignalOnTrackdir(rail_tile, td)) return true;
 		/* One-way PBS signal against us? Safe if end-of-line is allowed. */
-		if (IsTileType(ft.new_tile, TileType::Railway) && HasSignalOnTrackdir(ft.new_tile, ReverseTrackdir(td)) &&
-				GetSignalType(ft.new_tile, TrackdirToTrack(td)) == SignalType::PathOneWay) {
+		if (rail_tile && HasSignalOnTrackdir(rail_tile, ReverseTrackdir(td)) && GetSignalType(rail_tile, TrackdirToTrack(td)) == SignalType::PathOneWay) {
 			return include_line_end;
 		}
 	}
