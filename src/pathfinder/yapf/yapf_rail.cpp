@@ -54,7 +54,7 @@ private:
 	Trackdir res_fail_td; ///< The trackdir where the reservation failed
 	TileIndex origin_tile; ///< Tile our reservation will originate from
 
-	std::vector<std::pair<TileIndex, Trackdir>> signals_set_to_red; ///< List of signals turned red during a path reservation.
+	std::vector<std::pair<Tile, Trackdir>> signals_set_to_red; ///< List of signals turned red during a path reservation.
 
 	bool FindSafePositionProc(TileIndex tile, Trackdir td)
 	{
@@ -115,9 +115,9 @@ private:
 			}
 
 			/* Green path signal opposing the path? Turn to red. */
-			if (HasPbsSignalOnTrackdir(tile, rev_td) && GetSignalStateByTrackdir(tile, rev_td) == SignalState::Green) {
-				this->signals_set_to_red.emplace_back(tile, rev_td);
-				SetSignalStateByTrackdir(tile, rev_td, SignalState::Red);
+			if (Tile rail = Tile::GetByType(tile, TileType::Railway); HasPbsSignalOnTrackdir(rail, rev_td) && GetSignalStateByTrackdir(rail, rev_td) == SignalState::Green) {
+				this->signals_set_to_red.emplace_back(rail, rev_td);
+				SetSignalStateByTrackdir(rail, rev_td, SignalState::Red);
 				MarkTileDirtyByTile(tile);
 			}
 
