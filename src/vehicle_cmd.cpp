@@ -100,7 +100,7 @@ const StringID _send_to_depot_msg_table[] = {
 std::tuple<CommandCost, VehicleID, uint, uint16_t, CargoArray> CmdBuildVehicle(DoCommandFlags flags, TileIndex tile, EngineID eid, bool use_free_vehicles, CargoType cargo, ClientID client_id)
 {
 	/* Elementary check for valid location. */
-	if (!IsDepotTile(tile) || !IsTileOwner(tile, _current_company)) return { CMD_ERROR, VehicleID::Invalid(), 0, 0, {} };
+	if (!IsDepotTile(tile) || !IsDepotOwner(tile, _current_company)) return { CMD_ERROR, VehicleID::Invalid(), 0, 0, {} };
 
 	VehicleType type = GetDepotVehicleType(tile);
 
@@ -678,7 +678,7 @@ CommandCost CmdMassStartStopVehicle(DoCommandFlags flags, TileIndex tile, bool d
 	if (vehicle_list_window) {
 		if (!GenerateVehicleSortList(&list, vli)) return CMD_ERROR;
 	} else {
-		if (!IsDepotTile(tile) || !IsTileOwner(tile, _current_company)) return CMD_ERROR;
+		if (!IsDepotTile(tile) || !IsDepotOwner(tile, _current_company)) return CMD_ERROR;
 		/* Get the list of vehicles in the depot */
 		BuildDepotVehicleList(vli.vtype, tile, &list, nullptr);
 	}
@@ -709,7 +709,7 @@ CommandCost CmdDepotSellAllVehicles(DoCommandFlags flags, TileIndex tile, Vehicl
 	CommandCost cost(EXPENSES_NEW_VEHICLES);
 
 	if (!IsCompanyBuildableVehicleType(vehicle_type)) return CMD_ERROR;
-	if (!IsDepotTile(tile) || !IsTileOwner(tile, _current_company)) return CMD_ERROR;
+	if (!IsDepotTile(tile) || !IsDepotOwner(tile, _current_company)) return CMD_ERROR;
 
 	/* Get the list of vehicles in the depot */
 	BuildDepotVehicleList(vehicle_type, tile, &list, &list);
@@ -742,7 +742,7 @@ CommandCost CmdDepotMassAutoReplace(DoCommandFlags flags, TileIndex tile, Vehicl
 	CommandCost cost = CommandCost(EXPENSES_NEW_VEHICLES);
 
 	if (!IsCompanyBuildableVehicleType(vehicle_type)) return CMD_ERROR;
-	if (!IsDepotTile(tile) || !IsTileOwner(tile, _current_company)) return CMD_ERROR;
+	if (!IsDepotTile(tile) || !IsDepotOwner(tile, _current_company)) return CMD_ERROR;
 
 	/* Get the list of vehicles in the depot */
 	BuildDepotVehicleList(vehicle_type, tile, &list, &list, true);

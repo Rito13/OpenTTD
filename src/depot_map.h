@@ -16,7 +16,7 @@
 /**
  * Check if a tile is a depot and it is a depot of the given type.
  */
-inline bool IsDepotTypeTile(Tile tile, TransportType type)
+inline bool IsDepotTypeTile(TileIndex tile, TransportType type)
 {
 	switch (type) {
 		default: NOT_REACHED();
@@ -39,9 +39,22 @@ inline bool IsDepotTypeTile(Tile tile, TransportType type)
  * @param tile the tile to check
  * @return true if and only if there is a depot on the tile.
  */
-inline bool IsDepotTile(Tile tile)
+inline bool IsDepotTile(TileIndex tile)
 {
 	return IsRailDepotTile(tile) || IsRoadDepotTile(tile) || IsShipDepotTile(tile) || IsHangarTile(tile);
+}
+
+/**
+ * Get the depot tile at a tile index.
+ * @param index The tile index to get the depot tile from.
+ * @return The actual depot tile.
+ * @pre IsDepotTile
+ */
+inline Tile GetDepotTile(TileIndex index)
+{
+	assert(IsDepotTile(index));
+	if (Tile rail = Tile::GetByType(index, MP_RAILWAY); rail.IsValid()) return rail;
+	return index;
 }
 
 /**
@@ -63,10 +76,43 @@ inline DepotID GetDepotIndex(Tile t)
  * @pre IsRailDepotTile(t) || IsRoadDepotTile(t) || IsShipDepotTile(t) || IsHangarTile(t)
  * @return DepotID
  */
-inline DestinationID GetDepotDestinationIndex(Tile t)
+inline DestinationID GetDepotDestinationIndex(TileIndex t)
 {
 	if (IsHangarTile(t)) return GetStationIndex(t);
 	return GetDepotIndex(t);
+}
+
+/**
+ * Get the index of which depot is attached to the tile.
+ * @param t the tile
+ * @pre IsRailDepotTile(t) || IsRoadDepotTile(t) || IsShipDepotTile(t)
+ * @return DepotID
+ */
+inline DepotID GetDepotIndex(TileIndex t)
+{
+	return GetDepotIndex(GetDepotTile(t));
+}
+
+/**
+ * Get the owner of a depot tile.
+ * @param tile Tile to get the owner of.
+ * @return The depot owner.
+ * @pre IsDepotTile(t)
+ */
+inline Owner GetDepotOwner(TileIndex tile)
+{
+	return GetTileOwner(GetDepotTile(tile));
+}
+
+/**
+ * Check if a depot belongs to a given owner.
+ * @param tile The tile to check.
+ * @param owner The owner to check against.
+ * @return True if the depot belongs the the given owner.
+ */
+inline bool IsDepotOwner(TileIndex tile, Owner o)
+{
+	return GetDepotOwner(tile) == o;
 }
 
 /**
@@ -75,11 +121,13 @@ inline DestinationID GetDepotDestinationIndex(Tile t)
  * @pre IsDepotTile(t)
  * @return the type of vehicles that can use the depot
  */
-inline VehicleType GetDepotVehicleType(Tile t)
+inline VehicleType GetDepotVehicleType(TileIndex t)
 {
+	assert(IsDepotTile(t));
+
+	if (Tile::HasType(t, MP_RAILWAY)) return VEH_TRAIN;
 	switch (GetTileType(t)) {
 		default: NOT_REACHED();
-		case MP_RAILWAY: return VEH_TRAIN;
 		case MP_ROAD:    return VEH_ROAD;
 		case MP_WATER:   return VEH_SHIP;
 		case MP_STATION: return VEH_AIRCRAFT;
