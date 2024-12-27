@@ -31,13 +31,16 @@ protected:
 	/** Structure used inside PfCalcCost() to keep basic tile information. */
 	struct TILE {
 		TileIndex   tile;
+		Tile rail_tile;
 		Trackdir    td;
-		TileType    tile_type;
 		RailType    rail_type;
 
-		TILE() : tile(INVALID_TILE), td(Trackdir::Invalid), tile_type(TileType::Void), rail_type(INVALID_RAILTYPE) { }
+		TILE() : tile(INVALID_TILE), rail_tile(), td(Trackdir::Invalid), rail_type(INVALID_RAILTYPE) {}
 
-		TILE(TileIndex tile, Trackdir td) : tile(tile), td(td), tile_type(GetTileType(tile)), rail_type(GetTileRailType(tile)) { }
+		TILE(TileIndex tile, Trackdir td) : tile(tile), rail_tile(Tile::GetByType(tile, TileType::Railway)), td(td)
+		{
+			rail_type = GetTileRailType(rail_tile ? rail_tile : tile);
+		}
 	};
 
 protected:
@@ -195,11 +198,11 @@ public:
 		return 0;
 	}
 
-	int SignalCost(Node &n, TileIndex tile, Trackdir trackdir)
+	int SignalCost(Node &n, TileIndex index, const Tile &tile, Trackdir trackdir)
 	{
 		int cost = 0;
 		/* if there is one-way signal in the opposite direction, then it is not our way */
-		if (IsTileType(tile, TileType::Railway)) {
+		if (tile && IsTileType(tile, TileType::Railway)) {
 			bool has_signal_against = HasSignalOnTrackdir(tile, ReverseTrackdir(trackdir));
 			bool has_signal_along = HasSignalOnTrackdir(tile, trackdir);
 			if (has_signal_against && !has_signal_along && IsOnewaySignal(tile, TrackdirToTrack(trackdir))) {
@@ -254,7 +257,7 @@ public:
 					}
 
 					n.num_signals_passed++;
-					n.segment->last_signal_tile = tile;
+					n.segment->last_signal_tile = index;
 					n.segment->last_signal_td = trackdir;
 				}
 
@@ -374,12 +377,13 @@ public:
 					end_segment_reason = segment.end_segment_reason;
 					/* We will need also some information about the last signal (if it was red). */
 					if (segment.last_signal_tile != INVALID_TILE) {
-						assert(HasSignalOnTrackdir(segment.last_signal_tile, segment.last_signal_td));
-						SignalState sig_state = GetSignalStateByTrackdir(segment.last_signal_tile, segment.last_signal_td);
+						Tile rail_tile = Tile::GetByType(segment.last_signal_tile, TileType::Railway);
+						assert(rail_tile && HasSignalOnTrackdir(rail_tile, segment.last_signal_td));
+						SignalState sig_state = GetSignalStateByTrackdir(rail_tile, segment.last_signal_td);
 						bool is_red = (sig_state == SignalState::Red);
 						n.flags_u.flags_s.last_signal_was_red = is_red;
 						if (is_red) {
-							n.last_red_signal_type = GetSignalType(segment.last_signal_tile, TrackdirToTrack(segment.last_signal_td));
+							n.last_red_signal_type = GetSignalType(rail_tile, TrackdirToTrack(segment.last_signal_td));
 						}
 					}
 					/* No further calculation needed. */
@@ -403,7 +407,7 @@ no_entry_cost: // jump here at the beginning if the node has no parent (it is th
 			segment_cost += Yapf().SlopeCost(cur.tile, cur.td);
 
 			/* Signal cost (routine can modify segment data). */
-			segment_cost += Yapf().SignalCost(n, cur.tile, cur.td);
+			segment_cost += Yapf().SignalCost(n, cur.tile, cur.rail_tile, cur.td);
 
 			/* Reserved tiles. */
 			segment_cost += Yapf().ReservationCost(n, cur.tile, cur.td, follower->tiles_skipped);
@@ -420,7 +424,7 @@ no_entry_cost: // jump here at the beginning if the node has no parent (it is th
 				/* We will end in this pass (depot is possible target) */
 				end_segment_reason.Set(EndSegmentReason::Depot);
 
-			} else if (cur.tile_type == TileType::Station && IsRailWaypoint(cur.tile)) {
+			} else if (IsRailWaypointTile(cur.tile)) {
 				if (v->current_order.IsType(OT_GOTO_WAYPOINT) &&
 						GetStationIndex(cur.tile) == v->current_order.GetDestination() &&
 						!Waypoint::Get(v->current_order.GetDestination().ToStationID())->IsSingleTile()) {
@@ -473,9 +477,9 @@ no_entry_cost: // jump here at the beginning if the node has no parent (it is th
 				/* We will end in this pass (station is possible target) */
 				end_segment_reason.Set(EndSegmentReason::Station);
 
-			} else if (TrackFollower::DoTrackMasking() && cur.tile_type == TileType::Railway) {
+			} else if (TrackFollower::DoTrackMasking() && cur.rail_tile) {
 				/* Searching for a safe tile? */
-				if (HasSignalOnTrackdir(cur.tile, cur.td) && !IsPbsSignal(GetSignalType(cur.tile, TrackdirToTrack(cur.td)))) {
+				if (HasSignalOnTrackdir(cur.rail_tile, cur.td) && !IsPbsSignal(GetSignalType(cur.rail_tile, TrackdirToTrack(cur.td)))) {
 					end_segment_reason.Set(EndSegmentReason::SafeTile);
 				}
 			}
@@ -527,14 +531,14 @@ no_entry_cost: // jump here at the beginning if the node has no parent (it is th
 				break;
 			}
 
-			/* Gather the next tile/trackdir/tile_type/rail_type. */
+			/* Gather the next tile/trackdir/rail_type. */
 			TILE next(follower_local.new_tile, follower_local.new_td_bits.GetNthSetBit(0).value());
 
-			if (TrackFollower::DoTrackMasking() && IsTileType(next.tile, TileType::Railway)) {
-				if (HasSignalOnTrackdir(next.tile, next.td) && IsPbsSignal(GetSignalType(next.tile, TrackdirToTrack(next.td)))) {
+			if (TrackFollower::DoTrackMasking() && next.rail_tile) {
+				if (HasSignalOnTrackdir(next.rail_tile, next.td) && IsPbsSignal(GetSignalType(next.rail_tile, TrackdirToTrack(next.td)))) {
 					/* Possible safe tile. */
 					end_segment_reason.Set(EndSegmentReason::SafeTile);
-				} else if (HasSignalOnTrackdir(next.tile, ReverseTrackdir(next.td)) && GetSignalType(next.tile, TrackdirToTrack(next.td)) == SignalType::PathOneWay) {
+				} else if (HasSignalOnTrackdir(next.rail_tile, ReverseTrackdir(next.td)) && GetSignalType(next.rail_tile, TrackdirToTrack(next.td)) == SignalType::PathOneWay) {
 					/* Possible safe tile, but not so good as it's the back of a signal... */
 					end_segment_reason.Set({EndSegmentReason::SafeTile, EndSegmentReason::DeadEnd});
 					extra_cost += Yapf().PfGetSettings().rail_lastred_exit_penalty;

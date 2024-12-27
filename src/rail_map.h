@@ -60,7 +60,7 @@ enum class RailTileType : uint8_t {
  */
 [[debug_inline]] inline static bool IsPlainRailTile(const Tile &t)
 {
-	return IsTileType(t, TileType::Railway) && IsPlainRail(t);
+	return t.IsValid() && IsTileType(t, TileType::Railway) && IsPlainRail(t);
 }
 
 
@@ -534,8 +534,14 @@ inline void SetSignalStateByTrackdir(const Tile &tile, Trackdir trackdir, Signal
  */
 inline bool HasPbsSignalOnTrackdir(const Tile &tile, Trackdir td)
 {
-	return IsTileType(tile, TileType::Railway) && HasSignalOnTrackdir(tile, td) &&
+	return tile && IsTileType(tile, TileType::Railway) && HasSignalOnTrackdir(tile, td) &&
 			IsPbsSignal(GetSignalType(tile, TrackdirToTrack(td)));
+}
+
+/** @copydoc HasPbsSignalOnTrackdir(const Tile &, Trackdir) */
+inline bool HasPbsSignalOnTrackdir(TileIndex tile, Trackdir td)
+{
+	return HasPbsSignalOnTrackdir(Tile::GetByType(tile, TileType::Railway), td);
 }
 
 /**
@@ -547,8 +553,14 @@ inline bool HasPbsSignalOnTrackdir(const Tile &tile, Trackdir td)
  */
 inline bool HasOnewaySignalBlockingTrackdir(const Tile &tile, Trackdir td)
 {
-	return IsTileType(tile, TileType::Railway) && HasSignalOnTrackdir(tile, ReverseTrackdir(td)) &&
+	return tile && IsTileType(tile, TileType::Railway) && HasSignalOnTrackdir(tile, ReverseTrackdir(td)) &&
 			!HasSignalOnTrackdir(tile, td) && IsOnewaySignal(tile, TrackdirToTrack(td));
+}
+
+/** @copydoc HasOnewaySignalBlockingTrackdir(const Tile &, Trackdir) */
+inline bool HasOnewaySignalBlockingTrackdir(TileIndex tile, Trackdir td)
+{
+	return HasOnewaySignalBlockingTrackdir(Tile::GetByType(tile, TileType::Railway), td);
 }
 
 /**
@@ -559,8 +571,14 @@ inline bool HasOnewaySignalBlockingTrackdir(const Tile &tile, Trackdir td)
  */
 inline bool HasBlockSignalOnTrackdir(const Tile &tile, Trackdir td)
 {
-	return IsTileType(tile, TileType::Railway) && HasSignalOnTrackdir(tile, td) &&
+	return tile && IsTileType(tile, TileType::Railway) && HasSignalOnTrackdir(tile, td) &&
 		!IsPbsSignal(GetSignalType(tile, TrackdirToTrack(td)));
+}
+
+/** @copydoc HasBlockSignalOnTrackdir(Tile, Trackdir) */
+inline bool HasBlockSignalOnTrackdir(TileIndex tile, Trackdir td)
+{
+	return HasBlockSignalOnTrackdir(Tile::GetByType(tile, TileType::Railway), td);
 }
 
 RailType GetTileRailType(const Tile &tile);
