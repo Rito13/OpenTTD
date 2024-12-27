@@ -1314,7 +1314,7 @@ static bool GrowTownWithBridge(const Town *t, const TileIndex tile, const DiagDi
 				return false;
 			}
 			bridge_tile += delta;
-		} while (IsValidTile(bridge_tile) && ((IsWaterTile(bridge_tile) && !IsSea(bridge_tile)) || IsPlainRailTile(bridge_tile) || (IsNormalRoadTile(bridge_tile) && GetDisallowedRoadDirections(bridge_tile).Any())));
+		} while (IsValidTile(bridge_tile) && ((IsWaterTile(bridge_tile) && !IsSea(bridge_tile)) || IsPlainRailTile(Tile::GetByType(bridge_tile, TileType::Railway)) || (IsNormalRoadTile(bridge_tile) && GetDisallowedRoadDirections(bridge_tile).Any())));
 	} else {
 		do {
 			if (bridge_length++ >= max_bridge_length) {
@@ -1322,7 +1322,7 @@ static bool GrowTownWithBridge(const Town *t, const TileIndex tile, const DiagDi
 				return false;
 			}
 			bridge_tile += delta;
-		} while (IsValidTile(bridge_tile) && (IsWaterTile(bridge_tile) || IsPlainRailTile(bridge_tile) || (IsNormalRoadTile(bridge_tile) && GetDisallowedRoadDirections(bridge_tile).Any())));
+		} while (IsValidTile(bridge_tile) && (IsWaterTile(bridge_tile) || IsPlainRailTile(Tile::GetByType(bridge_tile, TileType::Railway)) || (IsNormalRoadTile(bridge_tile) && GetDisallowedRoadDirections(bridge_tile).Any())));
 	}
 
 	/* Don't allow a bridge where the start and end tiles are adjacent with no span between. */

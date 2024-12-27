@@ -36,7 +36,12 @@ struct Depot : DepotPool::PoolItem<&_depot_pool> {
 	 */
 	static inline Depot *GetByTile(const Tile &tile)
 	{
-		return Depot::Get(GetDepotIndex(tile));
+		return Depot::Get(GetDepotIndex(AsDepotTile(tile)));
+	}
+
+	static inline Depot *GetByTile(TileIndex tile)
+	{
+		return Depot::Get(GetDepotIndex(GetDepotTile(tile)));
 	}
 
 	/**

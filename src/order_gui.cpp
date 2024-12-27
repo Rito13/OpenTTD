@@ -370,17 +370,20 @@ static Order GetOrderCmdFromTile(const Vehicle *v, TileIndex tile)
 	Order order{};
 
 	/* check depot first */
-	if (IsDepotTypeTile(tile, (TransportType)(uint)v->type) && IsTileOwner(tile, _local_company)) {
-		order.MakeGoToDepot(GetDepotDestinationIndex(tile),
-				OrderDepotTypeFlag::PartOfOrders,
-				(_settings_client.gui.new_nonstop && v->IsGroundVehicle()) ? OrderNonStopFlag::NonStop : OrderNonStopFlags{});
+	if (IsDepotTypeTile(tile, static_cast<TransportType>(static_cast<uint>(v->type)))) {
+		DepotTile depot_tile = AsDepotTile(tile);
+		if (depot_tile.IsValid() && IsTileOwner(tile, _local_company)) {
+			order.MakeGoToDepot(GetDepotDestinationIndex(depot_tile),
+					OrderDepotTypeFlag::PartOfOrders,
+					(_settings_client.gui.new_nonstop && v->IsGroundVehicle()) ? OrderNonStopFlag::NonStop : OrderNonStopFlags{});
 
-		if (_ctrl_pressed) {
-			/* Now we are allowed to set the action type. */
-			order.SetDepotActionType(OrderDepotActionFlag::Unbunch);
+			if (_ctrl_pressed) {
+				/* Now we are allowed to set the action type. */
+				order.SetDepotActionType(OrderDepotActionFlag::Unbunch);
+			}
+
+			return order;
 		}
-
-		return order;
 	}
 
 	/* check rail waypoint */

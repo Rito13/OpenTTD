@@ -116,8 +116,8 @@ private:
 
 			/* Green path signal opposing the path? Turn to red. */
 			if (Tile rail = Tile::GetByType(tile, TileType::Railway); HasPbsSignalOnTrackdir(rail, rev_td) && GetSignalStateByTrackdir(rail, rev_td) == SignalState::Green) {
-				this->signals_set_to_red.emplace_back(rail, rev_td);
 				SetSignalStateByTrackdir(rail, rev_td, SignalState::Red);
+				this->signals_set_to_red.emplace_back(std::move(rail), rev_td);
 				MarkTileDirtyByTile(tile);
 			}
 
@@ -216,7 +216,7 @@ public:
 				} while (fail_node != node && (fail_node = fail_node->parent) != nullptr);
 
 				/* Re-instate green path signals we turned to red. */
-				for (auto [sig_tile, td] : this->signals_set_to_red) {
+				for (const auto& [sig_tile, td] : this->signals_set_to_red) {
 					SetSignalStateByTrackdir(sig_tile, td, SignalState::Green);
 				}
 
@@ -286,8 +286,8 @@ public:
 			FindDepotData result2 = pf2.FindNearestDepotTwoWay(v, t1, td1, t2, td2, max_penalty, reverse_penalty);
 			if (result1.tile != result2.tile || (result1.reverse != result2.reverse)) {
 				Debug(desync, 2, "warning: FindNearestDepotTwoWay cache mismatch: {} vs {}",
-						result1.tile != INVALID_TILE ? "T" : "F",
-						result2.tile != INVALID_TILE ? "T" : "F");
+						result1.index != INVALID_TILE ? "T" : "F",
+						result2.index != INVALID_TILE ? "T" : "F");
 				DumpState(pf1, pf2);
 			}
 		}
