@@ -265,12 +265,15 @@ static SigFlags ExploreSegment(Owner owner)
 {
 	SigFlags flags{};
 
-	TileIndex tile = INVALID_TILE; // Stop GCC from complaining about a possibly uninitialized variable (issue #8280).
+	TileIndex index = INVALID_TILE; // Stop GCC from complaining about a possibly uninitialized variable (issue #8280).
 	DiagDirection enterdir = INVALID_DIAGDIR;
 
-	while (_tbdset.Get(&tile, &enterdir)) { // tile and enterdir are initialized here, unless I'm mistaken.
-		TileIndex oldtile = tile; // tile we are leaving
+	while (_tbdset.Get(&index, &enterdir)) { // tile and enterdir are initialized here, unless I'm mistaken.
+		TileIndex oldindex = index; // tile we are leaving
 		DiagDirection exitdir = enterdir == INVALID_DIAGDIR ? INVALID_DIAGDIR : ReverseDiagDir(enterdir); // expected new exit direction (for straight line)
+
+		Tile tile = Tile::GetByType(index, MP_RAILWAY);
+		if (!tile) tile = index;
 
 		switch (GetTileType(tile)) {
 			case MP_RAILWAY: {
@@ -278,13 +281,13 @@ static SigFlags ExploreSegment(Owner owner)
 
 				if (IsRailDepot(tile)) {
 					if (enterdir == INVALID_DIAGDIR) { // from 'inside' - train just entered or left the depot
-						if (!flags.Test(SigFlag::Train) && HasVehicleOnTile(tile, IsTrainAndNotInDepot)) flags.Set(SigFlag::Train);
+						if (!flags.Test(SigFlag::Train) && HasVehicleOnTile(index, IsTrainAndNotInDepot)) flags.Set(SigFlag::Train);
 						exitdir = GetRailDepotDirection(tile);
-						tile += TileOffsByDiagDir(exitdir);
+						index += TileOffsByDiagDir(exitdir);
 						enterdir = ReverseDiagDir(exitdir);
 						break;
 					} else if (enterdir == GetRailDepotDirection(tile)) { // entered a depot
-						if (!flags.Test(SigFlag::Train) && HasVehicleOnTile(tile, IsTrainAndNotInDepot)) flags.Set(SigFlag::Train);
+						if (!flags.Test(SigFlag::Train) && HasVehicleOnTile(index, IsTrainAndNotInDepot)) flags.Set(SigFlag::Train);
 						continue;
 					} else {
 						continue;
@@ -298,10 +301,10 @@ static SigFlags ExploreSegment(Owner owner)
 				if (tracks == TRACK_BIT_HORZ || tracks == TRACK_BIT_VERT) { // there is exactly one incidating track, no need to check
 					tracks = tracks_masked;
 					/* If no train detected yet, and there is not no train -> there is a train -> set the flag */
-					if (!flags.Test(SigFlag::Train) && EnsureNoTrainOnTrackBits(tile, tracks).Failed()) flags. Set(SigFlag::Train);
+					if (!flags.Test(SigFlag::Train) && EnsureNoTrainOnTrackBits(index, tracks).Failed()) flags.Set(SigFlag::Train);
 				} else {
 					if (tracks_masked == TRACK_BIT_NONE) continue; // no incidating track
-					if (!flags.Test(SigFlag::Train) && HasVehicleOnTile(tile, IsTrainAndNotInDepot)) flags.Set(SigFlag::Train);
+					if (!flags.Test(SigFlag::Train) && HasVehicleOnTile(index, IsTrainAndNotInDepot)) flags.Set(SigFlag::Train);
 				}
 
 				/* Is this a track merge or split? */
@@ -320,8 +323,7 @@ static SigFlags ExploreSegment(Owner owner)
 							if (IsPbsSignal(sig)) flags.Set(SigFlag::Pbs);
 							if (flags.Test(SigFlag::Enter)) flags.Set(SigFlag::MultiEnter);
 							flags.Set(SigFlag::Enter);
-
-							if (!_tbuset.Add(tile, reversedir)) return flags | SigFlag::Full;
+							if (!_tbuset.Add(index, reversedir)) return flags | SigFlag::Full;
 						}
 						if (HasSignalOnTrackdir(tile, trackdir) && !IsOnewaySignal(tile, track)) flags.Set(SigFlag::Pbs);
 
@@ -341,14 +343,14 @@ static SigFlags ExploreSegment(Owner owner)
 
 				for (DiagDirection dir = DIAGDIR_BEGIN; dir < DIAGDIR_END; dir++) { // test all possible exit directions
 					if (dir != enterdir && (tracks & _enterdir_to_trackbits[dir])) { // any track incidating?
-						TileIndex newtile = tile + TileOffsByDiagDir(dir);  // new tile to check
+						TileIndex newtile = index + TileOffsByDiagDir(dir);  // new tile to check
 						DiagDirection newdir = ReverseDiagDir(dir); // direction we are entering from
-						if (!MaybeAddToTodoSet(newtile, newdir, tile, dir)) return flags | SigFlag::Full;
+						if (!MaybeAddToTodoSet(newtile, newdir, index, dir)) return flags | SigFlag::Full;
 					}
 				}
 
 				continue; // continue the while() loop
-				}
+			}
 
 			case MP_STATION:
 				if (!HasStationRail(tile)) continue;
@@ -356,8 +358,8 @@ static SigFlags ExploreSegment(Owner owner)
 				if (DiagDirToAxis(enterdir) != GetRailStationAxis(tile)) continue; // different axis
 				if (IsStationTileBlocked(tile)) continue; // 'eye-candy' station tile
 
-				if (!flags.Test(SigFlag::Train) && HasVehicleOnTile(tile, IsTrainAndNotInDepot)) flags.Set(SigFlag::Train);
-				tile += TileOffsByDiagDir(exitdir);
+				if (!flags.Test(SigFlag::Train) && HasVehicleOnTile(index, IsTrainAndNotInDepot)) flags.Set(SigFlag::Train);
+				index += TileOffsByDiagDir(exitdir);
 				break;
 
 			case MP_ROAD:
@@ -365,8 +367,8 @@ static SigFlags ExploreSegment(Owner owner)
 				if (GetTileOwner(tile) != owner) continue;
 				if (DiagDirToAxis(enterdir) == GetCrossingRoadAxis(tile)) continue; // different axis
 
-				if (!flags.Test(SigFlag::Train) && HasVehicleOnTile(tile, IsTrainAndNotInDepot)) flags.Set(SigFlag::Train);
-				tile += TileOffsByDiagDir(exitdir);
+				if (!flags.Test(SigFlag::Train) && HasVehicleOnTile(index, IsTrainAndNotInDepot)) flags.Set(SigFlag::Train);
+				index += TileOffsByDiagDir(exitdir);
 				break;
 
 			case MP_TUNNELBRIDGE: {
@@ -375,14 +377,14 @@ static SigFlags ExploreSegment(Owner owner)
 				DiagDirection dir = GetTunnelBridgeDirection(tile);
 
 				if (enterdir == INVALID_DIAGDIR) { // incoming from the wormhole
-					if (!flags.Test(SigFlag::Train) && HasVehicleOnTile(tile, IsTrainAndNotInDepot)) flags.Set(SigFlag::Train);
+					if (!flags.Test(SigFlag::Train) && HasVehicleOnTile(index, IsTrainAndNotInDepot)) flags.Set(SigFlag::Train);
 					enterdir = dir;
 					exitdir = ReverseDiagDir(dir);
-					tile += TileOffsByDiagDir(exitdir); // just skip to next tile
+					index += TileOffsByDiagDir(exitdir); // just skip to next tile
 				} else { // NOT incoming from the wormhole!
 					if (ReverseDiagDir(enterdir) != dir) continue;
-					if (!flags.Test(SigFlag::Train) && HasVehicleOnTile(tile, IsTrainAndNotInDepot)) flags.Set(SigFlag::Train);
-					tile = GetOtherTunnelBridgeEnd(tile); // just skip to exit tile
+					if (!flags.Test(SigFlag::Train) && HasVehicleOnTile(index, IsTrainAndNotInDepot)) flags.Set(SigFlag::Train);
+					index = GetOtherTunnelBridgeEnd(index); // just skip to exit tile
 					enterdir = INVALID_DIAGDIR;
 					exitdir = INVALID_DIAGDIR;
 				}
@@ -393,7 +395,7 @@ static SigFlags ExploreSegment(Owner owner)
 				continue; // continue the while() loop
 		}
 
-		if (!MaybeAddToTodoSet(tile, enterdir, oldtile, exitdir)) return flags | SigFlag::Full;
+		if (!MaybeAddToTodoSet(index, enterdir, oldindex, exitdir)) return flags | SigFlag::Full;
 	}
 
 	return flags;
@@ -407,11 +409,12 @@ static SigFlags ExploreSegment(Owner owner)
  */
 static void UpdateSignalsAroundSegment(SigFlags flags)
 {
-	TileIndex tile = INVALID_TILE; // Stop GCC from complaining about a possibly uninitialized variable (issue #8280).
+	TileIndex index = INVALID_TILE; // Stop GCC from complaining about a possibly uninitialized variable (issue #8280).
 	Trackdir trackdir = INVALID_TRACKDIR;
 
-	while (_tbuset.Get(&tile, &trackdir)) {
-		assert(HasSignalOnTrackdir(tile, trackdir));
+	while (_tbuset.Get(&index, &trackdir)) {
+		Tile tile = Tile::GetByType(index, MP_RAILWAY);
+		assert(tile.IsValid() && HasSignalOnTrackdir(tile, trackdir));
 
 		Track track = TrackdirToTrack(trackdir);
 		SignalType sig = GetSignalType(tile, track);
@@ -448,10 +451,10 @@ static void UpdateSignalsAroundSegment(SigFlags flags)
 			if (IsPresignalExit(tile, TrackdirToTrack(trackdir))) {
 				/* for pre-signal exits, add block to the global set */
 				DiagDirection exitdir = TrackdirToExitdir(ReverseTrackdir(trackdir));
-				_globset.Add(tile, exitdir); // do not check for full global set, first update all signals
+				_globset.Add(index, exitdir); // do not check for full global set, first update all signals
 			}
 			SetSignalStateByTrackdir(tile, trackdir, newstate);
-			MarkTileDirtyByTile(tile);
+			MarkTileDirtyByTile(index);
 		}
 	}
 
@@ -481,10 +484,10 @@ static SigSegState UpdateSignalsInBuffer(Owner owner)
 	bool first = true;  // first block?
 	SigSegState state = SIGSEG_FREE; // value to return
 
-	TileIndex tile = INVALID_TILE; // Stop GCC from complaining about a possibly uninitialized variable (issue #8280).
+	TileIndex index = INVALID_TILE; // Stop GCC from complaining about a possibly uninitialized variable (issue #8280).
 	DiagDirection dir = INVALID_DIAGDIR;
 
-	while (_globset.Get(&tile, &dir)) {
+	while (_globset.Get(&index, &dir)) {
 		assert(_tbuset.IsEmpty());
 		assert(_tbdset.IsEmpty());
 
@@ -493,40 +496,42 @@ static SigSegState UpdateSignalsInBuffer(Owner owner)
 		 * modification of railbits (including both rail building and removal),
 		 * train entering/leaving block, train leaving depot...
 		 */
+		Tile tile = Tile::GetByType(index, MP_RAILWAY);
+		if (!tile) tile = index;
 		switch (GetTileType(tile)) {
 			case MP_TUNNELBRIDGE:
 				/* 'optimization assert' - do not try to update signals when it is not needed */
 				assert(GetTunnelBridgeTransportType(tile) == TRANSPORT_RAIL);
 				assert(dir == INVALID_DIAGDIR || dir == ReverseDiagDir(GetTunnelBridgeDirection(tile)));
-				_tbdset.Add(tile, INVALID_DIAGDIR);  // we can safely start from wormhole centre
-				_tbdset.Add(GetOtherTunnelBridgeEnd(tile), INVALID_DIAGDIR);
+				_tbdset.Add(index, INVALID_DIAGDIR);  // we can safely start from wormhole centre
+				_tbdset.Add(GetOtherTunnelBridgeEnd(index), INVALID_DIAGDIR);
 				break;
 
 			case MP_RAILWAY:
 				if (IsRailDepot(tile)) {
 					/* 'optimization assert' do not try to update signals in other cases */
 					assert(dir == INVALID_DIAGDIR || dir == GetRailDepotDirection(tile));
-					_tbdset.Add(tile, INVALID_DIAGDIR); // start from depot inside
+					_tbdset.Add(index, INVALID_DIAGDIR); // start from depot inside
 					break;
 				}
 				[[fallthrough]];
 
 			case MP_STATION:
 			case MP_ROAD:
-				if ((TrackStatusToTrackBits(GetTileTrackStatus(tile, TRANSPORT_RAIL, 0)) & _enterdir_to_trackbits[dir]) != TRACK_BIT_NONE) {
+				if ((TrackStatusToTrackBits(GetTileTrackStatus(index, TRANSPORT_RAIL, 0)) & _enterdir_to_trackbits[dir]) != TRACK_BIT_NONE) {
 					/* only add to set when there is some 'interesting' track */
-					_tbdset.Add(tile, dir);
-					_tbdset.Add(tile + TileOffsByDiagDir(dir), ReverseDiagDir(dir));
+					_tbdset.Add(index, dir);
+					_tbdset.Add(index + TileOffsByDiagDir(dir), ReverseDiagDir(dir));
 					break;
 				}
 				[[fallthrough]];
 
 			default:
 				/* jump to next tile */
-				tile = tile + TileOffsByDiagDir(dir);
+				index = index + TileOffsByDiagDir(dir);
 				dir = ReverseDiagDir(dir);
-				if ((TrackStatusToTrackBits(GetTileTrackStatus(tile, TRANSPORT_RAIL, 0)) & _enterdir_to_trackbits[dir]) != TRACK_BIT_NONE) {
-					_tbdset.Add(tile, dir);
+				if ((TrackStatusToTrackBits(GetTileTrackStatus(index, TRANSPORT_RAIL, 0)) & _enterdir_to_trackbits[dir]) != TRACK_BIT_NONE) {
+					_tbdset.Add(index, dir);
 					break;
 				}
 				/* happens when removing a rail that wasn't connected at one or both sides */
