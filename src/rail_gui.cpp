@@ -1951,9 +1951,10 @@ static void SetDefaultRailGui()
 		case 2: {
 			/* Find the most used rail type */
 			std::array<uint, RAILTYPE_END> count{};
-			for (const auto t : Map::Iterate()) {
-				if (IsTileType(t, MP_RAILWAY) || IsLevelCrossingTile(t) || HasStationTileRail(t) ||
-						(IsTileType(t, MP_TUNNELBRIDGE) && GetTunnelBridgeTransportType(t) == TRANSPORT_RAIL)) {
+			for (const auto t : Map::IterateIndex()) {
+				if (Tile rail = Tile::GetByType(t, MP_RAILWAY); rail.IsValid()) count[GetRailType(rail)]++;
+
+				if (IsLevelCrossingTile(t) || HasStationTileRail(t) || (IsTileType(t, MP_TUNNELBRIDGE) && GetTunnelBridgeTransportType(t) == TRANSPORT_RAIL)) {
 					count[GetRailType(t)]++;
 				}
 			}
