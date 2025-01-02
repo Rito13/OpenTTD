@@ -606,7 +606,7 @@ inline bool HasBlockSignalOnTrackdir(TileIndex tile, Trackdir td)
 	return HasBlockSignalOnTrackdir(Tile::GetByType(tile, TileType::Railway), td);
 }
 
-RailType GetTileRailType(const Tile &tile);
+RailType GetTileRailType(TileIndex tile);
 
 /** The ground 'under' the rail */
 enum class RailGroundType : uint8_t {
