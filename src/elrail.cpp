@@ -85,18 +85,18 @@ static inline TileLocationGroup GetTileLocationGroup(TileIndex t)
  */
 static TrackBits GetRailTrackBitsUniversal(TileIndex t, DiagDirections *override)
 {
-	switch (GetTileType(t)) {
-		case TileType::Railway:
-			if (!HasRailCatenary(GetRailType(t))) return {};
-			switch (GetRailTileType(t)) {
-				case RailTileType::Normal:
-				case RailTileType::Signals:
-					return GetTrackBits(t);
-				default:
-					return {};
-			}
-			break;
+	if (Tile rail = Tile::GetByType(t, TileType::Railway); rail.IsValid()) {
+		if (!HasRailCatenary(GetRailType(rail))) return {};
+		switch (GetRailTileType(rail)) {
+			case RailTileType::Normal:
+			case RailTileType::Signals:
+				return GetTrackBits(t);
+			default:
+				return {};
+		}
+	}
 
+	switch (GetTileType(t)) {
 		case TileType::TunnelBridge:
 			if (GetTunnelBridgeTransportType(t) != TransportType::Rail) return {};
 			if (!HasRailCatenary(GetRailType(t))) return {};
@@ -177,27 +177,29 @@ static TrackBits MaskWireBits(TileIndex t, TrackBits tracks)
 
 /**
  * Get the base wire sprite to use.
+ * @param index The index of the tile to get the wire sprite for.
  * @param tile The tile to get the wire sprite for.
  * @param context The context to get the sprite for.
  * @return The wire sprite.
  */
-static inline SpriteID GetWireBase(TileIndex tile, TileContext context = TileContext::Normal)
+static inline SpriteID GetWireBase(TileIndex index, const Tile &tile, TileContext context = TileContext::Normal)
 {
 	const RailTypeInfo *rti = GetRailTypeInfo(GetRailType(tile));
-	SpriteID wires = GetCustomRailSprite(rti, tile, RailSpriteType::Wires, context);
+	SpriteID wires = GetCustomRailSprite(rti, index, RailSpriteType::Wires, context);
 	return wires == 0 ? SPR_WIRE_BASE : wires;
 }
 
 /**
  * Get the base pylon sprite to use.
+ * @param index The index of the tile to get the pylon sprite for.
  * @param tile The tile to get the pylon sprite for.
  * @param context The context to get the sprite for.
  * @return The pylon sprite.
  */
-static inline SpriteID GetPylonBase(TileIndex tile, TileContext context = TileContext::Normal)
+static inline SpriteID GetPylonBase(TileIndex index, const Tile &tile, TileContext context = TileContext::Normal)
 {
 	const RailTypeInfo *rti = GetRailTypeInfo(GetRailType(tile));
-	SpriteID pylons = GetCustomRailSprite(rti, tile, RailSpriteType::Pylons, context);
+	SpriteID pylons = GetCustomRailSprite(rti, index, RailSpriteType::Pylons, context);
 	return pylons == 0 ? SPR_PYLON_BASE : pylons;
 }
 
@@ -260,7 +262,7 @@ void DrawRailCatenaryOnTunnel(const TileInfo *ti)
 {
 	DiagDirection dir = GetTunnelBridgeDirection(ti->tile);
 
-	SpriteID wire_base = GetWireBase(ti->index);
+	SpriteID wire_base = GetWireBase(ti->index, ti->tile);
 
 	const SortableSpriteStruct &sss = _rail_catenary_sprite_data_tunnel[dir];
 	AddSortableSpriteToDraw(wire_base + sss.image_offset, PAL_NONE, ti->x, ti->y, GetTilePixelZ(ti->index), sss, IsTransparencySet(TransparencyOption::Catenary));
@@ -306,7 +308,7 @@ static void DrawRailCatenaryRailway(const TileInfo *ti, bool draw_halftile, Corn
 
 	AdjustTileh(ti->index, &tileh[TileSource::Home]);
 
-	SpriteID pylon_base = GetPylonBase(ti->index, draw_halftile ? TileContext::UpperHalftile : TileContext::Normal);
+	SpriteID pylon_base = GetPylonBase(ti->index, ti->tile, draw_halftile ? TileContext::UpperHalftile : TileContext::Normal);
 
 	for (DiagDirection i = DiagDirection::Begin; i < DiagDirection::End; i++) {
 		TileIndex neighbour = ti->index + TileOffsByDiagDir(i);
@@ -436,7 +438,7 @@ static void DrawRailCatenaryRailway(const TileInfo *ti, bool draw_halftile, Corn
 	/* Don't draw a wire if the station tile does not want any */
 	if (HasStationTileRail(ti->tile) && !CanStationTileHaveWires(ti->tile)) return;
 
-	SpriteID wire_base = GetWireBase(ti->index, draw_halftile ? TileContext::UpperHalftile : TileContext::Normal);
+	SpriteID wire_base = GetWireBase(ti->index, ti->tile, draw_halftile ? TileContext::UpperHalftile : TileContext::Normal);
 
 	/* Drawing of pylons is finished, now draw the wires */
 	for (Track t : wire_config[TileSource::Home]) {
@@ -491,11 +493,11 @@ void DrawRailCatenaryOnBridge(const TileInfo *ti)
 
 	uint height = GetBridgePixelHeight(end);
 
-	SpriteID wire_base = GetWireBase(end, TileContext::OnBridge);
+	SpriteID wire_base = GetWireBase(end, end, TileContext::OnBridge);
 
 	AddSortableSpriteToDraw(wire_base + sss->image_offset, PAL_NONE, ti->x, ti->y, height, *sss, IsTransparencySet(TransparencyOption::Catenary));
 
-	SpriteID pylon_base = GetPylonBase(end, TileContext::OnBridge);
+	SpriteID pylon_base = GetPylonBase(end, end, TileContext::OnBridge);
 
 	static constexpr SpriteBounds pylon_bounds{{-1, -1, 0}, {1, 1, BB_HEIGHT_UNDER_BRIDGE}, {1, 1, 0}};
 
@@ -535,7 +537,7 @@ void DrawRailCatenary(const TileInfo *ti, bool draw_halftile, Corner halftile_co
 			if (IsRailDepot(ti->tile)) {
 				const SortableSpriteStruct &sss = _rail_catenary_sprite_data_depot[GetRailDepotDirection(ti->tile)];
 
-				SpriteID wire_base = GetWireBase(ti->index);
+				SpriteID wire_base = GetWireBase(ti->index, ti->tile);
 
 				/* This wire is not visible with the default depot sprites */
 				AddSortableSpriteToDraw(wire_base + sss.image_offset, PAL_NONE, ti->x, ti->y, GetTileMaxPixelZ(ti->index), sss, IsTransparencySet(TransparencyOption::Catenary));

@@ -109,9 +109,10 @@ Axis GetAxisForNewRailWaypoint(TileIndex tile)
 	if (IsRailWaypointTile(tile)) return GetRailStationAxis(tile);
 
 	/* Non-plain rail type, no valid axis for waypoints. */
-	if (!IsTileType(tile, TileType::Railway) || GetRailTileType(tile) != RailTileType::Normal) return Axis::Invalid;
+	Tile rail = Tile::GetByType(tile, TileType::Railway);
+	if (!rail.IsValid() || GetRailTileType(rail) != RailTileType::Normal) return Axis::Invalid;
 
-	TrackBits bits = GetTrackBits(tile);
+	TrackBits bits = GetTrackBits(rail);
 	if (bits == Track::X) return Axis::X;
 	if (bits == Track::Y) return Axis::Y;
 	return Axis::Invalid;
@@ -328,7 +329,7 @@ CommandCost CmdBuildRailWaypoint(DoCommandFlags flags, TileIndex start_tile, Axi
 			bool reserved = rail.IsValid() ?
 					GetRailReservationTrackBits(tile).Test(AxisToTrack(axis)) :
 					HasStationReservation(tile);
-			MakeRailWaypoint(tile, wp->owner, wp->index, axis, *it, GetRailType(tile));
+			MakeRailWaypoint(tile, wp->owner, wp->index, axis, *it, rail.IsValid() ? GetRailType(rail) : GetRailType(tile));
 			SetCustomStationSpecIndex(tile, *specindex);
 
 			if (spec != nullptr) {
