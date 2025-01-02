@@ -363,7 +363,7 @@ uint16_t Train::GetCurveSpeedLimit() const
 
 	if (max_speed != absolute_max_speed) {
 		/* Apply the current railtype's curve speed advantage */
-		const RailTypeInfo *rti = GetRailTypeInfo(GetRailType(this->tile));
+		const RailTypeInfo *rti = GetRailTypeInfo(GetTileRailType(this->tile));
 		max_speed += (max_speed / 2) * rti->curve_speed;
 
 		if (this->tcache.cached_tilt) {
@@ -3130,12 +3130,14 @@ static void TrainEnterStation(Train *consist, StationID station)
 /**
  * Check if the vehicle is compatible with the specified tile.
  * @param v The train to check.
- * @param tile The tile to check.
+ * @param index The tile to check.
  * @param check_railtype Should we check the railtype for compatibility?
  * @return \c true iff the tile is compatible with the train.
  */
-static inline bool CheckCompatibleRail(const Train *v, TileIndex tile, bool check_railtype)
+static inline bool CheckCompatibleRail(const Train *v, TileIndex index, bool check_railtype)
 {
+	Tile tile = Tile::GetByType(index, TileType::Railway);
+	if (!tile.IsValid()) tile = index;
 	return IsTileOwner(tile, v->owner) &&
 			(!check_railtype || !v->IsFrontEngine() || v->compatible_railtypes.Test(GetRailType(tile)));
 }
