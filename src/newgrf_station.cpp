@@ -325,7 +325,7 @@ TownScopeResolver *StationResolverObject::GetTown()
 			if (!this->cache.v41.has_value()) this->cache.v41 = GetPlatformInfoHelper(this->tile, true,  false, false);
 			return *this->cache.v41;
 
-		case 0x42: return GetTerrainType(this->tile) | (GetReverseRailTypeTranslation(GetRailType(this->tile), this->statspec->grf_prop.grffile) << 8);
+		case 0x42: return GetTerrainType(this->tile) | (GetReverseRailTypeTranslation(GetTileRailType(this->tile), this->statspec->grf_prop.grffile) << 8);
 		case 0x43: return GetCompanyInfo(this->st->owner); // Station owner
 		case 0x44: return HasStationReservation(this->tile) ? 7 : 4; // PBS status
 		case 0x45:
