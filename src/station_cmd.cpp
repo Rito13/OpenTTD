@@ -1049,12 +1049,12 @@ static CommandCost CheckFlatLandRailStation(TileIndex tile_cur, TileIndex north_
 			if (HasSignals(rail_tile)) return CommandCost(STR_ERROR_MUST_REMOVE_SIGNALS_FIRST);
 
 			/* The current rail type must have power on the to-be-built type (e.g. convert normal rail to electrified rail). */
-			if (HasPowerOnRail(GetRailType(tile_cur), rt)) {
+			if (HasPowerOnRail(GetRailType(rail_tile), rt)) {
 				/* The existing track must align with the desired station axis. */
 				Track track = AxisToTrack(axis);
 				if (GetTrackBits(tile_cur) == track) {
 					/* Check for trains having a reservation for this tile. */
-					if (GetRailReservationTrackBits(tile_cur).Test(track)) {
+					if (GetRailReservationTrackBits(rail_tile).Test(track)) {
 						Train *v = GetTrainForReservation(tile_cur, track);
 						if (v != nullptr) {
 							affected_vehicles.push_back(v);
