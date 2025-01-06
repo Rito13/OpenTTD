@@ -121,9 +121,9 @@ public:
 
 	inline int SwitchCost(TileIndex tile1, TileIndex tile2, DiagDirection exitdir)
 	{
-		if (IsPlainRailTile(tile1) && IsPlainRailTile(tile2)) {
-			bool t1 = (GetTrackBits(tile1) & DiagdirReachesTracks(ReverseDiagDir(exitdir))).Count() > 1;
-			bool t2 = (GetTrackBits(tile2) & DiagdirReachesTracks(exitdir)).Count() > 1;
+		if (Tile rail1 = Tile::GetByType(tile1, TileType::Railway), rail2 = Tile::GetByType(tile2, TileType::Railway); IsPlainRailTile(rail1) && IsPlainRailTile(rail2)) {
+			bool t1 = (GetTrackBits(rail1) & DiagdirReachesTracks(ReverseDiagDir(exitdir))).Count() > 1;
+			bool t2 = (GetTrackBits(rail2) & DiagdirReachesTracks(exitdir)).Count() > 1;
 			if (t1 && t2) return Yapf().PfGetSettings().rail_doubleslip_penalty;
 		}
 		return 0;
