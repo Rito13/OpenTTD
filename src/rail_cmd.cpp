@@ -1112,7 +1112,7 @@ CommandCost CmdBuildSingleSignal(DoCommandFlags flags, TileIndex tile_index, Tra
 		/* The new/changed signal could block our path. As this can lead to
 		 * stale reservations, we clear the path reservation here and try
 		 * to redo it later on. */
-		if (HasReservedTracks(tile, track)) {
+		if (HasRailReservationTrackBits(tile, track)) {
 			v = GetTrainForReservation(tile_index, track);
 			if (v != nullptr) FreeTrainTrackReservation(v);
 		}
@@ -1485,7 +1485,7 @@ CommandCost CmdRemoveSingleSignal(DoCommandFlags flags, TileIndex tile_index, Tr
 	/* Do it? */
 	if (flags.Test(DoCommandFlag::Execute)) {
 		Train *v = nullptr;
-		if (HasReservedTracks(tile, track)) {
+		if (HasRailReservationTrackBits(tile, track)) {
 			v = GetTrainForReservation(tile_index, track);
 		} else if (IsPbsSignal(GetSignalType(tile, track))) {
 			/* PBS signal, might be the end of a path reservation. */
@@ -2126,7 +2126,7 @@ static void DrawTrackBitsOverlay(TileInfo *ti, TrackBits track, const RailTypeIn
 		}
 
 		DrawTrackSprite(ground + offset, PAL_NONE, ti, fake_slope);
-		if (_settings_client.gui.show_track_reservation && HasReservedTracks(ti->index, track)) {
+		if (_settings_client.gui.show_track_reservation && HasRailReservationTrackBits(ti->tile, track)) {
 			DrawTrackSprite(overlay + offset, PALETTE_CRASH, ti, fake_slope);
 		}
 
@@ -2294,7 +2294,7 @@ static void DrawTrackBits(TileInfo *ti, TrackBits track, bool draw_halftile, Cor
 		}
 		DrawGroundSprite(image, pal, GetHalftileSubSprite(halftile_corner));
 
-		if (_game_mode != GameMode::Menu && _settings_client.gui.show_track_reservation && HasReservedTracks(ti->tile, CornerToTrackBits(halftile_corner))) {
+		if (_game_mode != GameMode::Menu && _settings_client.gui.show_track_reservation && HasRailReservationTrackBits(ti->tile, CornerToTrackBits(halftile_corner))) {
 			static constexpr EnumIndexArray<uint8_t, Corner, Corner::End> _corner_to_track_sprite = {3, 1, 2, 0};
 			DrawGroundSprite(_corner_to_track_sprite[halftile_corner] + rti->base_sprites.single_n, PALETTE_CRASH, nullptr, 0, -(int)TILE_HEIGHT);
 		}

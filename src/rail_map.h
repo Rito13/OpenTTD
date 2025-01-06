@@ -214,6 +214,19 @@ inline TrackBits GetRailReservationTrackBits(const Tile &t)
 }
 
 /**
+ * Check whether some of tracks are reserved on a tile.
+ * @param tile The tile to test.
+ * @param tracks The tracks to test.
+ * @return \c true iff at least on of tracks is reserved.
+ * @pre IsPlainRailTile(tile)
+ */
+static inline bool HasRailReservationTrackBits(const Tile &tile, TrackBits tracks)
+{
+	assert(IsPlainRailTile(tile));
+	return (GetRailReservationTrackBits(tile) & tracks).Any();
+}
+
+/**
  * Sets the reserved track bits of the tile
  * @pre IsPlainRailTile(t) && !TracksOverlap(b)
  * @param t the tile to change
