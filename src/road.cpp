@@ -38,16 +38,17 @@ RoadType RoadTypeInfo::Index() const
 /**
  * Return if the tile is a valid tile for a crossing.
  *
- * @param tile the current tile
+ * @param index The tile to check.
  * @param ax the axis of the road over the rail
  * @return true if it is a valid tile
  */
-static bool IsPossibleCrossing(const TileIndex tile, Axis ax)
+static bool IsPossibleCrossing(const TileIndex index, Axis ax)
 {
-	return (IsTileType(tile, TileType::Railway) &&
+	Tile tile = Tile::GetByType(index, TileType::Railway);
+	return (tile.IsValid() &&
 		GetRailTileType(tile) == RailTileType::Normal &&
 		GetTrackBits(tile) == AxisToTrack(OtherAxis(ax)) &&
-		std::get<Slope>(GetFoundationSlope(tile)) == SLOPE_FLAT);
+		std::get<Slope>(GetFoundationSlope(index)) == SLOPE_FLAT);
 }
 
 /**
@@ -92,6 +93,12 @@ RoadBits CleanUpRoadBits(const TileIndex tile, RoadBits org_rb)
 						}
 						break;
 
+					default:
+						if (!Tile::HasType(neighbour_tile, TileType::Railway)) {
+							break; // The definitely not connective ones
+						}
+						[[fallthrough]];
+
 					case TileType::Railway:
 						connective = IsPossibleCrossing(neighbour_tile, DiagDirToAxis(dir));
 						break;
@@ -100,9 +107,6 @@ RoadBits CleanUpRoadBits(const TileIndex tile, RoadBits org_rb)
 						/* Check for real water tile */
 						connective = !IsWater(neighbour_tile);
 						break;
-
-					/* The definitely not connective ones */
-					default: break;
 				}
 			}
 
