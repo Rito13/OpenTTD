@@ -1040,6 +1040,7 @@ static bool IsSuitableForFarmField(TileIndex tile, bool allow_fields, bool allow
 {
 	if (!IsTileType(tile, TileType::Clear)) return false;
 	if (IsSnowTile(tile)) return false;
+	if (Tile::HasType(tile, TileType::Railway)) return false;
 	switch (GetClearGround(tile)) {
 		case ClearGround::Desert: return false;
 		case ClearGround::Rough: return allow_rough;
@@ -1636,7 +1637,7 @@ static bool CheckCanTerraformSurroundingTiles(TileIndex tile, uint height, int i
 	for (TileIndex tile_walk : ta) {
 		uint curh = TileHeight(tile_walk);
 		/* Is the tile clear? */
-		if (GetTileType(tile_walk) != TileType::Clear) return false;
+		if (GetTileType(tile_walk) != TileType::Clear || Tile::HasType(tile_walk, TileType::Railway)) return false;
 
 		/* Don't allow too big of a change if this is the sub-tile check */
 		if (internal != 0 && Delta(curh, height) > 1) return false;
