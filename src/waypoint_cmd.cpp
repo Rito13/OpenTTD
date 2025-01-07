@@ -171,7 +171,8 @@ static CommandCost IsValidTileForWaypoint(TileIndex tile, Axis axis, StationID *
 
 	if (GetAxisForNewRailWaypoint(tile) != axis) return CommandCost(STR_ERROR_NO_SUITABLE_RAILROAD_TRACK);
 
-	Owner owner = GetTileOwner(tile);
+	Tile rail = Tile::GetByType(tile, TileType::Railway);
+	Owner owner = rail.IsValid() ? GetTileOwner(rail) : GetTileOwner(tile);
 	CommandCost ret = CheckOwnership(owner);
 	if (ret.Succeeded()) ret = EnsureNoVehicleOnGround(tile);
 	if (ret.Failed()) return ret;
@@ -306,7 +307,8 @@ CommandCost CmdBuildRailWaypoint(DoCommandFlags flags, TileIndex start_tile, Axi
 			/* Move existing (recently deleted) waypoint to the new location */
 			wp->xy = start_tile;
 		}
-		wp->owner = GetTileOwner(start_tile);
+		Tile rail = Tile::GetByType(start_tile, TileType::Railway);
+		wp->owner = rail.IsValid() ? GetTileOwner(rail) : GetTileOwner(start_tile);
 
 		wp->rect.BeforeAddRect(start_tile, width, height, StationRect::ADD_TRY);
 		if (specindex.has_value()) AssignSpecToStation(spec, wp, *specindex);
@@ -325,9 +327,9 @@ CommandCost CmdBuildRailWaypoint(DoCommandFlags flags, TileIndex start_tile, Axi
 		for (auto [i, it, tile] = std::make_tuple(0, stl.begin(), start_tile); i < count; ++i, ++it, tile += offset) {
 			uint8_t old_specindex = HasStationTileRail(tile) ? GetCustomStationSpecIndex(tile) : 0;
 			if (!HasStationTileRail(tile)) c->infrastructure.station++;
-			Tile rail = Tile::GetByType(tile, TileType::Railway);
+			rail = Tile::GetByType(tile, TileType::Railway);
 			bool reserved = rail.IsValid() ?
-					GetRailReservationTrackBits(tile).Test(AxisToTrack(axis)) :
+					GetRailReservationTrackBits(rail).Test(AxisToTrack(axis)) :
 					HasStationReservation(tile);
 			MakeRailWaypoint(tile, wp->owner, wp->index, axis, *it, rail.IsValid() ? GetRailType(rail) : GetRailType(tile));
 			SetCustomStationSpecIndex(tile, *specindex);

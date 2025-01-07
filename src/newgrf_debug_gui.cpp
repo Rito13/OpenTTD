@@ -773,14 +773,13 @@ bool IsNewGRFInspectable(GrfSpecFeature feature, uint index)
  */
 GrfSpecFeature GetGrfSpecFeature(TileIndex tile)
 {
+	if (Tile::HasType(tile, TileType::Railway)) return GrfSpecFeature::RailTypes;
 	switch (GetTileType(tile)) {
 		default: return GrfSpecFeature::Invalid;
-		case TileType::Railway: return GrfSpecFeature::RailTypes;
 		case TileType::Road: return IsLevelCrossing(tile) ? GrfSpecFeature::RailTypes : GrfSpecFeature::RoadTypes;
 		case TileType::House: return GrfSpecFeature::Houses;
 		case TileType::Industry: return GrfSpecFeature::IndustryTiles;
 		case TileType::Object: return GrfSpecFeature::Objects;
-
 		case TileType::Station:
 			switch (GetStationType(tile)) {
 				case StationType::Rail: return GrfSpecFeature::Stations;
