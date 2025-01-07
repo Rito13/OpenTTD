@@ -422,10 +422,23 @@ TileIndex GetNearbyTile(uint8_t parameter, TileIndex tile, bool signed_offsets, 
  */
 uint32_t GetNearbyTileInformation(TileIndex tile, bool grf_version8)
 {
-	TileType tile_type = GetTileType(tile);
+	Tile t = tile;
+	TileType tile_type = GetTileType(t);
+	for (++t; t.IsValid(); ++t) {
+		switch (GetTileType(t)) {
+			case TileType::Railway:
+				tile_type = TileType::Railway;
+				break;
 
-	/* Only consider trees not on shore as a tree tile. */
-	if (tile_type != TileType::Water && Tile::HasType(tile, TileType::Trees)) tile_type = TileType::Trees;
+			case TileType::Trees:
+				/* Only consider trees not on shore as a tree tile. */
+				if (tile_type != TileType::Water) tile_type = TileType::Trees;
+				break;
+
+			default:
+				NOT_REACHED();
+		}
+	}
 
 	/* Fake tile type for road waypoints */
 	if (IsRoadWaypointTile(tile)) tile_type = TileType::Road;
