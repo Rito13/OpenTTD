@@ -446,14 +446,13 @@ CommandCost CmdBuildBridge(DoCommandFlags flags, TileIndex tile_end, TileIndex t
 			}
 
 			if (Tile::HasType(tile, MP_TREES)) goto not_valid_below;
+			if (Tile rail = Tile::GetByType(tile, MP_RAILWAY); rail.IsValid()) {
+				if (!IsPlainRail(rail)) goto not_valid_below;
+			}
 
 			switch (GetTileType(tile)) {
 				case MP_WATER:
 					if (!IsWater(tile) && !IsCoast(tile)) goto not_valid_below;
-					break;
-
-				case MP_RAILWAY:
-					if (!IsPlainRail(tile)) goto not_valid_below;
 					break;
 
 				case MP_ROAD:
