@@ -491,8 +491,8 @@ static void MinimapScreenCallback(void *buf, uint y, uint pitch, uint n)
 		uint col = (Map::SizeX() - 1) - (i % pitch);
 
 		TileIndex tile = TileXY(col, row);
-		TileType ttype = GetTileType(tile);
-		if (Tile::HasType(tile, TileType::Trees)) ttype = TileType::Trees;
+		TileType ttype = TileType::Void;
+		for (Tile t(tile); t.IsValid(); ++t) ttype = GetTileType(t);
 		uint8_t val = GetSmallMapOwnerPixels(tile, ttype, IncludeHeightmap::Never) & 0xFF;
 
 		uint32_t colour_buf = 0;

@@ -561,7 +561,7 @@ no_entry_cost: // jump here at the beginning if the node has no parent (it is th
 			if (segment_cost > MAX_SEGMENT_COST) {
 				/* Potentially in the infinite loop (or only very long segment?). We should
 				 * not force it to finish prematurely unless we are on a regular tile. */
-				if (IsTileType(follower->new_tile, TileType::Railway)) {
+				if (Tile::HasType(follower->new_tile, TileType::Railway)) {
 					end_segment_reason.Set(EndSegmentReason::SegmentTooLong);
 					break;
 				}

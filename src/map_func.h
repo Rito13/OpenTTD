@@ -480,6 +480,22 @@ public:
 	}
 
 	/**
+	 * Check if a tile index has an associated tile with any type from given types.
+	 * @param tile Tile index to query.
+	 * @param types Tile types to search for.
+	 * @return Whether such a tile exists.
+	 */
+	inline static bool HasAnyType(TileIndex tile, TileTypes types)
+	{
+		Tile t(tile);
+		while (t.IsValid()) {
+			if (types.Test(t.GetTileType())) return true;
+			++t;
+		}
+		return false;
+	}
+
+	/**
 	 * Check if this tile has an associated tile following.
 	 * @return \c true iff the next tile is associated with this tile.
 	 */

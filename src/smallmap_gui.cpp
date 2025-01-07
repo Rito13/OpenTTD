@@ -606,7 +606,11 @@ uint32_t GetSmallMapOwnerPixels(TileIndex tile, TileType t, IncludeHeightmap inc
 			break;
 
 		default:
-			o = GetTileOwner(tile);
+			if (Tile rail = Tile::GetByType(tile, TileType::Railway); rail.IsValid()) {
+				o = GetTileOwner(rail);
+			} else {
+				o = GetTileOwner(tile);
+			}
 			break;
 	}
 
@@ -1335,6 +1339,7 @@ protected:
 			TileType ttype = GetTileType(ti);
 
 			if (Tile::HasType(ti, TileType::Trees)) ttype = TileType::Trees;
+			if (Tile::HasType(ti, TileType::Railway)) ttype = TileType::Railway;
 
 			switch (ttype) {
 				case TileType::TunnelBridge: {
