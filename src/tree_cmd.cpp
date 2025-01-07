@@ -70,6 +70,7 @@ static const uint16_t EDITOR_TREE_DIV = 5;                   ///< Game editor tr
 static bool CanPlantTreesOnTile(TileIndex tile, bool allow_desert)
 {
 	if (Tile::HasType(tile, MP_TREES)) return false;
+	if (Tile::HasType(tile, MP_RAILWAY)) return false;
 
 	switch (GetTileType(tile)) {
 		case MP_WATER:
@@ -521,6 +522,11 @@ CommandCost CmdPlantTree(DoCommandFlags flags, TileIndex tile, TileIndex start_t
 			/* 2x as expensive to add more trees to an existing tile */
 			cost.AddCost(_price[PR_BUILD_TREES] * 2);
 
+			continue;
+		}
+
+		if (Tile::HasType(current_tile, MP_RAILWAY)) {
+			msg = STR_ERROR_SITE_UNSUITABLE;
 			continue;
 		}
 

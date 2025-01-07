@@ -592,10 +592,15 @@ uint32_t GetSmallMapOwnerPixels(TileIndex tile, TileType t, IncludeHeightmap inc
 		case MP_ROAD:
 			o = GetRoadOwner(tile, HasRoadTypeRoad(tile) ? RTT_ROAD : RTT_TRAM);
 			break;
-
-		default:
-			o = GetTileOwner(tile);
+		
+		default: {
+			if (Tile rail = Tile::GetByType(tile, MP_RAILWAY); rail.IsValid()) {
+				o = GetTileOwner(rail);
+			} else {
+				o = GetTileOwner(tile); break;
+			}
 			break;
+		}
 	}
 
 	if ((o < MAX_COMPANIES && !_legend_land_owners[_company_to_list_pos[o]].show_on_map) || o == OWNER_NONE || o == OWNER_WATER) {
@@ -1331,6 +1336,7 @@ protected:
 			TileType ttype = GetTileType(ti);
 
 			if (Tile::HasType(ti, MP_TREES)) ttype = MP_TREES;
+			if (Tile::HasType(ti, MP_RAILWAY)) ttype = MP_RAILWAY;
 
 			switch (ttype) {
 				case MP_TUNNELBRIDGE: {

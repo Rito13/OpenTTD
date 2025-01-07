@@ -518,13 +518,8 @@ no_entry_cost: // jump here at the beginning if the node has no parent (it is th
 			if (TrackFollower::DoTrackMasking() && next.rail_tile) {
 				if (HasSignalOnTrackdir(next.rail_tile, next.td) && IsPbsSignal(GetSignalType(next.rail_tile, TrackdirToTrack(next.td)))) {
 					/* Possible safe tile. */
-<<<<<<< HEAD
 					end_segment_reason.Set(EndSegmentReason::SafeTile);
-				} else if (HasSignalOnTrackdir(next.tile, ReverseTrackdir(next.td)) && GetSignalType(next.tile, TrackdirToTrack(next.td)) == SIGTYPE_PBS_ONEWAY) {
-=======
-					end_segment_reason |= ESRB_SAFE_TILE;
 				} else if (HasSignalOnTrackdir(next.rail_tile, ReverseTrackdir(next.td)) && GetSignalType(next.rail_tile, TrackdirToTrack(next.td)) == SIGTYPE_PBS_ONEWAY) {
->>>>>>> 7f0c399a99 (Codechange: Prepare signal code for split rail tiles.)
 					/* Possible safe tile, but not so good as it's the back of a signal... */
 					end_segment_reason.Set({EndSegmentReason::SafeTile, EndSegmentReason::DeadEnd});
 					extra_cost += Yapf().PfGetSettings().rail_lastred_exit_penalty;
@@ -547,7 +542,7 @@ no_entry_cost: // jump here at the beginning if the node has no parent (it is th
 			if (segment_cost > MAX_SEGMENT_COST) {
 				/* Potentially in the infinite loop (or only very long segment?). We should
 				 * not force it to finish prematurely unless we are on a regular tile. */
-				if (IsTileType(tf->new_tile, MP_RAILWAY)) {
+				if (Tile::HasType(tf->new_tile, MP_RAILWAY)) {
 					end_segment_reason.Set(EndSegmentReason::SegmentTooLong);
 					break;
 				}
