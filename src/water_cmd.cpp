@@ -1221,25 +1221,18 @@ static void DoFloodTile(TileIndex target)
 	Slope tileh = GetTileSlope(target);
 	if (tileh != SLOPE_FLAT) {
 		/* make coast.. */
-		switch (tiletype) {
-			case TileType::Railway: {
-				if (!IsPlainRail(target)) break;
+		if (Tile rail = Tile::GetByType(target, TileType::Railway); rail.IsValid()) {
+			if (IsPlainRail(rail)) {
 				FloodVehicles(target);
 				flooded = FloodHalftile(target);
-				break;
 			}
-
-			case TileType::Clear:
-				/* Don't clear trees on coastal tiles. */
-				if ((Tile::HasType(target, TileType::Trees) && !IsSlopeWithOneCornerRaised(tileh)) || Command<Commands::LandscapeClear>::Do(DoCommandFlag::Execute, target).Succeeded()) {
-					MakeShore(target, is_rocks);
-					MarkTileDirtyByTile(target);
-					flooded = true;
-				}
-				break;
-
-			default:
-				break;
+		} else if (tiletype == TileType::Clear) {
+			/* Don't clear trees on coastal tiles. */
+			if ((Tile::HasType(target, TileType::Trees) && !IsSlopeWithOneCornerRaised(tileh)) || Command<Commands::LandscapeClear>::Do(DoCommandFlag::Execute, target).Succeeded()) {
+				MakeShore(target, is_rocks);
+				MarkTileDirtyByTile(target);
+				flooded = true;
+			}
 		}
 	} else {
 		/* Flood vehicles */

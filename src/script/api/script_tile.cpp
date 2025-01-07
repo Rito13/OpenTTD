@@ -28,6 +28,8 @@
 	EnforceDeityOrCompanyModeValid(false);
 	if (!::IsValidTile(tile)) return false;
 
+	if (::Tile::HasType(tile, TileType::Railway)) return false;
+
 	switch (::GetTileType(tile)) {
 		default: return false;
 		case TileType::Clear: return true;
