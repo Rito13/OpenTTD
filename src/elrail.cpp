@@ -90,7 +90,7 @@ static TrackBits GetRailTrackBitsUniversal(TileIndex t, DiagDirections *override
 		switch (GetRailTileType(rail)) {
 			case RailTileType::Normal:
 			case RailTileType::Signals:
-				return GetTrackBits(t);
+				return GetTrackBits(rail);
 			default:
 				return {};
 		}
@@ -131,7 +131,7 @@ static TrackBits MaskWireBits(TileIndex t, TrackBits tracks)
 	/* Single track bits are never masked out. */
 	if (tracks.Count() <= 1) [[likely]] return tracks;
 
-	if (!IsPlainRailTile(t)) return tracks;
+	if (!IsPlainRailTile(Tile::GetByType(t, TileType::Railway))) return tracks;
 
 	TrackdirBits neighbour_tdb{};
 	for (DiagDirection d : EnumRange(DiagDirection::End)) {
