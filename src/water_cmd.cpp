@@ -710,19 +710,6 @@ bool IsWateredTile(TileIndex tile, Direction from)
 					return false;
 			}
 
-		case TileType::Railway:
-			if (GetRailGroundType(tile) == RailGroundType::HalfTileWater) {
-				assert(IsPlainRail(tile));
-				Slope slope = GetTileSlope(tile);
-				if (slope.Count() != 1) return false;
-				if (slope.Test(Corner::W)) return (from == Direction::SE) || (from == Direction::E) || (from == Direction::NE);
-				if (slope.Test(Corner::S)) return (from == Direction::NE) || (from == Direction::N) || (from == Direction::NW);
-				if (slope.Test(Corner::E)) return (from == Direction::NW) || (from == Direction::W) || (from == Direction::SW);
-				if (slope.Test(Corner::N)) return (from == Direction::SW) || (from == Direction::S) || (from == Direction::SE);
-				return false;
-			}
-			return false;
-
 		case TileType::Station:
 			if (IsOilRig(tile)) {
 				/* Do not draw waterborders inside of industries.
@@ -1188,12 +1175,6 @@ FloodingBehaviour GetFloodingBehaviour(TileIndex tile)
 		case TileType::Object:
 			return GetWaterClass(tile) == WaterClass::Sea ? FloodingBehaviour::Active : FloodingBehaviour::None;
 
-		case TileType::Railway:
-			if (GetRailGroundType(tile) == RailGroundType::HalfTileWater) {
-				return IsSlopeWithOneCornerRaised(GetTileSlope(tile)) ? FloodingBehaviour::Active : FloodingBehaviour::DryOut;
-			}
-			return FloodingBehaviour::None;
-
 		case TileType::Void:
 			return FloodingBehaviour::Active;
 
@@ -1266,36 +1247,28 @@ static void DoDryUp(TileIndex tile)
 {
 	AutoRestoreBackup cur_company(_current_company, OWNER_WATER);
 
-	switch (GetTileType(tile)) {
-		case TileType::Railway:
-			assert(IsPlainRail(tile));
-			assert(GetRailGroundType(tile) == RailGroundType::HalfTileWater);
-
-			RailGroundType new_ground;
-			switch (TrackBitsToTrack(GetTrackBits(tile))) {
-				case Track::Upper: new_ground = RailGroundType::FenceHoriz1; break;
-				case Track::Lower: new_ground = RailGroundType::FenceHoriz2; break;
-				case Track::Left: new_ground = RailGroundType::FenceVert1; break;
-				case Track::Right: new_ground = RailGroundType::FenceVert2; break;
-				default: NOT_REACHED();
-			}
-			SetRailGroundType(tile, new_ground);
-			MarkTileDirtyByTile(tile);
-			break;
-
-		case TileType::Water: {
-			assert(IsCoast(tile));
-			bool is_rocks = GetWaterTileType(tile) == WaterTileType::CoastRocks;
-
-			/* Don't clear trees on coastal tiles. */
-			if (Tile::HasType(tile, TileType::Trees) || Command<Commands::LandscapeClear>::Do(DoCommandFlag::Execute, tile).Succeeded()) {
-				MakeClear(tile, is_rocks ? ClearGround::Rocks : ClearGround::Grass, 3);
-				MarkTileDirtyByTile(tile);
-			}
-			break;
+	if (Tile rail = Tile::GetByType(tile, TileType::Railway); rail.IsValid()) {
+		assert(IsPlainRail(rail));
+		RailFence new_fences;
+		switch (TrackBitsToTrack(GetTrackBits(rail))) {
+			case Track::Upper: new_fences = RailFence::Horiz1; break;
+			case Track::Lower: new_fences = RailFence::Horiz2; break;
+			case Track::Left: new_fences = RailFence::Vert1; break;
+			case Track::Right: new_fences = RailFence::Vert2; break;
+			default: NOT_REACHED();
 		}
+		SetRailFence(rail, new_fences);
+		if (IsTileType(tile, TileType::Water)) MakeClear(tile, ClearGround::Grass, 3);
+		MarkTileDirtyByTile(tile);
+	} else if (IsTileType(tile, TileType::Water)) {
+		assert(IsCoast(tile));
+		bool is_rocks = GetWaterTileType(tile) == WaterTileType::CoastRocks;
 
-		default: NOT_REACHED();
+		/* Don't clear trees on coastal tiles. */
+		if (Tile::HasType(tile, TileType::Trees) || Command<Commands::LandscapeClear>::Do(DoCommandFlag::Execute, tile).Succeeded()) {
+			MakeClear(tile, is_rocks ? ClearGround::Rocks : ClearGround::Grass, 3);
+			MarkTileDirtyByTile(tile);
+		}
 	}
 }
 

@@ -1055,7 +1055,7 @@ static CommandCost CheckFlatLandRailStation(TileIndex tile_cur, TileIndex north_
 			if (HasPowerOnRail(GetRailType(rail_tile), rt)) {
 				/* The existing track must align with the desired station axis. */
 				Track track = AxisToTrack(axis);
-				if (GetTrackBits(tile_cur) == track) {
+				if (GetTrackBits(rail_tile) == track) {
 					/* Check for trains having a reservation for this tile. */
 					if (GetRailReservationTrackBits(rail_tile).Test(track)) {
 						Train *v = GetTrainForReservation(tile_cur, track);
@@ -3420,6 +3420,7 @@ static BridgePillarFlags DrawTile_Station(TileInfo *ti, bool draw_halftile, Corn
 		} else {
 			image += HasBit(image, SPRITE_MODIFIER_CUSTOM_SPRITE) ? ground_relocation : total_offset;
 			if (HasBit(pal, SPRITE_MODIFIER_CUSTOM_SPRITE)) pal += ground_relocation;
+			DrawGroundSprite(SPR_FLAT_GRASS_TILE, PAL_NONE);
 			DrawGroundSprite(image, GroundSpritePaletteTransform(image, pal, palette));
 
 			/* PBS debugging, draw reserved tracks darker */

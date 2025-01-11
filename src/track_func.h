@@ -79,6 +79,30 @@ inline TrackBits CornerToTrackBits(Corner corner)
 }
 
 /**
+ * Converts the Track enum to Corner enum, doing the opposite of CornerToTrackBits.
+ * @param track The track in a tile corner.
+ * @return The Corner that the track is in.
+ */
+inline Corner TrackToCorner(Track track)
+{
+	assert(TRACK_BIT_HORZ.Test(track) || TRACK_BIT_VERT.Test(track));
+	return static_cast<Corner>(uint8_t((to_underlying(track) + 1) * 154) >> 6);
+}
+
+/**
+ * Converts the bit set of Track enum to Corner enum, doing the opposite of CornerToTrackBits.
+ * @param track The bit set with track in a tile corner.
+ * @return The Corner that the track is in.
+ */
+inline Corner TrackBitsToCorner(TrackBits track)
+{
+	assert((track.Count() == 1) && ((track & TRACK_BIT_HORZ).Count() != (track & TRACK_BIT_VERT).Count()));
+	return static_cast<Corner>((track.Set(Track::Right).Flip({Track::Left, Track::Lower}).base() - 33) >> 3);
+	return static_cast<Corner>((track.Reset(Track::Right).Flip({Track::Left, Track::Lower}).base() - 1) >> 3);
+	return static_cast<Corner>((((track.base() + 6) * 3) >> 3) & 3);
+}
+
+/**
  * Maps a Trackdir to the corresponding TrackdirBits value
  * @param trackdir the track direction to convert
  * @return the converted TrackdirBits value
