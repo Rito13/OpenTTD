@@ -132,8 +132,8 @@ void SetWaterClassDependingOnSurroundings(TileIndex t, bool include_invalid_wate
 				break;
 
 			case TileType::Railway:
-				/* Shore or flooded halftile */
-				has_water |= (GetRailGroundType(neighbour) == RailGroundType::HalfTileWater);
+				/* Shore or flooded halftile. Only called for old savegames which still have this as TileType::Railway tiles. */
+				has_water |= (GB(neighbour.m4(), 0, 4) == 13 /* RailGroundType::HalfTileWater */);
 				break;
 
 			case TileType::Trees:
@@ -253,6 +253,37 @@ void DecomposeTile(TileIndex index)
 					break;
 				default: SlErrorCorrupt("Invalid ground type for tree tile");
 			}
+			old_tile.SetAssociated(true);
+
+			break;
+		}
+
+		case TileType::Railway: {
+			Tile new_tile = Tile::RawNew(index, index);
+			Tile old_tile(new_tile.tile - 1, new_tile.tile_extended - 1);
+
+			/* Copy old tile to the new tile. */
+			*new_tile.tile = *old_tile.tile;
+			*new_tile.tile_extended = *old_tile.tile_extended;
+			ClrBit(new_tile.m8(), 14); // Clear out any garbage in the associated tile flag.
+
+			/* Make new ground tile. */
+			uint ground_type = GB(new_tile.m4(), 0, 4);
+			RailFence fences = RailFence::None;
+			if (ground_type == 12 /* RailGroundType::SnowOrDesert */ || ground_type == 14 /* RailGroundType::HalfTileSnow */) {
+				MakeClear(old_tile, _settings_game.game_creation.landscape == LandscapeType::Tropic ? ClearGround::Desert : ClearGround::Grass, 3);
+				if (_settings_game.game_creation.landscape == LandscapeType::Arctic) MakeSnow(old_tile, ground_type == 14 ? 0 : 3);
+			} else if (ground_type == 13 /* RailGroundType::HalfTileWater */) {
+				bool is_docking_tile = HasBit(old_tile.m1(), 7);
+				MakeShore(old_tile);
+				SetDockingTile(old_tile, is_docking_tile);
+			} else {
+				/* Some kind of clear grass. */
+				MakeClear(old_tile, ClearGround::Grass, ground_type > 0 ? 3 : 0);
+				fences = IsInsideMM(ground_type, 1, 12) ? static_cast<RailFence>(ground_type - 1) : RailFence::None;
+			}
+			SetRailFence(new_tile, fences);
+
 			old_tile.SetAssociated(true);
 
 			break;
@@ -3108,11 +3139,11 @@ bool AfterLoadGame()
 	/* Update structures for multitile docks */
 	if (IsSavegameVersionBefore(SaveLoadVersion::MultitileDocks)) {
 		for (const auto ti : Map::IterateIndex()) {
-			const Tile t(ti);
+			Tile t(ti);
 			/* Clear docking tile flag from relevant tiles as it
 			 * was not previously cleared. */
 			if (IsTileType(t, TileType::Water) || IsTileType(t, TileType::Railway) || IsTileType(t, TileType::Station) || IsTileType(t, TileType::TunnelBridge)) {
-				SetDockingTile(t, false);
+				ClrBit(t.m1(), 7); // Can't use SetDockingTile(t, false) due to assert!
 			}
 			/* Add docks and oilrigs to Station::ship_station. */
 			if (IsTileType(t, TileType::Station)) {

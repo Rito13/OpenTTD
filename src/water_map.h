@@ -363,7 +363,7 @@ inline bool HasTileWaterGround(const Tile &t)
  */
 inline void SetDockingTile(const Tile &t, bool b)
 {
-	assert(IsTileType(t, TileType::Water) || IsTileType(t, TileType::Railway) || IsTileType(t, TileType::Station) || IsTileType(t, TileType::TunnelBridge));
+	assert(IsTileType(t, TileType::Water) || IsTileType(t, TileType::Station) || IsTileType(t, TileType::TunnelBridge));
 	AssignBit(t.m1(), 7, b);
 }
 
@@ -374,7 +374,7 @@ inline void SetDockingTile(const Tile &t, bool b)
  */
 inline bool IsDockingTile(const Tile &t)
 {
-	return (IsTileType(t, TileType::Water) || IsTileType(t, TileType::Railway) || IsTileType(t, TileType::Station) || IsTileType(t, TileType::TunnelBridge)) && HasBit(t.m1(), 7);
+	return (IsTileType(t, TileType::Water) || IsTileType(t, TileType::Station) || IsTileType(t, TileType::TunnelBridge)) && HasBit(t.m1(), 7);
 }
 
 
