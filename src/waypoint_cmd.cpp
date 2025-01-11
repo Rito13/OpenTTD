@@ -331,7 +331,9 @@ CommandCost CmdBuildRailWaypoint(DoCommandFlags flags, TileIndex start_tile, Axi
 			bool reserved = rail.IsValid() ?
 					GetRailReservationTrackBits(rail).Test(AxisToTrack(axis)) :
 					HasStationReservation(tile);
-			MakeRailWaypoint(tile, wp->owner, wp->index, axis, *it, rail.IsValid() ? GetRailType(rail) : GetRailType(tile));
+			RailType rt = rail.IsValid() ? GetRailType(rail) : GetRailType(tile);
+			if (rail.IsValid()) Tile::Remove(tile, std::move(rail));
+			MakeRailWaypoint(tile, wp->owner, wp->index, axis, *it, rt);
 			SetCustomStationSpecIndex(tile, *specindex);
 
 			if (spec != nullptr) {

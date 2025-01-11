@@ -332,20 +332,21 @@ protected:
 			}
 		}
 		if (IsRailTT()) {
-			if (Tile rail = Tile::GetByType(this->new_tile, TileType::Railway); IsRailDepotTile(rail)) {
+			Tile rail = Tile::GetByType(this->new_tile, TileType::Railway);
+			if (IsRailDepotTile(rail)) {
 				DiagDirection exitdir = GetRailDepotDirection(rail);
 				if (ReverseDiagDir(exitdir) != this->exitdir) {
 					this->err = ErrorCode::NoWay;
 					return false;
 				}
 			}
-		}
 
-		/* rail transport is possible only on tiles with the same owner as vehicle */
-		if (IsRailTT() && GetTileOwner(this->new_tile) != this->veh_owner) {
-			/* different owner */
-			this->err = ErrorCode::NoWay;
-			return false;
+			/* rail transport is possible only on tiles with the same owner as vehicle */
+			if ((rail ? GetTileOwner(rail) : GetTileOwner(this->new_tile)) != this->veh_owner) {
+				/* different owner */
+				this->err = ErrorCode::NoWay;
+				return false;
+			}
 		}
 
 		/* rail transport is possible only on compatible rail types */
