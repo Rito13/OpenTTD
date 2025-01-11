@@ -3166,7 +3166,7 @@ static inline void AffectSpeedByZChange(Train *consist, int z_diff)
 
 static bool TrainMovedChangeSignals(TileIndex tile, DiagDirection dir)
 {
-	if (Tile rail_tile = Tile::GetByType(tile, TileType::Railway); rail_tile.IsValid() && GetRailTileType(tile) == RailTileType::Signals) {
+	if (Tile rail_tile = Tile::GetByType(tile, TileType::Railway); rail_tile.IsValid() && GetRailTileType(rail_tile) == RailTileType::Signals) {
 		TrackdirBits tracks = TrackBitsToTrackdirBits(GetTrackBits(rail_tile)) & DiagdirReachesTrackdirs(dir);
 		Trackdir trackdir = FindFirstTrackdir(tracks);
 		if (UpdateSignalsOnSegment(tile, TrackdirToExitdir(trackdir), GetTileOwner(rail_tile)) == SigSegState::Path && HasSignalOnTrackdir(rail_tile, trackdir)) {

@@ -30,10 +30,10 @@ static constexpr DrawTileSeqStruct _depot_gfx_NW[] = {
 
 /** Sprite layout of a depot for each direction. */
 static const DiagDirectionIndexArray<DrawTileSpriteSpan> _depot_gfx_table{{{
-	{ {SPR_FLAT_GRASS_TILE, PAL_NONE}, _depot_gfx_NE },
+	{{0, PAL_NONE}, _depot_gfx_NE},
 	{ {SPR_RAIL_TRACK_Y,    PAL_NONE}, _depot_gfx_SE },
 	{ {SPR_RAIL_TRACK_X,    PAL_NONE}, _depot_gfx_SW },
-	{ {SPR_FLAT_GRASS_TILE, PAL_NONE}, _depot_gfx_NW },
+	{{0, PAL_NONE}, _depot_gfx_NW},
 }}};
 
 /** Sprite layout of an invisible depot with for each direction. */

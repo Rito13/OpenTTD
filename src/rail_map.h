@@ -608,55 +608,40 @@ inline bool HasBlockSignalOnTrackdir(TileIndex tile, Trackdir td)
 
 RailType GetTileRailType(TileIndex tile);
 
-/** The ground 'under' the rail */
-enum class RailGroundType : uint8_t {
-	Barren = 0, ///< Nothing (dirt)
-	Grass = 1, ///< Grassy
-	FenceNW = 2, ///< Grass with a fence at the NW edge
-	FenceSE = 3, ///< Grass with a fence at the SE edge
-	FenceSENW = 4, ///< Grass with a fence at the NW and SE edges
-	FenceNE = 5, ///< Grass with a fence at the NE edge
-	FenceSW = 6, ///< Grass with a fence at the SW edge
-	FenceNESW = 7, ///< Grass with a fence at the NE and SW edges
-	FenceVert1 = 8, ///< Grass with a fence at the eastern side
-	FenceVert2 = 9, ///< Grass with a fence at the western side
-	FenceHoriz1 = 10, ///< Grass with a fence at the southern side
-	FenceHoriz2 = 11, ///< Grass with a fence at the northern side
-	SnowOrDesert = 12, ///< Icy or sandy
-	HalfTileWater = 13, ///< Grass with a fence and shore or water on the free halftile
-	HalfTileSnow = 14, ///< Snow only on higher part of slope (steep or one corner raised)
+/** The fences around the rail. */
+enum class RailFence : uint8_t {
+	None, ///< No fences.
+	NW, ///< Fence at the NW edge.
+	SE, ///< Fence at the SE edge.
+	SENW, ///< Fence at the NW and SE edges.
+	NE, ///< Fence at the NE edge.
+	SW, ///< Fence at the SW edge.
+	NESW, ///< Fence at the NE and SW edges.
+	Vert1, ///< Fence at the eastern side.
+	Vert2, ///< Fence at the western side.
+	Horiz1, ///< Fence at the southern side.
+	Horiz2, ///< Fence at the northern side.
 };
 
 /**
- * Set the ground type for rail tiles.
+ * Set fences for rail tiles.
  * @param t The tile to update.
- * @param rgt The new ground type.
+ * @param fences The new fences.
  */
-inline void SetRailGroundType(const Tile &t, RailGroundType rgt)
+inline void SetRailFence(const Tile &t, RailFence fences)
 {
-	SB(t.m4(), 0, 4, to_underlying(rgt));
+	SB(t.m4(), 0, 4, to_underlying(fences));
 }
 
 /**
- * Get the ground type for rail tiles.
+ * Get the fences for rail tiles.
  * @param t The tile to query.
- * @return The ground type.
+ * @return The fences.
  */
-inline RailGroundType GetRailGroundType(const Tile &t)
+inline RailFence GetRailFence(const Tile &t)
 {
-	return static_cast<RailGroundType>(GB(t.m4(), 0, 4));
+	return static_cast<RailFence>(GB(t.m4(), 0, 4));
 }
-
-/**
- * Is the given rail tile snowy or deserty.
- * @param t The tile to query.
- * @return \c true iff the tile is snowy or deserty.
- */
-inline bool IsSnowOrDesertRailGround(const Tile &t)
-{
-	return GetRailGroundType(t) == RailGroundType::SnowOrDesert;
-}
-
 
 /**
  * Make the given tile a normal rail.
@@ -669,7 +654,6 @@ inline void MakeRailNormal(const Tile &t, Owner o, TrackBits b, RailType r)
 {
 	SetTileType(t, TileType::Railway);
 	SetTileOwner(t, o);
-	SetDockingTile(t, false);
 	t.m2() = 0;
 	t.m3() = 0;
 	t.m4() = 0;
@@ -677,6 +661,21 @@ inline void MakeRailNormal(const Tile &t, Owner o, TrackBits b, RailType r)
 	SB(t.m6(), 2, 6, 0);
 	t.m7() = 0;
 	t.m8() = t.HasAssociated() << M8_ASSOCIATED_TILE_BIT | r; // Preserves the state of the associated tile flag.
+}
+
+/**
+ * Add a rail-tile to a tile.
+ * @param index The tile index to wich rail-tile will be added.
+ * @param o The rail owner.
+ * @param b The bits/tracks to set.
+ * @param r The new rail type.
+ * @return The newly created rail-tile.
+ */
+inline Tile MakeRailNormal(TileIndex index, Owner o, TrackBits b, RailType r)
+{
+	Tile rail = Tile::New(index, TileType::Railway);
+	MakeRailNormal(rail, o, b, r);
+	return rail;
 }
 
 /**
@@ -691,25 +690,20 @@ inline void SetRailDepotExitDirection(const Tile &tile, DiagDirection dir)
 }
 
 /**
- * Make a rail depot.
- * @param tile      Tile to make a depot on.
+ * Add a rail depot tile to tile index.
+ * @param index Tile to add a depot on.
  * @param owner     New owner of the depot.
  * @param depot_id  New depot ID.
  * @param dir       Direction of the depot exit.
  * @param rail_type Rail type of the depot.
  */
-inline void MakeRailDepot(const Tile &tile, Owner owner, DepotID depot_id, DiagDirection dir, RailType rail_type)
+inline void MakeRailDepot(TileIndex index, Owner owner, DepotID depot_id, DiagDirection dir, RailType rail_type)
 {
-	SetTileType(tile, TileType::Railway);
+	Tile tile = Tile::New(index, TileType::Railway);
 	SetTileOwner(tile, owner);
-	SetDockingTile(tile, false);
 	tile.m2() = depot_id.base();
-	tile.m3() = 0;
-	tile.m4() = 0;
 	tile.m5() = to_underlying(RailTileType::Depot) << 6 | to_underlying(dir);
-	SB(tile.m6(), 2, 6, 0);
-	tile.m7() = 0;
-	tile.m8() = tile.HasAssociated() << M8_ASSOCIATED_TILE_BIT | rail_type; // Preserves the state of the associated tile flag.
+	SetRailType(tile, rail_type);
 }
 
 #endif /* RAIL_MAP_H */

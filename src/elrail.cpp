@@ -90,7 +90,7 @@ static TrackBits GetRailTrackBitsUniversal(TileIndex t, DiagDirections *override
 		switch (GetRailTileType(rail)) {
 			case RailTileType::Normal:
 			case RailTileType::Signals:
-				return GetTrackBits(t);
+				return GetTrackBits(rail);
 			default:
 				return {};
 		}

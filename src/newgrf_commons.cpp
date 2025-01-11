@@ -343,14 +343,6 @@ uint32_t GetTerrainType(TileIndex tile, TileContext context)
 					has_snow = IsSnowTile(tile) && GetClearDensity(tile) >= 2;
 					break;
 
-				case TileType::Railway: {
-					/* During map generation the snowstate may not be valid yet, as the tileloop may not have run yet. */
-					if (_generating_world) goto genworld; // we do not care about foundations here
-					RailGroundType ground = GetRailGroundType(tile);
-					has_snow = (ground == RailGroundType::SnowOrDesert || (context == TileContext::UpperHalftile && ground == RailGroundType::HalfTileSnow));
-					break;
-				}
-
 				case TileType::Road:
 					/* During map generation the snowstate may not be valid yet, as the tileloop may not have run yet. */
 					if (_generating_world) goto genworld; // we do not care about foundations here

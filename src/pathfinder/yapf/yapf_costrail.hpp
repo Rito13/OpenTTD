@@ -417,10 +417,10 @@ no_entry_cost: // jump here at the beginning if the node has no parent (it is th
 			/* Tests for 'potential target' reasons to close the segment. */
 			if (cur.tile == prev.tile) {
 				/* Penalty for reversing in a depot. */
-				assert(IsRailDepotTile(cur.tile));
+				assert(IsRailDepotTile(cur.rail_tile));
 				segment_cost += Yapf().PfGetSettings().rail_depot_reverse_penalty;
 
-			} else if (IsRailDepotTile(cur.tile)) {
+			} else if (IsRailDepotTile(cur.rail_tile)) {
 				/* We will end in this pass (depot is possible target) */
 				end_segment_reason.Set(EndSegmentReason::Depot);
 
