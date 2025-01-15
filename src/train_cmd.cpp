@@ -2328,10 +2328,10 @@ static void CheckNextTrainTile(Train *consist)
 	if (!HasReservedTracks(ft.new_tile, TrackdirBitsToTrackBits(ft.new_td_bits))) {
 		/* Next tile is not reserved. */
 		if (ft.new_td_bits.Count() == 1) {
-			if (HasPbsSignalOnTrackdir(ft.new_tile, FindFirstTrackdir(ft.new_td_bits))) {
+			if (HasPbsSignalOnTrackdir(ft.new_sub_tile, FindFirstTrackdir(ft.new_td_bits))) {
 				/* If the next tile is a PBS signal, try to make a reservation. */
 				TrackBits tracks = TrackdirBitsToTrackBits(ft.new_td_bits);
-				if (Rail90DegTurnDisallowed(GetTileRailType(ft.old_tile), GetTileRailType(ft.new_tile))) {
+				if (Rail90DegTurnDisallowed(GetTileRailType(ft.old_tile), GetRailType(ft.new_sub_tile))) {
 					tracks.Reset(TrackCrossesTracks(TrackdirToTrack(ft.old_td)));
 				}
 				ChooseTrainTrack(consist, ft.new_tile, ft.exitdir, tracks, false, nullptr, false);
@@ -2493,34 +2493,33 @@ void FreeTrainTrackReservation(const Train *consist)
 	CFollowTrackRail ft(consist, GetAllCompatibleRailTypes(consist->railtypes));
 	while (ft.Follow(tile, td)) {
 		tile = ft.new_tile;
-		TrackdirBits bits = ft.new_td_bits & TrackBitsToTrackdirBits(GetReservedTrackbits(tile));
+
+		TrackdirBits bits = ft.new_td_bits & TrackBitsToTrackdirBits(IsTileType(ft.new_sub_tile, TileType::Railway) ? GetReservedRailTracks(ft.new_sub_tile) : GetReservedTrackbits(tile));
 		td = RemoveFirstTrackdir(bits);
 		assert(bits.None());
 
 		if (!IsValidTrackdir(td)) break;
 
-		if (Tile rail_tile = Tile::GetByType(tile, TileType::Railway); rail_tile.IsValid()) {
-			if (HasSignalOnTrackdir(rail_tile, td) && !IsPbsSignal(GetSignalType(rail_tile, TrackdirToTrack(td)))) {
-				/* Conventional signal along trackdir: remove reservation and stop. */
-				UnreserveTrack(rail_tile, TrackdirToTrack(td));
-				if (_settings_client.gui.show_track_reservation) MarkTileDirtyByTile(ft.new_tile);
+		if (IsPlainRailTile(ft.new_sub_tile) && HasSignalOnTrackdir(ft.new_sub_tile, td) && !IsPbsSignal(GetSignalType(ft.new_sub_tile, TrackdirToTrack(td)))) {
+			/* Conventional signal along trackdir: remove reservation and stop. */
+			UnreserveTrack(ft.new_sub_tile, TrackdirToTrack(td));
+			if (_settings_client.gui.show_track_reservation) MarkTileDirtyByTile(ft.new_tile);
+			break;
+		}
+		if (HasPbsSignalOnTrackdir(ft.new_sub_tile, td)) {
+			if (GetSignalStateByTrackdir(ft.new_sub_tile, td) == SignalState::Red) {
+				/* Red PBS signal? Can't be our reservation, would be green then. */
 				break;
+			} else {
+				/* Turn the signal back to red. */
+				SetSignalStateByTrackdir(ft.new_sub_tile, td, SignalState::Red);
+				MarkTileDirtyByTile(tile);
 			}
-			if (HasPbsSignalOnTrackdir(rail_tile, td)) {
-				if (GetSignalStateByTrackdir(rail_tile, td) == SignalState::Red) {
-					/* Red PBS signal? Can't be our reservation, would be green then. */
-					break;
-				} else {
-					/* Turn the signal back to red. */
-					SetSignalStateByTrackdir(rail_tile, td, SignalState::Red);
-					MarkTileDirtyByTile(tile);
-				}
-			} else if (HasPbsSignalOnTrackdir(rail_tile, ReverseTrackdir(td))) {
-				/* Reservation passes an opposing path signal. Mark signal for update to re-establish the proper default state. */
-				AddSideToSignalBuffer(tile, TrackdirToExitdir(ReverseTrackdir(td)), consist->owner);
-			} else if (HasSignalOnTrackdir(rail_tile, ReverseTrackdir(td)) && IsOnewaySignal(rail_tile, TrackdirToTrack(td))) {
-				break;
-			}
+		} else if (HasPbsSignalOnTrackdir(ft.new_sub_tile, ReverseTrackdir(td))) {
+			/* Reservation passes an opposing path signal. Mark signal for update to re-establish the proper default state. */
+			AddSideToSignalBuffer(tile, TrackdirToExitdir(ReverseTrackdir(td)), consist->owner);
+		} else if (IsPlainRailTile(ft.new_sub_tile) && HasSignalOnTrackdir(ft.new_sub_tile, ReverseTrackdir(td)) && IsOnewaySignal(ft.new_sub_tile, TrackdirToTrack(td))) {
+			break;
 		}
 
 		/* Don't free first station/bridge/tunnel if we are on it. */
@@ -2572,17 +2571,16 @@ static PBSTileInfo ExtendTrainReservation(const Train *v, TrackBits *new_tracks,
 	while (ft.Follow(tile, cur_td)) {
 		if (ft.new_td_bits.Count() == 1) {
 			/* Possible signal tile. */
-			if (HasOnewaySignalBlockingTrackdir(ft.new_tile, FindFirstTrackdir(ft.new_td_bits))) break;
+			if (HasOnewaySignalBlockingTrackdir(ft.new_sub_tile, FindFirstTrackdir(ft.new_td_bits))) break;
 		}
 
-		if (Rail90DegTurnDisallowed(GetTileRailType(ft.old_tile), GetTileRailType(ft.new_tile))) {
+		if (Rail90DegTurnDisallowed(GetTileRailType(ft.old_tile), GetRailType(ft.new_sub_tile))) {
 			ft.new_td_bits.Reset(TrackdirCrossesTrackdirs(ft.old_td));
 			if (ft.new_td_bits.None()) break;
 		}
 
 		/* Station, depot or waypoint are a possible target. */
-		Tile rail_tile = Tile::GetByType(ft.new_tile, TileType::Railway);
-		bool target_seen = ft.is_station || IsRailDepotTile(rail_tile);
+		bool target_seen = ft.is_station || IsRailDepotTile(ft.new_sub_tile);
 		if (target_seen || ft.new_td_bits.Count() > 1) {
 			/* Choice found or possible target encountered.
 			 * On finding a possible target, we need to stop and let the pathfinder handle the
@@ -2610,9 +2608,9 @@ static PBSTileInfo ExtendTrainReservation(const Train *v, TrackBits *new_tracks,
 			bool wp_free = IsWaitingPositionFree(v, tile, cur_td, _settings_game.pf.forbid_90_deg);
 			if (!(wp_free && TryReserveRailTrack(tile, TrackdirToTrack(cur_td)))) break;
 			/* Green path signal opposing the path? Turn to red. */
-			if (HasPbsSignalOnTrackdir(rail_tile, rev_td) && GetSignalStateByTrackdir(rail_tile, rev_td) == SignalState::Green) {
-				SetSignalStateByTrackdir(rail_tile, rev_td, SignalState::Red);
-				signals_set_to_red.emplace_back(std::move(rail_tile), rev_td);
+			if (HasPbsSignalOnTrackdir(ft.new_sub_tile, rev_td) && GetSignalStateByTrackdir(ft.new_sub_tile, rev_td) == SignalState::Green) {
+				SetSignalStateByTrackdir(ft.new_sub_tile, rev_td, SignalState::Red);
+				signals_set_to_red.emplace_back(std::move(ft.new_sub_tile), rev_td);
 				MarkTileDirtyByTile(tile);
 			}
 			/* Safe position is all good, path valid and okay. */
@@ -2622,9 +2620,9 @@ static PBSTileInfo ExtendTrainReservation(const Train *v, TrackBits *new_tracks,
 		if (!TryReserveRailTrack(tile, TrackdirToTrack(cur_td))) break;
 
 		/* Green path signal opposing the path? Turn to red. */
-		if (HasPbsSignalOnTrackdir(rail_tile, rev_td) && GetSignalStateByTrackdir(rail_tile, rev_td) == SignalState::Green) {
-			SetSignalStateByTrackdir(rail_tile, rev_td, SignalState::Red);
-			signals_set_to_red.emplace_back(std::move(rail_tile), rev_td);
+		if (HasPbsSignalOnTrackdir(ft.new_sub_tile, rev_td) && GetSignalStateByTrackdir(ft.new_sub_tile, rev_td) == SignalState::Green) {
+			SetSignalStateByTrackdir(ft.new_sub_tile, rev_td, SignalState::Red);
+			signals_set_to_red.emplace_back(std::move(ft.new_sub_tile), rev_td);
 			MarkTileDirtyByTile(tile);
 		}
 	}
@@ -2642,7 +2640,7 @@ static PBSTileInfo ExtendTrainReservation(const Train *v, TrackBits *new_tracks,
 	while (tile != stopped || cur_td != stopped_td) {
 		if (!ft.Follow(tile, cur_td)) break;
 
-		if (Rail90DegTurnDisallowed(GetTileRailType(ft.old_tile), GetTileRailType(ft.new_tile))) {
+		if (Rail90DegTurnDisallowed(GetTileRailType(ft.old_tile), GetRailType(ft.new_sub_tile))) {
 			ft.new_td_bits.Reset(TrackdirCrossesTrackdirs(ft.old_td));
 			assert(ft.new_td_bits.Any());
 		}
