@@ -311,6 +311,18 @@ inline TrackBits GetDepotReservationTrackBits(const Tile &t)
 	return HasDepotReservation(t) ? GetRailDepotTrack(t) : TrackBits{};
 }
 
+/**
+ * Get the reserved track bits for any rail tile.
+ * @pre IsTileType(t, TileType::Railway)
+ * @param t The tile to get the reserved for.
+ * @return Reserved track bits.
+ */
+inline TrackBits GetReservedRailTracks(const Tile &t)
+{
+	assert(IsTileType(t, TileType::Railway));
+	return IsRailDepot(t) ? GetDepotReservationTrackBits(t) : GetRailReservationTrackBits(t);
+}
+
 
 /**
  * Checks whether the given signal is a path based signal.
