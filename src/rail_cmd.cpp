@@ -34,6 +34,7 @@
 #include "rail_cmd.h"
 #include "landscape_cmd.h"
 #include "clear_map.h"
+#include "clear_func.h"
 
 #include "table/strings.h"
 #include "table/railtypes.h"
@@ -2533,18 +2534,9 @@ static bool TileLoop_Rail(TileIndex index, Tile &tile)
 {
 	RailFence old_fences = GetRailFence(tile);
 	Tile base_tile = index;
-	if (IsTileType(base_tile, TileType::Clear)) {
-		if (GetClearGround(base_tile) == ClearGround::Desert || IsSnowTile(base_tile)) {
-			if (old_fences != RailFence::None) {
-				SetRailFence(tile, RailFence::None);
-				MarkTileDirtyByTile(index);
-			}
-			return false;
-		}
-	}
 
 	RailFence new_fences = RailFence::None;
-	if (IsPlainRail(tile) && (!IsTileType(base_tile, TileType::Clear) || GetClearDensity(base_tile) == 3)) { // Wait until bottom is green.
+	if (IsPlainRail(tile) && (!IsTileType(base_tile, TileType::Clear) || GetClearGround(base_tile) == ClearGround::Desert || GetClearDensity(base_tile) == (IsSnowTile(base_tile) ? GetSnowRequiredDensity(index) : 3))) { // Wait until bottom is green.
 		/* determine direction of fence */
 		TrackBits rail = GetTrackBits(tile);
 

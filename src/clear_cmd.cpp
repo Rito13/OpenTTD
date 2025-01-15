@@ -268,6 +268,35 @@ static void UpdateFences(TileIndex tile)
 	if (dirty) MarkTileDirtyByTile(tile);
 }
 
+/**
+ * Get offset to snow line for given tile.
+ * @parm tile The tile to get the offset.
+ * @return The snow line offset, negative values indicate no snow others some snow.
+ */
+static inline int GetSnowLineOffset(TileIndex tile)
+{
+	return std::get<int>(GetFoundationSlope(tile)) - GetSnowLine() + 1;
+}
+
+/**
+ * Get required density of snow based on offset to snow line.
+ * @param k Offset to snow line. @see GetSnowLineOffset
+ * @return Required snow density for given offset.
+ */
+static inline uint GetSnowRequiredDensity(int k)
+{
+	return (k < 0) ? 0u : std::min<uint>(k, 3u);
+}
+
+/**
+ * Get required density of snow for given tile.
+ * @param tile The tile to get the snow density for.
+ * @return Required snow density for given tile.
+ */
+uint GetSnowRequiredDensity(TileIndex tile)
+{
+	return GetSnowRequiredDensity(GetSnowLineOffset(tile));
+}
 
 /**
  * Convert to or from snowy tiles.
@@ -275,7 +304,7 @@ static void UpdateFences(TileIndex tile)
  */
 static void TileLoopClearAlps(TileIndex tile)
 {
-	int k = std::get<int>(GetFoundationSlope(tile)) - GetSnowLine() + 1;
+	int k = GetSnowLineOffset(tile);
 
 	if (!IsSnowTile(tile)) {
 		/* Below the snow line, do nothing if no snow. */
@@ -290,7 +319,7 @@ static void TileLoopClearAlps(TileIndex tile)
 
 	/* Update snow density. */
 	uint current_density = GetClearDensity(tile);
-	uint req_density = (k < 0) ? 0u : std::min<uint>(k, 3u);
+	uint req_density = GetSnowRequiredDensity(k);
 
 	if (current_density == req_density) {
 		/* Density at the required level. */
