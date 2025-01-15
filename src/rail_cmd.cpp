@@ -1048,7 +1048,7 @@ CommandCost CmdBuildTrainDepot(DoCommandFlags flags, TileIndex tile, RailType ra
 		}
 
 		MarkTileDirtyByTile(tile);
-		AddSideToSignalBuffer(tile, DiagDirection::Invalid, _current_company);
+		AddSideToSignalBuffer(tile, dir, _current_company);
 		YapfNotifyTrackLayoutChange(tile, DiagDirToDiagTrack(dir));
 
 		if (v != nullptr) TryPathReserve(v, true);
