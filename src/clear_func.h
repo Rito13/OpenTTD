@@ -15,5 +15,6 @@
 void DrawRoughLandTile(const TileInfo *ti, bool draw_halftile, Corner halftile_corner);
 void DrawClearLandTile(const TileInfo *ti, uint8_t density, bool draw_halftile, Corner halftile_corner);
 void GenerateRocks(TileIndex tile, uint32_t count);
+uint GetSnowRequiredDensity(TileIndex tile);
 
 #endif /* CLEAR_FUNC_H */
