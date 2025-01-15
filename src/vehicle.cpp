@@ -1569,10 +1569,11 @@ void VehicleEnterDepot(Vehicle *v)
 			Train *t = Train::From(v);
 			SetWindowClassesDirty(WindowClass::TrainList);
 			/* Clear path reservation */
-			SetDepotReservation(GetRailDepotTile(t->tile), false);
+			Tile depot = GetRailDepotTile(t->tile);
+			SetDepotReservation(depot, false);
 			if (_settings_client.gui.show_track_reservation) MarkTileDirtyByTile(t->tile);
 
-			UpdateSignalsOnSegment(t->tile, DiagDirection::Invalid, t->owner);
+			UpdateSignalsOnSegment(t->tile, GetRailDepotDirection(depot), t->owner);
 			t->wait_counter = 0;
 			t->force_proceed = TFP_NONE;
 			t->flags.Reset(VehicleRailFlag::Reversed);
