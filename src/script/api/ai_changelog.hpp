@@ -32,6 +32,7 @@
  * \li AIBridge::GetBridgeID renamed to AIBridge::GetBridgeType
  * \li AIWaypoint::GetWaypointID now returns the StationID of any type of waypoint
  * \li AIList instances can now be saved
+ * \li AIRail::GetRailType now also needs a second tile parameter to indicate the side the tile is entered.
  *
  * \b 14.0
  *

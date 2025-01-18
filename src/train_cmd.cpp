@@ -356,7 +356,7 @@ uint16_t Train::GetCurveSpeedLimit() const
 
 	if (max_speed != absolute_max_speed) {
 		/* Apply the current railtype's curve speed advantage */
-		const RailTypeInfo *rti = GetRailTypeInfo(GetTileRailType(this->tile));
+		const RailTypeInfo *rti = GetRailTypeInfo(GetTileRailType(this->tile, TrackdirToTrack(this->GetVehicleTrackdir())));
 		max_speed += (max_speed / 2) * rti->curve_speed;
 
 		if (this->tcache.cached_tilt) {
@@ -2244,7 +2244,7 @@ static void CheckNextTrainTile(Train *v)
 			if (HasPbsSignalOnTrackdir(ft.new_sub_tile, FindFirstTrackdir(ft.new_td_bits))) {
 				/* If the next tile is a PBS signal, try to make a reservation. */
 				TrackBits tracks = TrackdirBitsToTrackBits(ft.new_td_bits);
-				if (Rail90DegTurnDisallowed(GetTileRailType(ft.old_tile), GetRailType(ft.new_sub_tile))) {
+				if (Rail90DegTurnDisallowed(GetTileRailType(ft.old_tile, TrackdirToTrack(ft.old_td)), GetRailType(ft.new_sub_tile))) {
 					tracks &= ~TrackCrossesTracks(TrackdirToTrack(ft.old_td));
 				}
 				ChooseTrainTrack(v, ft.new_tile, ft.exitdir, tracks, false, nullptr, false);
@@ -2492,7 +2492,7 @@ static PBSTileInfo ExtendTrainReservation(const Train *v, TrackBits *new_tracks,
 			if (HasOnewaySignalBlockingTrackdir(ft.new_sub_tile, FindFirstTrackdir(ft.new_td_bits))) break;
 		}
 
-		if (Rail90DegTurnDisallowed(GetTileRailType(ft.old_tile), GetRailType(ft.new_sub_tile))) {
+		if (Rail90DegTurnDisallowed(GetTileRailType(ft.old_tile, TrackdirToTrack(ft.old_td)), GetRailType(ft.new_sub_tile))) {
 			ft.new_td_bits &= ~TrackdirCrossesTrackdirs(ft.old_td);
 			if (ft.new_td_bits == TRACKDIR_BIT_NONE) break;
 		}
@@ -2558,7 +2558,7 @@ static PBSTileInfo ExtendTrainReservation(const Train *v, TrackBits *new_tracks,
 	while (tile != stopped || cur_td != stopped_td) {
 		if (!ft.Follow(tile, cur_td)) break;
 
-		if (Rail90DegTurnDisallowed(GetTileRailType(ft.old_tile), GetRailType(ft.new_sub_tile))) {
+		if (Rail90DegTurnDisallowed(GetTileRailType(ft.old_tile, TrackdirToTrack(ft.old_td)), GetRailType(ft.new_sub_tile))) {
 			ft.new_td_bits &= ~TrackdirCrossesTrackdirs(ft.old_td);
 			assert(ft.new_td_bits != TRACKDIR_BIT_NONE);
 		}
@@ -2808,7 +2808,7 @@ static Track ChooseTrainTrack(Train *v, TileIndex tile, DiagDirection enterdir, 
 		DiagDirection exitdir = TrackdirToExitdir(res_dest.trackdir);
 		TileIndex     next_tile = TileAddByDiagDir(res_dest.tile, exitdir);
 		TrackBits     reachable = TrackdirBitsToTrackBits((TrackdirBits)(GetTileTrackStatus(next_tile, TRANSPORT_RAIL, 0))) & DiagdirReachesTracks(exitdir);
-		if (Rail90DegTurnDisallowed(GetTileRailType(res_dest.tile), GetTileRailType(next_tile))) {
+		if (Rail90DegTurnDisallowed(GetTileRailType(res_dest.tile, TrackdirToTrack(res_dest.trackdir)), GetTileRailType(next_tile, exitdir))) {
 			reachable &= ~TrackCrossesTracks(TrackdirToTrack(res_dest.trackdir));
 		}
 
@@ -2910,7 +2910,7 @@ bool TryPathReserve(Train *v, bool mark_as_stuck, bool first_tile_okay)
 	TileIndex     new_tile = TileAddByDiagDir(origin.tile, exitdir);
 	TrackBits     reachable = TrackdirBitsToTrackBits(TrackStatusToTrackdirBits(GetTileTrackStatus(new_tile, TRANSPORT_RAIL, 0)) & DiagdirReachesTrackdirs(exitdir));
 
-	if (Rail90DegTurnDisallowed(GetTileRailType(origin.tile), GetTileRailType(new_tile))) reachable &= ~TrackCrossesTracks(TrackdirToTrack(origin.trackdir));
+	if (Rail90DegTurnDisallowed(GetTileRailType(origin.tile, TrackdirToTrack(origin.trackdir)), GetTileRailType(new_tile, exitdir))) reachable &= ~TrackCrossesTracks(TrackdirToTrack(origin.trackdir));
 
 	bool res_made = false;
 	ChooseTrainTrack(v, new_tile, exitdir, reachable, true, &res_made, mark_as_stuck);
@@ -3028,9 +3028,9 @@ static void TrainEnterStation(Train *v, StationID station)
 }
 
 /* Check if the vehicle is compatible with the specified tile */
-static inline bool CheckCompatibleRail(const Train *v, TileIndex tile)
+static inline bool CheckCompatibleRail(const Train *v, TileIndex tile, DiagDirection diagdir)
 {
-	Tile rail = Tile::GetByType(tile, MP_RAILWAY);
+	Tile rail = GetRailTileFromDiagDir(tile, diagdir);
 	if (!rail) rail = tile;
 	return IsTileOwner(rail, v->owner) && (!v->IsFrontEngine() || v->compatible_railtypes.Test(GetRailType(tile)));
 }
@@ -3313,7 +3313,7 @@ bool TrainController(Train *v, Vehicle *nomove, bool reverse)
 				TrackBits red_signals = TrackdirBitsToTrackBits(TrackStatusToRedSignals(ts) & reachable_trackdirs);
 
 				TrackBits bits = TrackdirBitsToTrackBits(trackdirbits);
-				if (Rail90DegTurnDisallowed(GetTileRailType(gp.old_tile), GetTileRailType(gp.new_tile)) && prev == nullptr) {
+				if (Rail90DegTurnDisallowed(GetTileRailType(gp.old_tile, FindFirstTrack(v->track)), GetTileRailType(gp.new_tile, enterdir)) && prev == nullptr) {
 					/* We allow wagons to make 90 deg turns, because forbid_90_deg
 					 * can be switched on halfway a turn */
 					bits &= ~TrackCrossesTracks(FindFirstTrack(v->track));
@@ -3323,7 +3323,7 @@ bool TrainController(Train *v, Vehicle *nomove, bool reverse)
 
 				/* Check if the new tile constrains tracks that are compatible
 				 * with the current train, if not, bail out. */
-				if (!CheckCompatibleRail(v, gp.new_tile)) goto invalid_rail;
+				if (!CheckCompatibleRail(v, gp.new_tile, enterdir)) goto invalid_rail;
 
 				TrackBits chosen_track;
 				if (prev == nullptr) {
@@ -3465,10 +3465,6 @@ bool TrainController(Train *v, Vehicle *nomove, bool reverse)
 
 					v->tile = gp.new_tile;
 
-					if (GetTileRailType(gp.new_tile) != GetTileRailType(gp.old_tile)) {
-						v->First()->ConsistChanged(CCF_TRACK);
-					}
-
 					v->track = chosen_track;
 					assert(v->track);
 				}
@@ -3485,6 +3481,13 @@ bool TrainController(Train *v, Vehicle *nomove, bool reverse)
 					}
 					direction_changed = true;
 					v->direction = chosen_dir;
+				}
+
+
+				if (!VehicleEnterTile(v, gp.new_tile, gp.x, gp.y).Test(VehicleEnterTileState::EnteredWormhole) &&
+						GetTileRailType(gp.new_tile, enterdir) != GetTileRailType(gp.old_tile, ReverseDiagDir(enterdir))) {
+					/* v->track and v->direction need to be valid before calling. */
+					v->First()->ConsistChanged(CCF_TRACK);
 				}
 
 				if (v->IsFrontEngine()) {
@@ -3858,7 +3861,7 @@ static TileIndex TrainApproachingCrossingTile(const Train *v)
 
 	/* not a crossing || wrong axis || unusable rail (wrong type or owner) */
 	if (!IsLevelCrossingTile(tile) || DiagDirToAxis(dir) == GetCrossingRoadAxis(tile) ||
-			!CheckCompatibleRail(v, tile)) {
+			!CheckCompatibleRail(v, tile, dir)) {
 		return INVALID_TILE;
 	}
 
@@ -3905,12 +3908,13 @@ static bool TrainCheckIfLineEnds(Train *v, bool reverse)
 
 	/* mask unreachable track bits if we are forbidden to do 90deg turns */
 	TrackBits bits = TrackdirBitsToTrackBits(trackdirbits);
-	if (Rail90DegTurnDisallowed(GetTileRailType(v->tile), GetTileRailType(tile))) {
-		bits &= ~TrackCrossesTracks(FindFirstTrack(v->track));
+	Track track = FindFirstTrack(v->track);
+	if (Rail90DegTurnDisallowed(GetTileRailType(v->tile, track), GetTileRailType(tile, dir))) {
+		bits &= ~TrackCrossesTracks(track);
 	}
 
 	/* no suitable trackbits at all || unusable rail (wrong type or owner) */
-	if (bits == TRACK_BIT_NONE || !CheckCompatibleRail(v, tile)) {
+	if (bits == TRACK_BIT_NONE || !CheckCompatibleRail(v, tile, dir)) {
 		return TrainApproachingLineEnd(v, false, reverse);
 	}
 
@@ -4205,8 +4209,6 @@ void Train::OnNewEconomyDay()
  */
 Trackdir Train::GetVehicleTrackdir() const
 {
-	if (this->vehstatus.Test(VehState::Crashed)) return INVALID_TRACKDIR;
-
 	if (this->track == TRACK_BIT_DEPOT) {
 		/* We'll assume the train is facing outwards */
 		return DiagDirToDiagTrackdir(GetRailDepotDirection(GetRailDepotTile(this->tile))); // Train in depot
@@ -4216,6 +4218,8 @@ Trackdir Train::GetVehicleTrackdir() const
 		/* train in tunnel or on bridge, so just use its direction and assume a diagonal track */
 		return DiagDirToDiagTrackdir(DirToDiagDir(this->direction));
 	}
+
+	if (this->vehstatus.Test(VehState::Crashed)) return TrackToTrackdir(FindFirstTrack(this->track));
 
 	return TrackDirectionToTrackdir(FindFirstTrack(this->track), this->direction);
 }
