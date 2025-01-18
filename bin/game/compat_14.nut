@@ -78,3 +78,20 @@ GSTown.FoundTown <- function(tile, size, city, layout, name) { return GSTown.Fou
 
 GSVehicle.SetNameCompat14 <- GSVehicle.SetName;
 GSVehicle.SetName <- function(id, name) { return GSVehicle.SetNameCompat14(id, GSCompat14.Text(name)); }
+
+GSVehicle._SetName <- GSVehicle.SetName;
+GSVehicle.SetName <- function(id, name) { return GSVehicle._SetName(id, GSCompat14.Text(name)); }
+
+GSRail._GetRailType <- GSRail.GetRailType;
+GSRail.GetRailType <- function(tile)
+{
+	local tile_x = GSMap.GetTileX(tile);
+	local tile_y = GSMap.GetTileY(tile);
+	local dirs = [[-1, 0], [0, -1], [1, 0], [0, 1]];
+
+	foreach (d in dirs) {
+		local rt = GSRail._GetRailType(tile, GSMap.GetTileIndex(tile_x + d[0], tile_y + d[1]));
+		if (rt != GSRail.RAILTYPE_INVALID) return rt;
+	}
+	return GSRail.RAILTYPE_INVALID;
+}
