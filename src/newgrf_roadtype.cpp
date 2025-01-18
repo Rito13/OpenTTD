@@ -7,6 +7,7 @@
 
 /** @file newgrf_roadtype.cpp NewGRF handling of road types. */
 
+#include "direction_type.h"
 #include "stdafx.h"
 #include "core/container_func.hpp"
 #include "debug.h"
@@ -22,12 +23,13 @@
 /**
  * Variable 0x45 of road-/tram-/rail-types to query track types on a tile.
  *
- * Format: __RRttrr
+ * Format: 22RRttrr
  * - rr: Translated roadtype.
  * - tt: Translated tramtype.
  * - RR: Translated railtype.
+ * - 22: Same as RR but for the opposite tile corner, available only for diagonal tracks.
  *
- * Special values for rr, tt, RR:
+ * Special values for rr, tt, RR, 22:
  * - 0xFF: Track not present on tile.
  * - 0xFE: Track present, but no matching entry in translation table.
  * @param tile The tile to consider.
@@ -48,12 +50,21 @@ uint32_t GetTrackTypes(TileIndex tile, const GRFFile *grffile)
 			if (tram == 0xFF) tram = 0xFE;
 		}
 	}
-	uint8_t rail = 0xFF;
-	if (auto tt = GetTileRailType(tile); tt != INVALID_RAILTYPE) {
-		rail = GetReverseRailTypeTranslation(tt, grffile);
-		if (rail == 0xFF) rail = 0xFE;
+	uint8_t rail1 = 0xFF;
+	uint8_t rail2 = 0xFF;
+	for (DiagDirection dir : EnumRange(DiagDirection::End)) {
+		if (auto tt = GetTileRailType(tile, dir); tt != INVALID_RAILTYPE) {
+			rail1 = GetReverseRailTypeTranslation(tt, grffile);
+			if (rail1 == 0xFF) rail1 = 0xFE;
+			tt = GetTileRailType(tile, ReverseDiagDir(dir));
+			if (tt != INVALID_RAILTYPE) {
+				rail2 = GetReverseRailTypeTranslation(tt, grffile);
+				if (rail2 == 0xFF) rail2 = 0xFE;
+			}
+			break;
+		}
 	}
-	return road | tram << 8 | rail << 16;
+	return road | tram << 8 | rail1 << 16 | rail2 << 24;
 }
 
 /* virtual */ uint32_t RoadTypeScopeResolver::GetRandomBits() const

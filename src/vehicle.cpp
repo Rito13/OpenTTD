@@ -2905,7 +2905,7 @@ void Vehicle::ShowVisualEffect() const
 				IsDepotTile(AsDepotTile(v->tile)) ||
 				IsTunnelTile(v->tile) ||
 				(v->type == VehicleType::Train &&
-				!HasPowerOnRail(Train::From(v)->railtypes, GetTileRailType(v->tile)))) {
+				!HasPowerOnRail(Train::From(v)->railtypes, GetTileRailType(v->tile, TrackdirToTrack(v->GetVehicleTrackdir()))))) {
 			continue;
 		}
 
