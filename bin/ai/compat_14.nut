@@ -36,3 +36,20 @@ AITown.FoundTown <- function(tile, size, city, layout, name) { return AITown.Fou
 
 AIVehicle.SetNameCompat14 <- AIVehicle.SetName;
 AIVehicle.SetName <- function(id, name) { return AIVehicle.SetNameCompat14(id, AICompat14.Text(name)); }
+
+AIVehicle._SetName <- AIVehicle.SetName;
+AIVehicle.SetName <- function(id, name) { return AIVehicle._SetName(id, AICompat14.Text(name)); }
+
+AIRail._GetRailType <- AIRail.GetRailType;
+AIRail.GetRailType <- function(tile)
+{
+	local tile_x = AIMap.GetTileX(tile);
+	local tile_y = AIMap.GetTileY(tile);
+	local dirs = [[-1, 0], [0, -1], [1, 0], [0, 1]];
+
+	foreach (d in dirs) {
+		local rt = AIRail._GetRailType(tile, AIMap.GetTileIndex(tile_x + d[0], tile_y + d[1]));
+		if (rt != AIRail.RAILTYPE_INVALID) return rt;
+	}
+	return AIRail.RAILTYPE_INVALID;
+}
