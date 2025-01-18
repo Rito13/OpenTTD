@@ -138,3 +138,18 @@ GSWindow.WC_FRAMETIME_GRAPH <- GSWindow.WindowClass.FrametimeGraph;
 GSWindow.WC_SCREENSHOT <- GSWindow.WindowClass.Screenshot;
 GSWindow.WC_HELPWIN <- GSWindow.WindowClass.Help;
 GSWindow.WC_INVALID <- GSWindow.WindowClass.Invalid;
+
+/* 16 adds direction to GetRailType. */
+GSRail.GetRailTypeCompat15 <- GSRail.GetRailType;
+GSRail.GetRailType <- function(tile)
+{
+	local tile_x = GSMap.GetTileX(tile);
+	local tile_y = GSMap.GetTileY(tile);
+	local dirs = [[-1, 0], [0, -1], [1, 0], [0, 1]];
+
+	foreach (d in dirs) {
+		local rt = GSRail.GetRailTypeCompat15(tile, GSMap.GetTileIndex(tile_x + d[0], tile_y + d[1]));
+		if (rt != GSRail.RAILTYPE_INVALID) return rt;
+	}
+	return GSRail.RAILTYPE_INVALID;
+}
