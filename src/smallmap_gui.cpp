@@ -517,8 +517,9 @@ static inline uint32_t GetSmallMapRoutesPixels(TileIndex tile, TileType t)
 			}
 
 		case TileType::Railway: {
+			Tile rail = Tile::GetByType(tile, TileType::Railway);
 			AndOr andor = {
-				MKCOLOUR_0XX0(GetRailTypeInfo(GetTileRailType(tile))->map_colour),
+				MKCOLOUR_0XX0(GetRailTypeInfo(rail.IsValid() ? GetRailType(rail) : GetRailType(tile))->map_colour),
 				_smallmap_contours_andor[t].mand
 			};
 

@@ -167,7 +167,7 @@ struct CFollowTrackT {
 
 			return false;
 		}
-		if ((!IsRailTT() && !Allow90degTurns()) || (IsRailTT() && Rail90DegTurnDisallowed(GetTileRailType(this->old_tile), GetTileRailType(this->new_tile), !Allow90degTurns()))) {
+		if ((!IsRailTT() && !Allow90degTurns()) || (IsRailTT() && Rail90DegTurnDisallowed(GetTileRailType(this->old_tile, TrackdirToTrack(this->old_td)), GetTileRailType(this->new_tile, this->exitdir), !Allow90degTurns()))) {
 			this->new_td_bits.Reset(TrackdirCrossesTrackdirs(this->old_td));
 			if (this->new_td_bits.None()) {
 				this->err = ErrorCode::SharpTurn;
@@ -358,7 +358,8 @@ protected:
 			}
 
 			/* rail transport is possible only on compatible rail types */
-			RailType rail_type = IsTileType(this->new_sub_tile, TileType::Railway) ? GetRailType(this->new_sub_tile) : GetTileRailType(this->new_tile);
+			RailType rail_type = GetRailType(this->new_sub_tile);
+			assert(rail_type < RAILTYPE_END);
 			if (this->railtypes.Any() && !this->railtypes.Test(rail_type)) {
 				/* incompatible rail type */
 				this->err = ErrorCode::RailRoadType;
@@ -498,7 +499,7 @@ public:
 		}
 		/* Check for speed limit imposed by railtype */
 		if (IsRailTT()) {
-			uint16_t rail_speed = GetRailTypeInfo(GetTileRailType(this->old_tile))->max_speed;
+			uint16_t rail_speed = GetRailTypeInfo(GetTileRailType(this->old_tile, TrackdirToTrack(this->old_td)))->max_speed;
 			if (rail_speed > 0) max_speed = std::min<int>(max_speed, rail_speed);
 		}
 		if (IsRoadTT()) {
