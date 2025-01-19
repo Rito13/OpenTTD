@@ -137,7 +137,7 @@ void AfterLoadCompanyStats()
 
 	Company *c;
 	for (const auto tile : Map::IterateIndex()) {
-		if (Tile rail_tile = Tile::GetByType(tile, TileType::Railway); rail_tile.IsValid()) {
+		for (Tile rail_tile : RailTileIterator::Iterate(tile)) {
 			c = Company::GetIfValid(GetTileOwner(rail_tile));
 			if (c != nullptr) {
 				uint pieces = 1;

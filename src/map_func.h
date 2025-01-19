@@ -26,7 +26,7 @@ class Tile;
  */
 static inline bool MayHaveAssociatedTile(TileType tt)
 {
-	return tt == TileType::Clear || tt == TileType::Water;
+	return tt == TileType::Clear || tt == TileType::Water || tt == TileType::Railway;
 }
 
 /**
