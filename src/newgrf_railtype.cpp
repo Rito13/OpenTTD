@@ -211,15 +211,11 @@ void ConvertRailTypes()
 	if (!needs_conversion) return;
 
 	for (const auto t : Map::IterateIndex()) {
-		if (Tile rail = Tile::GetByType(t, MP_RAILWAY); rail.IsValid()) {
+		for (Tile rail : RailTileIterator::Iterate(t)) {
 			SetRailType(rail, railtype_conversion_map[GetRailType(rail)]);
 		}
 
 		switch (GetTileType(t)) {
-			case MP_RAILWAY:
-				SetRailType(t, railtype_conversion_map[GetRailType(t)]);
-				break;
-
 			case MP_ROAD:
 				if (IsLevelCrossing(t)) {
 					SetRailType(t, railtype_conversion_map[GetRailType(t)]);
