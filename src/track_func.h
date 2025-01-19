@@ -308,6 +308,17 @@ inline TrackBits TrackdirBitsToTrackBits(TrackdirBits bits)
 }
 
 /**
+ * Returns a TrackBit mask from a given Track
+ *
+ * @param track The track to get the TrackdirBits from
+ * @return The TrackBits which the selected tracks
+ */
+inline TrackBits TrackToTrackBits(Track track)
+{
+	return static_cast<TrackBits>(TrackdirToTrackdirBits(TrackToTrackdir(track)).base());
+}
+
+/**
  * Converts TrackBits to TrackdirBits while allowing both directions.
  *
  * @param bits The TrackBits

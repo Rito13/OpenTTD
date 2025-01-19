@@ -121,7 +121,7 @@ static void GenericPlaceRail(TileIndex tile, Track track)
  */
 static void PlaceExtraDepotRail(TileIndex index, DiagDirection dir, Track track)
 {
-	Tile tile = Tile::GetByType(index, TileType::Railway);
+	Tile tile = GetRailTileFromDiagDir(index, dir);
 	if (!tile.IsValid()) return;
 	if (GetRailTileType(tile) == RailTileType::Depot) return;
 	if (GetRailTileType(tile) == RailTileType::Signals && !_settings_client.gui.auto_remove_signals) return;
@@ -255,7 +255,7 @@ static void GenericPlaceSignals(TileIndex tile)
 		Command<Commands::RemoveSignal>::Post(STR_ERROR_CAN_T_REMOVE_SIGNALS_FROM, CcPlaySound_CONSTRUCTION_RAIL, tile, track);
 	} else {
 		/* Which signals should we cycle through? */
-		Tile rail = Tile::GetByType(tile, TileType::Railway);
+		Tile rail = GetRailTileFromTrack(tile, track);
 		bool tile_has_signal = IsPlainRailTile(rail) && IsValidTrack(track) && HasSignalOnTrack(rail, track);
 		SignalType cur_signal_on_tile = tile_has_signal ? GetSignalType(rail, track) : _cur_signal_type;
 		SignalType cycle_start;

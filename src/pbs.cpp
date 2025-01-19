@@ -23,8 +23,12 @@
  */
 TrackBits GetReservedTrackbits(TileIndex t)
 {
-	if (Tile rail = Tile::GetByType(t, TileType::Railway); rail.IsValid()) {
-		return GetReservedRailTracks(rail);
+	if (auto rail_iter = RailTileIterator::Iterate(t); !rail_iter.empty()) {
+		TrackBits bits{};
+		for (Tile rail : rail_iter) {
+			bits.Set(GetReservedRailTracks(rail));
+		}
+		return bits;
 	}
 
 	switch (GetTileType(t)) {
@@ -89,7 +93,7 @@ bool TryReserveRailTrack(TileIndex tile, Track t, bool trigger_stations)
 		}
 	}
 
-	if (Tile rail = Tile::GetByType(tile, TileType::Railway); rail.IsValid()) {
+	if (Tile rail = GetRailTileFromTrack(tile, t); rail.IsValid()) {
 		if (IsPlainRail(rail)) return TryReserveTrack(rail, t);
 		if (IsRailDepot(rail)) {
 			if (!HasDepotReservation(rail)) {
@@ -152,7 +156,7 @@ void UnreserveRailTrack(TileIndex tile, Track t)
 		}
 	}
 
-	if (Tile rail = Tile::GetByType(tile, TileType::Railway); rail.IsValid()) {
+	if (Tile rail = GetRailTileFromTrack(tile, t); rail.IsValid()) {
 		if (IsRailDepot(rail)) {
 			SetDepotReservation(rail, false);
 			MarkTileDirtyByTile(tile);
