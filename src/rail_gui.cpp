@@ -120,11 +120,10 @@ static void GenericPlaceRail(TileIndex tile, Track track)
  */
 static void PlaceExtraDepotRail(TileIndex index, DiagDirection dir, Track track)
 {
-	Tile tile = Tile::GetByType(index, MP_RAILWAY);
+	Tile tile = GetRailTileFromDiagDir(index, dir);
 	if (!tile.IsValid()) return;
 	if (GetRailTileType(tile) == RAIL_TILE_DEPOT) return;
 	if (GetRailTileType(tile) == RAIL_TILE_SIGNALS && !_settings_client.gui.auto_remove_signals) return;
-	if ((GetTrackBits(tile) & DiagdirReachesTracks(dir)) == 0) return;
 
 	Command<CMD_BUILD_SINGLE_RAIL>::Post(index, _cur_railtype, track, _settings_client.gui.auto_remove_signals);
 }
@@ -254,7 +253,7 @@ static void GenericPlaceSignals(TileIndex tile)
 		Command<CMD_REMOVE_SINGLE_SIGNAL>::Post(STR_ERROR_CAN_T_REMOVE_SIGNALS_FROM, CcPlaySound_CONSTRUCTION_RAIL, tile, track);
 	} else {
 		/* Which signals should we cycle through? */
-		Tile rail = Tile::GetByType(tile, MP_RAILWAY);
+		Tile rail = GetRailTileFromTrack(tile, track);
 		bool tile_has_signal = IsPlainRailTile(rail) && IsValidTrack(track) && HasSignalOnTrack(rail, track);
 		SignalType cur_signal_on_tile = tile_has_signal ? GetSignalType(rail, track) : _cur_signal_type;
 		SignalType cycle_start;
@@ -1952,7 +1951,9 @@ static void SetDefaultRailGui()
 			/* Find the most used rail type */
 			std::array<uint, RAILTYPE_END> count{};
 			for (const auto t : Map::IterateIndex()) {
-				if (Tile rail = Tile::GetByType(t, MP_RAILWAY); rail.IsValid()) count[GetRailType(rail)]++;
+				for (Tile rail : RailTileIterator::Iterate(t)) {
+					count[GetRailType(rail)]++;
+				}
 
 				if (IsLevelCrossingTile(t) || HasStationTileRail(t) || (IsTileType(t, MP_TUNNELBRIDGE) && GetTunnelBridgeTransportType(t) == TRANSPORT_RAIL)) {
 					count[GetRailType(t)]++;
