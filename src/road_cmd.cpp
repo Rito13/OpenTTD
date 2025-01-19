@@ -637,7 +637,11 @@ CommandCost CmdBuildRoad(DoCommandFlags flags, TileIndex tile, RoadBits pieces, 
 
 	bool need_to_clear = false;
 
-	if (Tile rail = Tile::GetByType(tile, TileType::Railway); rail.IsValid()) {
+	if (Tile::HasType(tile, TileType::Railway)) {
+		if (RoadNoLevelCrossing(rt)) {
+			return CommandCost(STR_ERROR_CROSSING_DISALLOWED_ROAD);
+		}
+
 		if (IsSteepSlope(tileh)) {
 			return CommandCost(STR_ERROR_LAND_SLOPED_IN_WRONG_DIRECTION);
 		}
@@ -647,34 +651,32 @@ CommandCost CmdBuildRoad(DoCommandFlags flags, TileIndex tile, RoadBits pieces, 
 			return CommandCost(STR_ERROR_LAND_SLOPED_IN_WRONG_DIRECTION);
 		}
 
-		if (!_settings_game.construction.crossing_with_competitor && company != OWNER_TOWN && company != OWNER_DEITY) {
-			CommandCost ret = CheckTileOwnership(tile, rail);
-			if (ret.Failed()) return ret;
-		}
+		Axis roaddir = Axis::Invalid;
+		for (Tile rail : RailTileIterator::Iterate(tile)) {
+			if (!_settings_game.construction.crossing_with_competitor && company != OWNER_TOWN && company != OWNER_DEITY) {
+				CommandCost ret = CheckTileOwnership(tile, rail);
+				if (ret.Failed()) return ret;
+			}
 
-		if (GetRailTileType(rail) != RailTileType::Normal) goto do_clear;
+			if (GetRailTileType(rail) != RailTileType::Normal) goto do_clear;
 
-		if (RoadNoLevelCrossing(rt)) {
-			return CommandCost(STR_ERROR_CROSSING_DISALLOWED_ROAD);
-		}
+			if (RailNoLevelCrossings(GetRailType(rail))) {
+				return CommandCost(STR_ERROR_CROSSING_DISALLOWED_RAIL);
+			}
 
-		if (RailNoLevelCrossings(GetRailType(rail))) {
-			return CommandCost(STR_ERROR_CROSSING_DISALLOWED_RAIL);
-		}
+			switch (gettrackbits(rail).base()) {
+				case TrackBits{Track::X}.base():
+					if (pieces.Any(ROAD_X)) goto do_clear;
+					roaddir = Axis::Y;
+					break;
 
-		Axis roaddir;
-		switch (GetTrackBits(rail).base()) {
-			case TrackBits{Track::X}.base():
-				if (pieces.Any(ROAD_X)) goto do_clear;
-				roaddir = Axis::Y;
-				break;
+				case TrackBits{Track::Y}.base():
+					if (pieces.Any(ROAD_Y)) goto do_clear;
+					roaddir = Axis::X;
+					break;
 
-			case TrackBits{Track::Y}.base():
-				if (pieces.Any(ROAD_Y)) goto do_clear;
-				roaddir = Axis::X;
-				break;
-
-			default: goto do_clear;
+				default: goto do_clear;
+			}
 		}
 
 		CommandCost ret = EnsureNoVehicleOnGround(tile);
@@ -682,6 +684,8 @@ CommandCost CmdBuildRoad(DoCommandFlags flags, TileIndex tile, RoadBits pieces, 
 
 		if (flags.Test(DoCommandFlag::Execute)) {
 			Track railtrack = AxisToTrack(OtherAxis(roaddir));
+			/* If there is more than one associated rail sub-tile, the previous checks never succeed. */
+			Tile rail = Tile::GetByType(tile, MP_RAILWAY);
 			RailType rail_type = GetRailType(rail);
 			Owner rail_o = GetTileOwner(rail);
 			bool reserved = GetRailReservationTrackBits(rail).Test(railtrack);

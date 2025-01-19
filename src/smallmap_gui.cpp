@@ -517,6 +517,7 @@ static inline uint32_t GetSmallMapRoutesPixels(TileIndex tile, TileType t)
 			}
 
 		case TileType::Railway: {
+			/* Use first associated sub-tile for map colour. */
 			Tile rail = Tile::GetByType(tile, TileType::Railway);
 			AndOr andor = {
 				MKCOLOUR_0XX0(GetRailTypeInfo(rail.IsValid() ? GetRailType(rail) : GetRailType(tile))->map_colour),
@@ -637,6 +638,7 @@ uint32_t GetSmallMapOwnerPixels(TileIndex tile, TileType t, IncludeHeightmap inc
 
 		default:
 			if (Tile rail = Tile::GetByType(tile, TileType::Railway); rail.IsValid()) {
+				/* Use owner of first associated sub-tile for map colour. */
 				o = GetTileOwner(rail);
 			} else {
 				o = GetTileOwner(tile);

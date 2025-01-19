@@ -1176,8 +1176,9 @@ static void DoFloodTile(TileIndex target)
 	Slope tileh = GetTileSlope(target);
 	if (tileh != SLOPE_FLAT) {
 		/* make coast.. */
-		if (Tile rail = Tile::GetByType(target, TileType::Railway); rail.IsValid()) {
-			if (IsPlainRail(rail)) {
+		if (Tile::HasType(target, TileType::Railway)) {
+			/* If one associated tile is plain rail, all tiles will be, so no need to check more. */
+			if (IsPlainRailTile(target)) {
 				FloodVehicles(target);
 				flooded = FloodHalftile(target);
 			}
@@ -1221,17 +1222,19 @@ static void DoDryUp(TileIndex tile)
 {
 	AutoRestoreBackup cur_company(_current_company, OWNER_WATER);
 
-	if (Tile rail = Tile::GetByType(tile, TileType::Railway); rail.IsValid()) {
-		assert(IsPlainRail(rail));
-		RailFence new_fences;
-		switch (TrackBitsToTrack(GetTrackBits(rail))) {
-			case Track::Upper: new_fences = RailFence::Horiz1; break;
-			case Track::Lower: new_fences = RailFence::Horiz2; break;
-			case Track::Left: new_fences = RailFence::Vert1; break;
-			case Track::Right: new_fences = RailFence::Vert2; break;
-			default: NOT_REACHED();
+	if (auto rail_itr = RailTileIterator::Iterate(tile); !rail_itr.empty()) {
+		for (Tile rail : rail_itr) {
+			assert(IsPlainRail(rail));
+			RailFenceType new_fences;
+			switch (TrackBitsToTrack(GetTrackBits(rail))) {
+				case Track::Upper: new_fences = RailFence::Horiz1; break;
+				case Track::Lower: new_fences = RailFence::Horiz2; break;
+				case Track::Left: new_fences = RailFence::Vert1; break;
+				case Track::Right: new_fences = RailFence::Vert2; break;
+				default: NOT_REACHED();
+			}
+			SetRailFence(rail, new_fences);
 		}
-		SetRailFence(rail, new_fences);
 		if (IsTileType(tile, TileType::Water)) MakeClear(tile, ClearGround::Grass, 3);
 		MarkTileDirtyByTile(tile);
 	} else if (IsTileType(tile, TileType::Water)) {

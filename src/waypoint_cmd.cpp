@@ -108,7 +108,9 @@ Axis GetAxisForNewRailWaypoint(TileIndex tile)
 	/* The axis for rail waypoints is easy. */
 	if (IsRailWaypointTile(tile)) return GetRailStationAxis(tile);
 
-	/* Non-plain rail type, no valid axis for waypoints. */
+	/* Non-plain rail tile type, no valid axis for waypoints. As waypoints can only be built
+	 * on single track rail tiles, we just need to check the first associated sub-tile. If there
+	 * are two or more sub-tiles, there are also two or more tracks. */
 	Tile rail = Tile::GetByType(tile, TileType::Railway);
 	if (!rail.IsValid() || GetRailTileType(rail) != RailTileType::Normal) return Axis::Invalid;
 
@@ -171,6 +173,7 @@ static CommandCost IsValidTileForWaypoint(TileIndex tile, Axis axis, StationID *
 
 	if (GetAxisForNewRailWaypoint(tile) != axis) return CommandCost(STR_ERROR_NO_SUITABLE_RAILROAD_TRACK);
 
+	/* Can't have more than one rail sub-tile when getting to here. */
 	Tile rail = Tile::GetByType(tile, TileType::Railway);
 	Owner owner = rail.IsValid() ? GetTileOwner(rail) : GetTileOwner(tile);
 	CommandCost ret = CheckOwnership(owner);
@@ -307,6 +310,7 @@ CommandCost CmdBuildRailWaypoint(DoCommandFlags flags, TileIndex start_tile, Axi
 			/* Move existing (recently deleted) waypoint to the new location */
 			wp->xy = start_tile;
 		}
+		/* Can't have more than one rail sub-tile when getting to here. */
 		Tile rail = Tile::GetByType(start_tile, TileType::Railway);
 		wp->owner = rail.IsValid() ? GetTileOwner(rail) : GetTileOwner(start_tile);
 
@@ -327,7 +331,7 @@ CommandCost CmdBuildRailWaypoint(DoCommandFlags flags, TileIndex start_tile, Axi
 		for (auto [i, it, tile] = std::make_tuple(0, stl.begin(), start_tile); i < count; ++i, ++it, tile += offset) {
 			uint8_t old_specindex = HasStationTileRail(tile) ? GetCustomStationSpecIndex(tile) : 0;
 			if (!HasStationTileRail(tile)) c->infrastructure.station++;
-			rail = Tile::GetByType(tile, TileType::Railway);
+			rail = Tile::GetByType(tile, TileType::Railway); // One rail sub-tile only.
 			bool reserved = rail.IsValid() ?
 					GetRailReservationTrackBits(rail).Test(AxisToTrack(axis)) :
 					HasStationReservation(tile);

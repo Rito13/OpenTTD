@@ -200,6 +200,16 @@ inline Tile GetRailDepotTile(TileIndex index)
 	return tile;
 }
 
+/**
+ * Get the track bits of any rail tile.
+ * @pre IsTileType(t, MP_RAILWAY)
+ * @param t The tile
+ * @return The track bits of the tile
+ */
+inline TrackBits GetRailTrackBits(Tile t)
+{
+	return IsRailDepot(t) ? TrackToTrackBits(GetRailDepotTrack(t)) : GetTrackBits(t);
+}
 
 /**
  * Returns the reserved track bits of the tile
@@ -581,7 +591,10 @@ inline bool HasPbsSignalOnTrackdir(const Tile &tile, Trackdir td)
 /** @copydoc HasPbsSignalOnTrackdir(const Tile &, Trackdir) */
 inline bool HasPbsSignalOnTrackdir(TileIndex tile, Trackdir td)
 {
-	return HasPbsSignalOnTrackdir(Tile::GetByType(tile, TileType::Railway), td);
+	for (Tile tile : RailTileIterator::Iterate(index)) {
+		if (HasPbsSignalOnTrackdir(tile, td)) return true;
+	}
+	return false;
 }
 
 /**
@@ -600,7 +613,10 @@ inline bool HasOnewaySignalBlockingTrackdir(const Tile &tile, Trackdir td)
 /** @copydoc HasOnewaySignalBlockingTrackdir(const Tile &, Trackdir) */
 inline bool HasOnewaySignalBlockingTrackdir(TileIndex tile, Trackdir td)
 {
-	return HasOnewaySignalBlockingTrackdir(Tile::GetByType(tile, TileType::Railway), td);
+	for (Tile tile : RailTileIterator::Iterate(index)) {
+		if (HasOnewaySignalBlockingTrackdir(tile, td)) return true;
+	}
+	return false;
 }
 
 /**
@@ -618,7 +634,10 @@ inline bool HasBlockSignalOnTrackdir(const Tile &tile, Trackdir td)
 /** @copydoc HasBlockSignalOnTrackdir(Tile, Trackdir) */
 inline bool HasBlockSignalOnTrackdir(TileIndex tile, Trackdir td)
 {
-	return HasBlockSignalOnTrackdir(Tile::GetByType(tile, TileType::Railway), td);
+	for (Tile tile : RailTileIterator::Iterate(index)) {
+		if (HasBlockSignalOnTrackdir(tile, td)) return true;
+	}
+	return false;
 }
 
 RailType GetTileRailType(TileIndex tile, Track track);
@@ -687,14 +706,24 @@ inline Tile GetRailTileFromDiagDir(TileIndex index, DiagDirection diagdir)
 inline Tile GetRailTileFromTrack(TileIndex index, Track track)
 {
 	for (auto tile : RailTileIterator::Iterate(index)) {
-		if (IsRailDepot(tile)) {
-			if (GetRailDepotTrack(tile) == track) return tile;
-		} else {
-			if (HasTrack(tile, track)) return tile;
-		}
+		if (HasBit(GetRailTrackBits(tile), track)) return tile;
 	}
 
 	return {};
+}
+
+/**
+ * Get all tracks on a given tile index.
+ * @param index The tile index to get the tracks for.
+ * @return All present tracks.
+ */
+inline TrackBits GetAllTrackBits(TileIndex index)
+{
+	TrackBits bits{};
+	for (Tile rail : RailTileIterator::Iterate(index)) {
+		bits.Set(GetRailTrackBits(rail));
+	}
+	return bits;
 }
 
 /**

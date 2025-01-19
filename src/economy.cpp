@@ -485,11 +485,14 @@ void ChangeOwnershipOfCompanyItems(Owner old_owner, Owner new_owner)
 			 * Similar with crossings - it is needed to bar crossings that weren't before
 			 * because of different owner of crossing and approaching train */
 			for (const auto tile : Map::IterateIndex()) {
-				if (Tile rail_tile = Tile::GetByType(tile, TileType::Railway); rail_tile && IsTileOwner(rail_tile, new_owner) && HasSignals(rail_tile)) {
-					for (Track track : GetTrackBits(rail_tile)) {
-						if (IsSignalPresent(tile, SignalOnTrack(track))) AddTrackToSignalBuffer(tile, track, new_owner);
+				for (Tile rail_tile : RailTileIterator::Iterate(tile)) {
+					if (IsTileOwner(rail_tile, new_owner) && HasSignals(rail_tile)) {
+						for (Track track : GetTrackBits(rail_tile)) {
+							if (HasSignalOnTrack(rail_tile, track)) AddTrackToSignalBuffer(tile, track, new_owner);
+						}
 					}
-				} else if (IsLevelCrossingTile(tile) && IsTileOwner(tile, new_owner)) {
+				}
+				if (IsLevelCrossingTile(tile) && IsTileOwner(tile, new_owner)) {
 					UpdateLevelCrossing(tile);
 				}
 			}
