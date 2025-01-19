@@ -46,7 +46,7 @@ uint32_t GetTrackTypes(TileIndex tile, const GRFFile *grffile)
 		}
 	}
 	uint8_t rail = 0xFF;
-	if (auto tt = GetTileRailType(tile); tt != INVALID_RAILTYPE) {
+	if (auto tt = GetTileRailType(tile, TRACK_BEGIN); tt != INVALID_RAILTYPE) {
 		rail = GetReverseRailTypeTranslation(tt, grffile);
 		if (rail == 0xFF) rail = 0xFE;
 	}
