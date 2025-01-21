@@ -240,17 +240,14 @@ static CommandCost EnsureNoTrainOnTrack(TileIndex tile, Track track)
  * @param to_build New track bits.
  * @return Succeeded or failed command.
  */
-static CommandCost CheckTrackCombination(const Tile &tile, TrackBits to_build)
+static CommandCost CheckTrackCombination(TileIndex tile, TrackBits to_build)
 {
-	if (!IsPlainRail(tile)) return CommandCost(STR_ERROR_IMPOSSIBLE_TRACK_COMBINATION);
-
 	/* So, we have a tile with tracks on it (and possibly signals). Let's see
 	 * what tracks first */
-	TrackBits current = GetTrackBits(tile); // The current track layout.
-	TrackBits future = current | to_build;  // The track layout we want to build.
+	TrackBits current = GetAllTrackBits(tile); // The current track layout.
 
 	/* Are we really building something new? */
-	if (current == future) {
+	if (to_build.Reset(current).None()) {
 		/* Nothing new is being built */
 		return CommandCost(STR_ERROR_ALREADY_BUILT);
 	}
@@ -410,6 +407,73 @@ static CommandCost CheckRailSlope(Slope tileh, TrackBits rail_bits, TrackBits ex
 	return CommandCost(ExpensesType::Construction, f_new != f_old ? _price[Price::BuildFoundation] : (Money)0);
 }
 
+/**
+ * Check if a track is compatible with all present rail tiles and convert rail types when necessary.
+ * @param tile Tile to build the track on.
+ * @param track Track to build.
+ * @param railtype The rail type to build.
+ * @param auto_remove_signals Automatically remove signals?
+ * @param flags Command flags of the operation.
+ * @return Error message or cost for converting rail types.
+ */
+static CommandCost CheckRailTiles(TileIndex tile, Track track, RailType railtype, bool auto_remove_signals, DoCommandFlags flags)
+{
+	CommandCost cost(ExpensesType::Construction);
+	bool need_convert = false;
+
+	/* Check if the track is compatible with all rail tiles. */
+	for (Tile rail : RailTileIterator::Iterate(tile)) {
+		if (!IsPlainRail(rail)) return Command<Commands::LandscapeClear>::Do(flags, tile); // just get appropriate error message
+
+		if (TrackOverlapsTracks(GetTrackBits(rail), track)) {
+			/* Possible target rail tile. */
+			CommandCost ret = CheckTileOwnership(tile, rail);
+			if (ret.Failed()) return ret;
+
+			RailType cur_rt = GetRailType(rail);
+			if (!IsCompatibleRail(cur_rt, railtype)) return CommandCost(STR_ERROR_IMPOSSIBLE_TRACK_COMBINATION);
+
+			if (HasSignals(rail) && TracksOverlap(GetTrackBits(rail) | TrackToTrackBits(track))) {
+				/* If adding the new track causes any overlap, all signals must be removed first */
+				if (!auto_remove_signals) return CommandCost(STR_ERROR_MUST_REMOVE_SIGNALS_FIRST);
+
+				for (Track track_it : EnumRange(Track::End)) {
+					if (HasTrack(rail, track_it) && HasSignalOnTrack(rail, track_it)) {
+						CommandCost ret_remove_signals = Command<Commands::RemoveSignal>::Do(flags, tile, track_it);
+						if (ret_remove_signals.Failed()) return ret_remove_signals;
+						cost.AddCost(std::move(ret_remove_signals));
+					}
+				}
+			}
+
+			if (cur_rt != railtype) {
+				if (!HasPowerOnRail(railtype, cur_rt)) {
+					/* Engines of the new type are not powered on the present type. Convert rail type if
+					 * engines of the present rail type are powered on the new type, otherwise error out. */
+					if (HasPowerOnRail(cur_rt, railtype)) {
+						need_convert = true;
+					} else {
+						return CMD_ERROR;
+					}
+				} else {
+					/* Engines of the new type are powered on the present type. Convert all
+					 * associated tiles to the present rail type to allow tile merging. */
+					railtype = cur_rt;
+					need_convert = true;
+				}
+			}
+		}
+	}
+
+	if (need_convert) {
+		CommandCost ret = Command<Commands::ConvertRail>::Do(flags, tile, tile, railtype, false);
+		if (ret.Failed()) return ret;
+		cost.AddCost(std::move(ret));
+	}
+
+	return cost;
+}
+
 /* Validate functions for rail building */
 static inline bool ValParamTrackOrientation(Track track)
 {
@@ -435,48 +499,31 @@ CommandCost CmdBuildSingleRail(DoCommandFlags flags, TileIndex tile, RailType ra
 	TrackBits trackbit = track;
 
 	if (Tile rail = Tile::GetByType(tile, TileType::Railway); rail.IsValid()) {
-		CommandCost ret = CheckTileOwnership(tile, rail);
-		if (ret.Failed()) return ret;
-
-		if (!IsPlainRail(rail)) return Command<Commands::LandscapeClear>::Do(flags, tile); // just get appropriate error message
-
-		if (!IsCompatibleRail(GetRailType(rail), railtype)) return CommandCost(STR_ERROR_IMPOSSIBLE_TRACK_COMBINATION);
-
-		ret = CheckTrackCombination(rail, trackbit);
+		CommandCost ret = CheckTrackCombination(tile, trackbit);
 		if (ret.Succeeded()) ret = EnsureNoTrainOnTrack(tile, track);
 		if (ret.Failed()) return ret;
 
-		ret = CheckRailSlope(tileh, trackbit, GetTrackBits(rail), tile);
+		ret = CheckRailSlope(tileh, trackbit, GetAllTrackBits(tile), tile);
 		if (ret.Failed()) return ret;
 		cost.AddCost(ret.GetCost());
 
-		if (HasSignals(rail) && TracksOverlap(GetTrackBits(rail) | track)) {
-			/* If adding the new track causes any overlap, all signals must be removed first */
-			if (!auto_remove_signals) return CommandCost(STR_ERROR_MUST_REMOVE_SIGNALS_FIRST);
+		ret = CheckRailTiles(tile, track, railtype, auto_remove_signals, flags);
+		if (ret.Failed()) return ret;
+		cost.AddCost(std::move(ret));
 
-			for (Track existing_track : GetTrackBits(rail)) {
-				if (HasSignalOnTrack(rail, existing_track)) {
-					CommandCost ret_remove_signals = Command<Commands::RemoveRail>::Do(flags, tile, existing_track);
-					if (ret_remove_signals.Failed()) return ret_remove_signals;
-					cost.AddCost(ret_remove_signals.GetCost());
-				}
-			}
+		/* Find target rail sub-tile. */
+		while (rail.IsValid()) {
+			/* Check if the track overlaps the current rail tile. */
+			TrackBits tracks = GetTrackBits(rail);
+			if (TrackOverlapsTracks(tracks, track)) break;
+
+			/* Tracks don't overlap, but the track might still be combinable with the present track. */
+			if (tracks.Test(TrackToOppositeTrack(track)) && IsTileOwner(rail, _current_company) && GetRailType(rail) == railtype) break;
+
+			++rail;
 		}
 
-		/* If the rail types don't match, try to convert only if engines of
-		 * the new rail type are not powered on the present rail type and engines of
-		 * the present rail type are powered on the new rail type. */
-		if (GetRailType(rail) != railtype && !HasPowerOnRail(railtype, GetRailType(rail))) {
-			if (HasPowerOnRail(GetRailType(rail), railtype)) {
-				ret = Command<Commands::ConvertRail>::Do(flags, tile, tile, railtype, false);
-				if (ret.Failed()) return ret;
-				cost.AddCost(ret.GetCost());
-			} else {
-				return CMD_ERROR;
-			}
-		}
-
-		if (flags.Test(DoCommandFlag::Execute)) {
+		if (rail.IsValid() && flags.Test(DoCommandFlag::Execute)) {
 			SetRailFence(rail, RailFence::None);
 			TrackBits bits = GetTrackBits(rail);
 			SetTrackBits(rail, bits | trackbit);
@@ -491,6 +538,17 @@ CommandCost CmdBuildSingleRail(DoCommandFlags flags, TileIndex tile, RailType ra
 			if (TracksOverlap(bits | trackbit)) pieces *= pieces;
 			Company::Get(GetTileOwner(rail))->infrastructure.rail[GetRailType(rail)] += pieces;
 			DirtyCompanyInfrastructureWindows(GetTileOwner(rail));
+		} else if (flags.Test(DoCommandFlag::Execute)) {
+			/* Create a new rail sub-tile. */
+			MakeRailNormal(tile, _current_company, trackbit, railtype);
+			/* If we create a new tile, it will always be for a single, non-overlapping new trackbit. */
+			Company::Get(_current_company)->infrastructure.rail[railtype]++;
+			DirtyCompanyInfrastructureWindows(_current_company);
+
+			/* Clear all fences on the tile to make sure there is no overlap. */
+			for (Tile t : RailTileIterator::Iterate(tile)) {
+				SetRailFence(t, RailFence::None);
+			}
 		}
 	} else {
 		if (IsTileType(tile, TileType::Road)) {
@@ -669,7 +727,7 @@ static CommandCost RemoveSingleRail(DoCommandFlags flags, TileIndex tile, Tile &
 			if (!IsTileType(tile, TileType::Water) || !IsSlopeWithOneCornerRaised(GetTileSlope(tile))) {
 				MakeClearGrass(tile);
 			}
-			DeleteNewGRFInspectWindow(GrfSpecFeature::RailTypes, tile.base());
+			if (!Tile::HasType(tile, TileType::Railway)) DeleteNewGRFInspectWindow(GrfSpecFeature::RailTypes, tile.base());
 		} else {
 			SetTrackBits(rail, present);
 			SetTrackReservation(rail, GetRailReservationTrackBits(rail) & present);
@@ -1564,6 +1622,49 @@ CommandCost CmdRemoveSignalTrack(DoCommandFlags flags, TileIndex tile, TileIndex
 }
 
 /**
+ * Merge the associated rail sub-tiles if possible.
+ * @param index Tile index where the sub-tile is located.
+ * @param[in,out] tile Sub-tile to try to merge. If the tile is merged, the value will point to the next tile.
+ * @return \c true iff the tile was deleted.
+ */
+static bool TryMergeRailTile(TileIndex index, Tile &tile)
+{
+	/* Find the rail sub-tile that is before the tile. */
+	Tile prev_tile = Tile::GetByType(index, TileType::Railway);
+	if (prev_tile == tile) return false; // Tile is the first sub-tile? Nothing to merge with.
+
+	while (prev_tile.IsValid() && (prev_tile.GetNextByType(TileType::Railway) != tile)) prev_tile = prev_tile.GetNextByType(TileType::Railway);
+	if (!prev_tile.IsValid()) return false;
+
+	/* Can only merge plain rail tiles. */
+	if (!IsPlainRail(tile) || !IsPlainRail(prev_tile)) return false;
+	/* Can only merge same owner. */
+	if (GetTileOwner(tile) != GetTileOwner(prev_tile)) return false;
+	/* Can only merge same railtype. */
+	if (GetRailType(tile) != GetRailType(prev_tile)) return false;
+
+	/* If two sub-tiles have the same trackbit set, the map has become corrupt. */
+	assert((GetTrackBits(prev_tile) & GetTrackBits(tile)).None());
+
+	/* Merge track bits and signal states. */
+	SetTrackBits(prev_tile, GetTrackBits(prev_tile) | GetTrackBits(tile));
+	SetTrackReservation(prev_tile, GetRailReservationTrackBits(prev_tile) | GetRailReservationTrackBits(tile));
+	if (HasSignals(tile)) {
+		for (Track track : {Track::Lower, Track::Upper, Track::Right, Track::Left}) {
+			if (!HasSignalOnTrack(tile, track)) continue;
+			SetSignalVariant(prev_tile, track, GetSignalVariant(tile, track));
+		}
+		SetHasSignals(prev_tile, true);
+		SetPresentSignals(prev_tile, GetPresentSignals(prev_tile) | GetPresentSignals(tile));
+		SetSignalStates(prev_tile, GetSignalStates(prev_tile) | GetSignalStates(tile));
+	}
+
+	/* Remove tile. */
+	tile = Tile::Remove(index, tile);
+	return true;
+}
+
+/**
  * Convert one rail type to the other. You can convert normal rail to
  * monorail/maglev easily or vice-versa.
  * @param flags operation to perform
@@ -1587,9 +1688,14 @@ CommandCost CmdConvertRail(DoCommandFlags flags, TileIndex tile_index, TileIndex
 	bool found_convertible_track = false; // whether we actually did convert some track (see bug #7633)
 
 	std::unique_ptr<TileIterator> iter = TileIterator::Create(area_start, area_end, diagonal);
-	for (; (tile_index = *iter) != INVALID_TILE; ++(*iter)) {
-		Tile tile = Tile::GetByType(tile_index, TileType::Railway);
-		if (!tile.IsValid()) tile = tile_index;
+	tile_index = *iter;
+	for (Tile tile{tile_index}; tile.IsValid() || tile_index != INVALID_TILE; tile.GoToNextByType(TileType::Railway)) {
+		if (!tile.IsValid()) {
+			++(*iter);
+			tile_index = *iter;
+			if (tile_index == INVALID_TILE) break;
+			tile = tile_index;
+		}
 
 		TileType tt = GetTileType(tile);
 
@@ -1617,7 +1723,10 @@ CommandCost CmdConvertRail(DoCommandFlags flags, TileIndex tile_index, TileIndex
 		RailType type = GetRailType(tile);
 
 		/* Converting to the same type or converting 'hidden' elrail -> rail */
-		if (type == totype || (_settings_game.vehicle.disable_elrails && totype == RAILTYPE_RAIL && type == RAILTYPE_ELECTRIC)) continue;
+		if (type == totype || (_settings_game.vehicle.disable_elrails && totype == RAILTYPE_RAIL && type == RAILTYPE_ELECTRIC)) {
+			if (flags.Test(DoCommandFlag::Execute) && tt == TileType::Railway) TryMergeRailTile(tile_index, tile);
+			continue;
+		}
 
 		/* Trying to convert other's rail */
 		CommandCost ret = CheckTileOwnership(tile_index, tile);
@@ -1689,14 +1798,15 @@ CommandCost CmdConvertRail(DoCommandFlags flags, TileIndex tile_index, TileIndex
 						break;
 
 					default: // RailTileType::Normal, RailTileType::Signals
+						found_convertible_track = true;
+						cost.AddCost(RailConvertCost(type, totype) * GetTrackBits(tile).Count());
 						if (flags.Test(DoCommandFlag::Execute)) {
 							/* notify YAPF about the track layout change */
 							for (Track track : GetTrackBits(tile)) {
 								YapfNotifyTrackLayoutChange(tile_index, track);
 							}
+							TryMergeRailTile(tile_index, tile);
 						}
-						found_convertible_track = true;
-						cost.AddCost(RailConvertCost(type, totype) * GetTrackBits(tile).Count());
 						break;
 				}
 				break;
@@ -2546,6 +2656,25 @@ static Foundation GetFoundation_Rail([[maybe_unused]] TileIndex index, const Til
 	return IsPlainRail(tile) ? GetRailFoundation(tileh, GetTrackBits(tile)) : FlatteningFoundation(tileh);
 }
 
+/**
+ * Get all tracks of one owner on a tile.
+ * @param index The index of the tile to get the tracks from.
+ * @param o The owner to get the tracks for.
+ * @return All track bits owned by the \a o on the provided tile.
+ */
+static TrackBits GetOwnTrackBits(TileIndex index, Owner o)
+{
+	TrackBits bits{};
+	for (Tile rail : RailTileIterator::Iterate(index)) {
+		if (IsTileOwner(rail, o)) {
+			/* Ignore direction of depots for fence calculation. */
+			if (IsRailDepot(rail)) bits.Set(TRACK_BIT_CROSS);
+			if (IsPlainRail(rail)) bits.Set(GetTrackBits(rail));
+		}
+	}
+	return bits;
+}
+
 /** @copydoc TileLoopProc */
 static bool TileLoop_Rail(TileIndex index, Tile &tile)
 {
@@ -2555,9 +2684,8 @@ static bool TileLoop_Rail(TileIndex index, Tile &tile)
 	RailFence new_fences = RailFence::None;
 	if (IsPlainRail(tile) && (!IsTileType(base_tile, TileType::Clear) || GetClearGround(base_tile) == ClearGround::Desert || GetClearDensity(base_tile) == (IsSnowTile(base_tile) ? GetSnowRequiredDensity(index) : 3))) { // Wait until bottom is green.
 		/* determine direction of fence */
-		TrackBits rail = GetTrackBits(tile);
-
 		Owner owner = GetTileOwner(tile);
+		TrackBits rail = GetOwnTrackBits(index, owner);
 		DiagDirections fences{};
 
 		for (DiagDirection d : EnumRange(DiagDirection::End)) {
@@ -2759,7 +2887,8 @@ static void GetTileDesc_Rail([[maybe_unused]] TileIndex index, const Tile &tile,
 /** @copydoc ChangeTileOwnerProc */
 static bool ChangeTileOwner_Rail(TileIndex index, Tile &tile, Owner old_owner, Owner new_owner)
 {
-	if (!IsTileOwner(tile, old_owner)) return false;
+	/* We might have more than one rail sub-tile and changed the owner of the previous tile. Try merging. */
+	if (!IsTileOwner(tile, old_owner)) return TryMergeRailTile(index, tile);
 
 	if (new_owner != INVALID_OWNER) {
 		/* Update company infrastructure counts. No need to dirty windows here, we'll redraw the whole screen anyway. */
@@ -2780,7 +2909,8 @@ static bool ChangeTileOwner_Rail(TileIndex index, Tile &tile, Owner old_owner, O
 		}
 
 		SetTileOwner(tile, new_owner);
-		return false;
+
+		return TryMergeRailTile(index, tile);
 	} else {
 		return std::get<bool>(ClearTile_Rail(index, tile, {DoCommandFlag::Execute, DoCommandFlag::Bankrupt}));
 	}
