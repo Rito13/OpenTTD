@@ -447,7 +447,7 @@ CommandCost CmdBuildBridge(DoCommandFlags flags, TileIndex tile_end, TileIndex t
 
 			if (Tile::HasType(tile, MP_TREES)) goto not_valid_below;
 			for (Tile rail : RailTileIterator::Iterate(tile)) {
-				if (!IsPlainRail(rail)) goto not_valid_below;
+				if (!IsNormalRail(rail)) goto not_valid_below;
 			}
 
 			switch (GetTileType(tile)) {
