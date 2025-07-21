@@ -267,7 +267,7 @@ struct FindTrainOnTrackInfo {
 static void CheckTrainsOnTrack(FindTrainOnTrackInfo &info, TileIndex tile)
 {
 	for (Vehicle *v : VehiclesOnTile(tile)) {
-		if (v->type != VEH_TRAIN || v->vehstatus.Test(VehState::Crashed)) continue;
+		if (v->type != VEH_TRAIN || v->vehstatus.Any({VehState::Derailed, VehState::Crashed})) continue;
 
 		Train *t = Train::From(v);
 		if (t->track == TRACK_BIT_WORMHOLE || HasBit(static_cast<TrackBits>(t->track), TrackdirToTrack(info.res.trackdir))) {

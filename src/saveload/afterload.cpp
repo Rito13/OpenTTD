@@ -1671,7 +1671,7 @@ bool AfterLoadGame()
 		/* Added a FIFO queue of vehicles loading at stations */
 		for (Vehicle *v : Vehicle::Iterate()) {
 			if ((v->type != VEH_TRAIN || Train::From(v)->IsFrontEngine()) &&  // for all locs
-					!v->vehstatus.Any({VehState::Stopped, VehState::Crashed}) && // not stopped or crashed
+					!v->vehstatus.Any({VehState::Stopped, VehState::Crashed, VehState::Derailed}) && // not stopped or crashed
 					v->current_order.IsType(OT_LOADING)) {         // loading
 				Station::Get(v->last_station_visited)->loading_vehicles.push_back(v);
 
@@ -2541,7 +2541,7 @@ bool AfterLoadGame()
 				UpdateAircraftCache(v);
 				AircraftNextAirportPos_and_Order(v);
 				/* get aircraft back on running altitude */
-				if (!v->vehstatus.Test(VehState::Crashed)) {
+				if (!v->vehstatus.Any({VehState::Derailed, VehState::Crashed})) {
 					GetAircraftFlightLevelBounds(v, &v->z_pos, nullptr);
 					SetAircraftPosition(v, v->x_pos, v->y_pos, GetAircraftFlightLevel(v));
 				}
@@ -2744,7 +2744,7 @@ bool AfterLoadGame()
 					ClrBit(t->gv_flags, GVF_GOINGDOWN_BIT);
 
 					/* Crashed vehicles can't be going up/down. */
-					if (t->vehstatus.Test(VehState::Crashed)) break;
+					if (t->vehstatus.Any({VehState::Derailed, VehState::Crashed})) break;
 
 					/* Only X/Y tracks can be sloped. */
 					if (t->track != TRACK_BIT_X && t->track != TRACK_BIT_Y) break;
@@ -2758,7 +2758,7 @@ bool AfterLoadGame()
 					ClrBit(rv->gv_flags, GVF_GOINGDOWN_BIT);
 
 					/* Crashed vehicles can't be going up/down. */
-					if (rv->vehstatus.Test(VehState::Crashed)) break;
+					if (rv->vehstatus.Any({VehState::Derailed, VehState::Crashed})) break;
 
 					if (rv->state == RVSB_IN_DEPOT || rv->state == RVSB_WORMHOLE) break;
 
@@ -2795,7 +2795,7 @@ bool AfterLoadGame()
 				 * by loading and saving the game in a new version. */
 				v->z_pos = GetSlopePixelZ(v->x_pos, v->y_pos, true);
 				DiagDirection dir = GetTunnelBridgeDirection(v->tile);
-				if (v->type == VEH_TRAIN && !v->vehstatus.Test(VehState::Crashed) &&
+				if (v->type == VEH_TRAIN && !v->vehstatus.Any({VehState::Derailed, VehState::Crashed}) &&
 						v->direction != DiagDirToDir(dir)) {
 					/* If the train has left the bridge, it shouldn't have
 					 * track == TRACK_BIT_WORMHOLE - this could happen
@@ -3276,7 +3276,7 @@ bool AfterLoadGame()
 			if (rv->cur_speed > 0) continue;
 
 			/* Ignore crashed vehicles. */
-			if (rv->vehstatus.Test(VehState::Crashed)) continue;
+			if (rv->vehstatus.Any({VehState::Derailed, VehState::Crashed})) continue;
 
 			/* Ignore vehicles not on level crossings. */
 			TileIndex cur_tile = rv->tile;

@@ -2844,6 +2844,9 @@ static constexpr NWidgetPart _nested_vehicle_view_widgets[] = {
 			/* For trains only, 'ignore signal' button. */
 			NWidget(WWT_PUSHIMGBTN, COLOUR_GREY, WID_VV_FORCE_PROCEED), SetMinimalSize(18, 18),
 											SetSpriteTip(SPR_IGNORE_SIGNALS, STR_VEHICLE_VIEW_TRAIN_IGNORE_SIGNAL_TOOLTIP),
+			// derail button 
+			NWidget(WWT_PUSHIMGBTN, COLOUR_YELLOW, WID_VV_FORCE_DERAIL), SetMinimalSize(18, 18),
+											SetSpriteTip(SPR_IGNORE_SIGNALS, STR_VEHICLE_VIEW_TRAIN_IGNORE_SIGNAL_TOOLTIP),
 			NWidget(NWID_SELECTION, INVALID_COLOUR, WID_VV_SELECT_REFIT_TURN),
 				NWidget(WWT_PUSHIMGBTN, COLOUR_GREY, WID_VV_REFIT), SetMinimalSize(18, 18), SetSpriteTip(SPR_REFIT_VEHICLE),
 				NWidget(WWT_PUSHIMGBTN, COLOUR_GREY, WID_VV_TURN_AROUND), SetMinimalSize(18, 18),
@@ -3067,6 +3070,13 @@ public:
 					size.width = 0;
 				}
 				break;
+			
+			case WID_VV_FORCE_DERAIL:
+				if (v->type != VEH_TRAIN || v->vehstatus.Test(VehState::Derailed)) { // add debug tool condition here
+					size.height = 0;
+					size.width = 0;
+				}
+				break;
 
 			case WID_VV_VIEWPORT:
 				size.width = VV_INITIAL_VIEWPORT_WIDTH;
@@ -3089,6 +3099,11 @@ public:
 		if (v->type == VEH_TRAIN) {
 			this->SetWidgetLoweredState(WID_VV_FORCE_PROCEED, Train::From(v)->force_proceed == TFP_SIGNAL);
 			this->SetWidgetDisabledState(WID_VV_FORCE_PROCEED, !is_localcompany);
+		}
+
+		if (v->type == VEH_TRAIN) {
+			this->SetWidgetDisabledState(WID_VV_FORCE_DERAIL, Train::From(v)->vehstatus.Test(VehState::Derailed));
+			this->SetWidgetDisabledState(WID_VV_FORCE_DERAIL, !is_localcompany);
 		}
 
 		if (v->type == VEH_TRAIN || v->type == VEH_ROAD) {
@@ -3117,7 +3132,7 @@ public:
 	{
 		text_colour = TC_BLACK;
 
-		if (v->vehstatus.Test(VehState::Crashed)) return GetString(STR_VEHICLE_STATUS_CRASHED);
+		if (v->vehstatus.Any({VehState::Derailed, VehState::Crashed})) return GetString(STR_VEHICLE_STATUS_CRASHED);
 
 		if (v->type != VEH_AIRCRAFT && v->breakdown_ctr == 1) return GetString(STR_VEHICLE_STATUS_BROKEN_DOWN);
 
@@ -3295,6 +3310,10 @@ public:
 			case WID_VV_FORCE_PROCEED: // force proceed
 				assert(v->type == VEH_TRAIN);
 				Command<CMD_FORCE_TRAIN_PROCEED>::Post(STR_ERROR_CAN_T_MAKE_TRAIN_PASS_SIGNAL, v->tile, v->index);
+				break;
+			case WID_VV_FORCE_DERAIL: // force proceed
+				assert(v->type == VEH_TRAIN);
+				Command<CMD_FORCE_TRAIN_DERAIL>::Post(STR_ERROR_CAN_T_MAKE_TRAIN_PASS_SIGNAL, v->tile, v->index);
 				break;
 		}
 	}
@@ -3554,7 +3573,7 @@ void SetMouseCursorVehicle(const Vehicle *v, EngineImageType image_type)
 	while (v != nullptr) {
 		if (total_width >= ScaleSpriteTrad(2 * (int)VEHICLEINFO_FULL_VEHICLE_WIDTH)) break;
 
-		PaletteID pal = v->vehstatus.Test(VehState::Crashed) ? PALETTE_CRASH : GetVehiclePalette(v);
+		PaletteID pal = v->vehstatus.Any({VehState::Derailed, VehState::Crashed}) ? PALETTE_CRASH : GetVehiclePalette(v);
 		VehicleSpriteSeq seq;
 
 		if (rotor_seq) {
@@ -3569,7 +3588,7 @@ void SetMouseCursorVehicle(const Vehicle *v, EngineImageType image_type)
 		if (v->type == VEH_TRAIN) x_offs = Train::From(v)->GetCursorImageOffset();
 
 		for (uint i = 0; i < seq.count; ++i) {
-			PaletteID pal2 = v->vehstatus.Test(VehState::Crashed) || !seq.seq[i].pal ? pal : seq.seq[i].pal;
+			PaletteID pal2 = v->vehstatus.Any({VehState::Derailed, VehState::Crashed}) || !seq.seq[i].pal ? pal : seq.seq[i].pal;
 			_cursor.sprites.emplace_back(seq.seq[i].sprite, pal2, rtl ? (-total_width + x_offs) : (total_width + x_offs), y_offset);
 		}
 

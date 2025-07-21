@@ -244,6 +244,7 @@ enum Commands : uint8_t {
 
 	CMD_MOVE_RAIL_VEHICLE,            ///< move a rail vehicle (in the depot)
 	CMD_FORCE_TRAIN_PROCEED,          ///< proceed a train to pass a red signal
+	CMD_FORCE_TRAIN_DERAIL,           ///< derail (debug tool)
 	CMD_REVERSE_TRAIN_DIRECTION,      ///< turn a train around
 
 	CMD_CLEAR_ORDER_BACKUP,           ///< clear the order backup of a given user/tile

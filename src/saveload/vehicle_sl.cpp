@@ -561,7 +561,7 @@ void FixupTrainLengths()
 			 * so we need to move all vehicles forward to cover the difference to the
 			 * old center, otherwise wagon spacing in trains would be broken upon load. */
 			for (Train *u = Train::From(v); u != nullptr; u = u->Next()) {
-				if (u->track == TRACK_BIT_DEPOT || u->vehstatus.Test(VehState::Crashed)) continue;
+				if (u->track == TRACK_BIT_DEPOT || u->vehstatus.Any({VehState::Derailed, VehState::Crashed})) continue;
 
 				Train *next = u->Next();
 
@@ -674,7 +674,8 @@ public:
 		SLE_CONDVAR(Vehicle, motion_counter,        SLE_UINT32,                   SLV_VEH_MOTION_COUNTER, SL_MAX_VERSION),
 		    SLE_VAR(Vehicle, progress,              SLE_UINT8),
 
-		    SLE_VAR(Vehicle, vehstatus,             SLE_UINT8),
+		    SLE_CONDVAR(Vehicle, vehstatus,         SLE_FILE_U8 | SLE_VAR_U16,    SL_MIN_VERSION, SLV_TRAINS_DERAIL),
+			SLE_CONDVAR(Vehicle, vehstatus,         SLE_UINT16,                   SLV_TRAINS_DERAIL, SL_MAX_VERSION),
 		SLE_CONDVAR(Vehicle, last_station_visited,  SLE_FILE_U8  | SLE_VAR_U16,   SL_MIN_VERSION,   SLV_5),
 		SLE_CONDVAR(Vehicle, last_station_visited,  SLE_UINT16,                   SLV_5, SL_MAX_VERSION),
 		SLE_CONDVAR(Vehicle, last_loading_station,  SLE_UINT16,                 SLV_182, SL_MAX_VERSION),
@@ -1007,7 +1008,8 @@ public:
 
 		     SLE_VAR(Vehicle, sprite_cache.sprite_seq.seq[0].sprite, SLE_FILE_U16 | SLE_VAR_U32),
 		     SLE_VAR(Vehicle, progress,              SLE_UINT8),
-		     SLE_VAR(Vehicle, vehstatus,             SLE_UINT8),
+		    SLE_CONDVAR(Vehicle, vehstatus,         SLE_FILE_U8 | SLE_VAR_U16,    SL_MIN_VERSION, SLV_TRAINS_DERAIL),
+			SLE_CONDVAR(Vehicle, vehstatus,         SLE_UINT16,                   SLV_TRAINS_DERAIL, SL_MAX_VERSION),
 
 		     SLE_VAR(EffectVehicle, animation_state,    SLE_UINT16),
 		     SLE_VAR(EffectVehicle, animation_substate, SLE_UINT8),
@@ -1055,7 +1057,8 @@ public:
 		    SLE_VAR(Vehicle, direction,             SLE_UINT8),
 
 		    SLE_VAR(Vehicle, owner,                 SLE_UINT8),
-		    SLE_VAR(Vehicle, vehstatus,             SLE_UINT8),
+		    SLE_CONDVAR(Vehicle, vehstatus,         SLE_FILE_U8 | SLE_VAR_U16,    SL_MIN_VERSION, SLV_TRAINS_DERAIL),
+			SLE_CONDVAR(Vehicle, vehstatus,         SLE_UINT16,                   SLV_TRAINS_DERAIL, SL_MAX_VERSION),
 		SLE_CONDVARNAME(DisasterVehicle, state, "current_order.dest", SLE_FILE_U8 | SLE_VAR_U16, SL_MIN_VERSION,         SLV_5),
 		SLE_CONDVARNAME(DisasterVehicle, state, "current_order.dest", SLE_UINT16,                SLV_5,                  SLV_DISASTER_VEH_STATE),
 		SLE_CONDVAR(DisasterVehicle,     state,                       SLE_UINT16,                SLV_DISASTER_VEH_STATE, SL_MAX_VERSION),
