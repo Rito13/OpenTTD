@@ -329,7 +329,7 @@ uint Vehicle::Derail()
 	for (Vehicle *v = this; v != nullptr; v = v->Next()) {
 		/* We do not transfer reserver cargo back, so TotalCount() instead of StoredCount() */
 		if (IsCargoInClass(v->cargo_type, CargoClass::Passengers)) pass += v->cargo.TotalCount();
-		v->vehstatus.Set(VehState::Derailed);
+		v->vehstatus.Set(VehState::WillDerail);
 		v->MarkAllViewportsDirty();
 	}
 
@@ -2541,7 +2541,7 @@ void Vehicle::LeaveUnbunchingDepot()
 	Vehicle *u = this->FirstShared();
 	for (; u != nullptr; u = u->NextShared()) {
 		/* Ignore vehicles that are manually stopped or crashed. */
-		if (u->vehstatus.Any({VehState::Stopped, VehState::Crashed})) continue; // ::Derailed is not here
+		if (u->vehstatus.Any({VehState::Stopped, VehState::Crashed, VehState::Derailed})) continue;
 
 		num_vehicles++;
 		total_travel_time += u->round_trip_time;
@@ -2558,7 +2558,7 @@ void Vehicle::LeaveUnbunchingDepot()
 	u = this->FirstShared();
 	for (; u != nullptr; u = u->NextShared()) {
 		/* Ignore vehicles that are manually stopped or crashed. */
-		if (u->vehstatus.Any({VehState::Stopped, VehState::Crashed})) continue; // ::Derailed is not here
+		if (u->vehstatus.Any({VehState::Stopped, VehState::Crashed, VehState::Derailed})) continue;
 
 		u->depot_unbunching_next_departure = next_departure;
 		SetWindowDirty(WC_VEHICLE_VIEW, u->index);

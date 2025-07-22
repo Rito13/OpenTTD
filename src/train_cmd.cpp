@@ -2189,7 +2189,7 @@ CommandCost CmdForceTrainDerail(DoCommandFlags flags, VehicleID veh_id)
 
 
 	if (flags.Test(DoCommandFlag::Execute)) {
-		if(!t->vehstatus.Test(VehState::Derailed))
+		if(!t->vehstatus.Any(VehState::Derailed))
 			t->Derail();
 		SetWindowDirty(WC_VEHICLE_VIEW, t->index);
 	}
@@ -3219,8 +3219,8 @@ uint Train::Derail()
 {
 	uint victims = 0;
 	if (this->IsFrontEngine()) {
-		if(this->vehstatus.Test(VehState::Crashed))
-			return 0;
+		if(this->vehstatus.Any({VehState::Crashed, VehState::WillDerail}))
+			return 0; // can't derail right now
 		victims += 1; // driver
 
 		/* Remove the reserved path in front of the train if it is not stuck.
@@ -3472,7 +3472,7 @@ bool TrainController(Train *v, Vehicle *nomove, bool reverse)
 
 								/* check if a train is waiting on the other side */
 								if (!HasVehicleOnTile(o_tile, [&exitdir](const Vehicle *u) {
-										if (u->type != VEH_TRAIN || u->vehstatus.Any({VehState::Crashed})) return false; // no VehState::Derailed here
+										if (u->type != VEH_TRAIN || u->vehstatus.Any({VehState::Crashed, VehState::Derailed})) return false;
 										const Train *t = Train::From(u);
 
 										/* not front engine of a train, inside wormhole or depot, crashed */
@@ -4012,7 +4012,7 @@ static bool TrainCanLeaveTile(const Train *v)
 static TileIndex TrainApproachingCrossingTile(const Train *v)
 {
 	assert(v->IsFrontEngine());
-	assert(!v->vehstatus.Any({VehState::Crashed})); // not VehState::Derailed here
+	assert(!v->vehstatus.Any({VehState::Crashed, VehState::Derailed}));
 
 	if (!TrainCanLeaveTile(v)) return INVALID_TILE;
 
@@ -4092,6 +4092,11 @@ static bool TrainLocoHandler(Train *v, bool mode)
 	/* train has crashed? */
 	if (v->vehstatus.Test(VehState::Crashed)) {
 		return mode ? true : HandleCrashedTrain(v); // 'this' can be deleted here
+	}
+
+	/* train has derailed? */
+	if (v->vehstatus.Test(VehState::Derailed)) {
+		return mode ? true : HandleDerailedTrain(v); // 'this' can be deleted here
 	}
 
 	if (v->force_proceed != TFP_NONE) {
@@ -4222,11 +4227,6 @@ static bool TrainLocoHandler(Train *v, bool mode)
 	}
 
 	if (v->progress == 0) v->progress = j; // Save unused spd for next time, if TrainController didn't set progress
-
-	/* train has derailed? */
-	if (v->vehstatus.Test(VehState::Derailed)) {
-		return mode ? true : HandleDerailedTrain(v); // 'this' can be deleted here
-	}
 
 	return true;
 }
