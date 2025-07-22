@@ -12,12 +12,16 @@
 #ifndef VIEWPORT_SPRITE_SORTER_H
 #define VIEWPORT_SPRITE_SORTER_H
 
-/** Parent sprite that should be drawn */
+/** Parent sprite that should be drawn.
+ *  In order to make space for rotate boolean
+ *  zmin has been retyped from int32_t to int16_t.
+ */
 struct ParentSpriteToDraw {
 	/* Block of 16B loadable in xmm register */
 	int32_t xmin;                     ///< minimal world X coordinate of bounding box
 	int32_t ymin;                     ///< minimal world Y coordinate of bounding box
-	int32_t zmin;                     ///< minimal world Z coordinate of bounding box
+	int16_t zmin;                     ///< minimal world Z coordinate of bounding box
+	bool rotate;                      ///< If true sprite will be rotated by 90 deg.
 	int32_t x;                        ///< screen X coordinate of sprite
 
 	/* Second block of 16B loadable in xmm register */

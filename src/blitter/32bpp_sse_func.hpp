@@ -456,11 +456,11 @@ IGNORE_UNINITIALIZED_WARNING_STOP
  * @param zoom zoom level at which we are drawing
  */
 #if (SSE_VERSION == 2)
-void Blitter_32bppSSE2::Draw(Blitter::BlitterParams *bp, BlitterMode mode, ZoomLevel zoom)
+void Blitter_32bppSSE2::Draw(Blitter::BlitterParams *bp, BlitterMode mode, ZoomLevel zoom, bool /*rotate*/)
 #elif (SSE_VERSION == 3)
-void Blitter_32bppSSSE3::Draw(Blitter::BlitterParams *bp, BlitterMode mode, ZoomLevel zoom)
+void Blitter_32bppSSSE3::Draw(Blitter::BlitterParams *bp, BlitterMode mode, ZoomLevel zoom, bool /*rotate*/)
 #elif (SSE_VERSION == 4)
-void Blitter_32bppSSE4::Draw(Blitter::BlitterParams *bp, BlitterMode mode, ZoomLevel zoom)
+void Blitter_32bppSSE4::Draw(Blitter::BlitterParams *bp, BlitterMode mode, ZoomLevel zoom, bool /*rotate*/)
 #endif
 {
 	switch (mode) {

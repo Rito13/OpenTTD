@@ -382,11 +382,11 @@ IGNORE_UNINITIALIZED_WARNING_STOP
  * @param mode blitter mode
  * @param zoom zoom level at which we are drawing
  */
-void Blitter_32bppSSE4_Anim::Draw(Blitter::BlitterParams *bp, BlitterMode mode, ZoomLevel zoom)
+void Blitter_32bppSSE4_Anim::Draw(Blitter::BlitterParams *bp, BlitterMode mode, ZoomLevel zoom, bool rotate)
 {
 	if (_screen_disable_anim) {
 		/* This means our output is not to the screen, so we can't be doing any animation stuff, so use our parent Draw() */
-		Blitter_32bppSSE4::Draw(bp, mode, zoom);
+		Blitter_32bppSSE4::Draw(bp, mode, zoom, rotate);
 		return;
 	}
 

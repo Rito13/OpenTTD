@@ -139,11 +139,11 @@ void VehicleSpriteSeq::GetBounds(Rect *bounds) const
  * @param default_pal Vehicle palette
  * @param force_pal Whether to ignore individual palettes, and draw everything with \a default_pal.
  */
-void VehicleSpriteSeq::Draw(int x, int y, PaletteID default_pal, bool force_pal) const
+void VehicleSpriteSeq::Draw(int x, int y, PaletteID default_pal, bool force_pal, bool rotate) const
 {
 	for (uint i = 0; i < this->count; ++i) {
 		PaletteID pal = force_pal || !this->seq[i].pal ? default_pal : this->seq[i].pal;
-		DrawSprite(this->seq[i].sprite, pal, x, y);
+		DrawSprite(this->seq[i].sprite, pal, x, y, nullptr, _gui_zoom, rotate);
 	}
 }
 

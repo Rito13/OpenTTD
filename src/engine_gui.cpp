@@ -308,10 +308,11 @@ void DrawVehicleEngine(int left, int right, int preferred_x, int y, EngineID eng
 	const Engine *e = Engine::Get(engine);
 
 	switch (e->type) {
-		case VEH_TRAIN:
-			DrawTrainEngine(left, right, preferred_x, y, engine, pal, image_type);
+		case VEH_TRAIN: {
+			bool rotate = false; //Train::From(e)->vehstatus.Any({VehState::Derailed, VehState::WillDerail});
+			DrawTrainEngine(left, right, preferred_x, y, engine, pal, image_type, rotate);
 			break;
-
+		}
 		case VEH_ROAD:
 			DrawRoadVehEngine(left, right, preferred_x, y, engine, pal, image_type);
 			break;

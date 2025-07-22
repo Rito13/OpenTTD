@@ -54,8 +54,8 @@ GameSessionStats _game_session_stats; ///< Statistics about the current session.
 static uint8_t _stringwidth_table[FS_END][224]; ///< Cache containing width of often used characters. @see GetCharacterWidth()
 DrawPixelInfo *_cur_dpi;
 
-static void GfxMainBlitterViewport(const Sprite *sprite, int x, int y, BlitterMode mode, const SubSprite *sub = nullptr, SpriteID sprite_id = SPR_CURSOR_MOUSE);
-static void GfxMainBlitter(const Sprite *sprite, int x, int y, BlitterMode mode, const SubSprite *sub = nullptr, SpriteID sprite_id = SPR_CURSOR_MOUSE, ZoomLevel zoom = ZoomLevel::Min);
+static void GfxMainBlitterViewport(const Sprite *sprite, int x, int y, BlitterMode mode, const SubSprite *sub = nullptr, SpriteID sprite_id = SPR_CURSOR_MOUSE, bool rotate = false);
+static void GfxMainBlitter(const Sprite *sprite, int x, int y, BlitterMode mode, const SubSprite *sub = nullptr, SpriteID sprite_id = SPR_CURSOR_MOUSE, ZoomLevel zoom = ZoomLevel::Min, bool rotate = false);
 
 static ReusableBuffer<uint8_t> _cursor_backup;
 
@@ -1001,22 +1001,22 @@ static BlitterMode GetBlitterMode(PaletteID pal)
  * @param y    Top coordinate of image in viewport, scaled by zoom
  * @param sub  If available, draw only specified part of the sprite
  */
-void DrawSpriteViewport(SpriteID img, PaletteID pal, int x, int y, const SubSprite *sub)
+void DrawSpriteViewport(SpriteID img, PaletteID pal, int x, int y, const SubSprite *sub, bool rotate)
 {
 	SpriteID real_sprite = GB(img, 0, SPRITE_WIDTH);
 	if (HasBit(img, PALETTE_MODIFIER_TRANSPARENT)) {
 		pal = GB(pal, 0, PALETTE_WIDTH);
 		_colour_remap_ptr = GetNonSprite(pal, SpriteType::Recolour) + 1;
-		GfxMainBlitterViewport(GetSprite(real_sprite, SpriteType::Normal), x, y, pal == PALETTE_TO_TRANSPARENT ? BlitterMode::Transparent : BlitterMode::TransparentRemap, sub, real_sprite);
+		GfxMainBlitterViewport(GetSprite(real_sprite, SpriteType::Normal), x, y, pal == PALETTE_TO_TRANSPARENT ? BlitterMode::Transparent : BlitterMode::TransparentRemap, sub, real_sprite, rotate);
 	} else if (pal != PAL_NONE) {
 		if (HasBit(pal, PALETTE_TEXT_RECOLOUR)) {
 			SetColourRemap((TextColour)GB(pal, 0, PALETTE_WIDTH));
 		} else {
 			_colour_remap_ptr = GetNonSprite(GB(pal, 0, PALETTE_WIDTH), SpriteType::Recolour) + 1;
 		}
-		GfxMainBlitterViewport(GetSprite(real_sprite, SpriteType::Normal), x, y, GetBlitterMode(pal), sub, real_sprite);
+		GfxMainBlitterViewport(GetSprite(real_sprite, SpriteType::Normal), x, y, GetBlitterMode(pal), sub, real_sprite, rotate);
 	} else {
-		GfxMainBlitterViewport(GetSprite(real_sprite, SpriteType::Normal), x, y, BlitterMode::Normal, sub, real_sprite);
+		GfxMainBlitterViewport(GetSprite(real_sprite, SpriteType::Normal), x, y, BlitterMode::Normal, sub, real_sprite, rotate);
 	}
 }
 
@@ -1029,22 +1029,22 @@ void DrawSpriteViewport(SpriteID img, PaletteID pal, int x, int y, const SubSpri
  * @param sub  If available, draw only specified part of the sprite
  * @param zoom Zoom level of sprite
  */
-void DrawSprite(SpriteID img, PaletteID pal, int x, int y, const SubSprite *sub, ZoomLevel zoom)
+void DrawSprite(SpriteID img, PaletteID pal, int x, int y, const SubSprite *sub, ZoomLevel zoom, bool rotate)
 {
 	SpriteID real_sprite = GB(img, 0, SPRITE_WIDTH);
 	if (HasBit(img, PALETTE_MODIFIER_TRANSPARENT)) {
 		pal = GB(pal, 0, PALETTE_WIDTH);
 		_colour_remap_ptr = GetNonSprite(pal, SpriteType::Recolour) + 1;
-		GfxMainBlitter(GetSprite(real_sprite, SpriteType::Normal), x, y, pal == PALETTE_TO_TRANSPARENT ? BlitterMode::Transparent : BlitterMode::TransparentRemap, sub, real_sprite, zoom);
+		GfxMainBlitter(GetSprite(real_sprite, SpriteType::Normal), x, y, pal == PALETTE_TO_TRANSPARENT ? BlitterMode::Transparent : BlitterMode::TransparentRemap, sub, real_sprite, zoom, rotate);
 	} else if (pal != PAL_NONE) {
 		if (HasBit(pal, PALETTE_TEXT_RECOLOUR)) {
 			SetColourRemap((TextColour)GB(pal, 0, PALETTE_WIDTH));
 		} else {
 			_colour_remap_ptr = GetNonSprite(GB(pal, 0, PALETTE_WIDTH), SpriteType::Recolour) + 1;
 		}
-		GfxMainBlitter(GetSprite(real_sprite, SpriteType::Normal), x, y, GetBlitterMode(pal), sub, real_sprite, zoom);
+		GfxMainBlitter(GetSprite(real_sprite, SpriteType::Normal), x, y, GetBlitterMode(pal), sub, real_sprite, zoom, rotate);
 	} else {
-		GfxMainBlitter(GetSprite(real_sprite, SpriteType::Normal), x, y, BlitterMode::Normal, sub, real_sprite, zoom);
+		GfxMainBlitter(GetSprite(real_sprite, SpriteType::Normal), x, y, BlitterMode::Normal, sub, real_sprite, zoom, rotate);
 	}
 }
 
@@ -1061,8 +1061,10 @@ void DrawSprite(SpriteID img, PaletteID pal, int x, int y, const SubSprite *sub,
  * @tparam SCALED_XY Whether the X and Y are scaled or unscaled.
  */
 template <int ZOOM_BASE, bool SCALED_XY>
-static void GfxBlitter(const Sprite * const sprite, int x, int y, BlitterMode mode, const SubSprite * const sub, SpriteID sprite_id, ZoomLevel zoom, const DrawPixelInfo *dst = nullptr)
+static void GfxBlitter(const Sprite * sprite, int x, int y, BlitterMode mode, const SubSprite * const sub, SpriteID sprite_id, ZoomLevel zoom, const DrawPixelInfo *dst = nullptr, bool rotate = false)
 {
+	rotate = rotate && BlitterFactory::GetCurrentBlitter()->CanRotateSprites();
+
 	const DrawPixelInfo *dpi = (dst != nullptr) ? dst : _cur_dpi;
 	Blitter::BlitterParams bp;
 
@@ -1122,38 +1124,66 @@ static void GfxBlitter(const Sprite * const sprite, int x, int y, BlitterMode mo
 	int y_unscaled = UnScaleByZoom(y, zoom);
 	/* Check for top overflow */
 	if (y < 0) {
-		bp.height -= -y_unscaled;
-		if (bp.height <= 0) return;
-		bp.skip_top += -y_unscaled;
+		if(rotate) {
+			bp.width -= -y_unscaled;
+			if (bp.width <= 0) return;
+			bp.skip_left += -y_unscaled;
+		} else {
+			bp.height -= -y_unscaled;
+			if (bp.height <= 0) return;
+			bp.skip_top += -y_unscaled;
+		}
 		y = 0;
 	} else {
 		bp.top = y_unscaled;
 	}
 
 	/* Check for bottom overflow */
-	y += SCALED_XY ? ScaleByZoom(bp.height - dpi->height, zoom) : ScaleByZoom(bp.height, zoom) - dpi->height;
-	if (y > 0) {
-		bp.height -= UnScaleByZoom(y, zoom);
-		if (bp.height <= 0) return;
+	if(rotate) {
+		y += SCALED_XY ? ScaleByZoom(bp.width - dpi->height, zoom) : ScaleByZoom(bp.width, zoom) - dpi->height;
+		if (y > 0) {
+			bp.width -= UnScaleByZoom(y, zoom);
+			if (bp.width <= 0) return;
+		}
+	} else {
+		y += SCALED_XY ? ScaleByZoom(bp.height - dpi->height, zoom) : ScaleByZoom(bp.height, zoom) - dpi->height;
+		if (y > 0) {
+			bp.height -= UnScaleByZoom(y, zoom);
+			if (bp.height <= 0) return;
+		}
 	}
 
 	x -= SCALED_XY ? ScaleByZoom(dpi->left, zoom) : dpi->left;
 	int x_unscaled = UnScaleByZoom(x, zoom);
 	/* Check for left overflow */
 	if (x < 0) {
-		bp.width -= -x_unscaled;
-		if (bp.width <= 0) return;
-		bp.skip_left += -x_unscaled;
+		if(rotate) {
+			bp.height -= -x_unscaled;
+			if (bp.height <= 0) return;
+			bp.skip_top += -x_unscaled;
+		} else {
+			bp.width -= -x_unscaled;
+			if (bp.width <= 0) return;
+			bp.skip_left += -x_unscaled;
+		}
 		x = 0;
 	} else {
 		bp.left = x_unscaled;
 	}
 
 	/* Check for right overflow */
-	x += SCALED_XY ? ScaleByZoom(bp.width - dpi->width, zoom) : ScaleByZoom(bp.width, zoom) - dpi->width;
-	if (x > 0) {
-		bp.width -= UnScaleByZoom(x, zoom);
-		if (bp.width <= 0) return;
+	if(rotate) {
+		x += SCALED_XY ? ScaleByZoom(bp.height - dpi->width, zoom) : ScaleByZoom(bp.height, zoom) - dpi->width;
+		if (x > 0) {
+			bp.height -= UnScaleByZoom(x, zoom);
+			if (bp.height <= 0) return;
+		}
+	} else {
+		x += SCALED_XY ? ScaleByZoom(bp.width - dpi->width, zoom) : ScaleByZoom(bp.width, zoom) - dpi->width;
+		if (x > 0) {
+			bp.width -= UnScaleByZoom(x, zoom);
+			if (bp.width <= 0) return;
+		}
 	}
 
 	assert(bp.skip_left + bp.width <= UnScaleByZoom(sprite->width, zoom));
@@ -1175,7 +1205,7 @@ static void GfxBlitter(const Sprite * const sprite, int x, int y, BlitterMode mo
 		}
 	}
 
-	BlitterFactory::GetCurrentBlitter()->Draw(&bp, mode, zoom);
+	BlitterFactory::GetCurrentBlitter()->Draw(&bp, mode, zoom, rotate);
 }
 
 /**
@@ -1237,14 +1267,14 @@ std::unique_ptr<uint32_t[]> DrawSpriteToRgbaBuffer(SpriteID spriteId, ZoomLevel 
 	return result;
 }
 
-static void GfxMainBlitterViewport(const Sprite *sprite, int x, int y, BlitterMode mode, const SubSprite *sub, SpriteID sprite_id)
+static void GfxMainBlitterViewport(const Sprite *sprite, int x, int y, BlitterMode mode, const SubSprite *sub, SpriteID sprite_id, bool rotate)
 {
-	GfxBlitter<ZOOM_BASE, false>(sprite, x, y, mode, sub, sprite_id, _cur_dpi->zoom);
+	GfxBlitter<ZOOM_BASE, false>(sprite, x, y, mode, sub, sprite_id, _cur_dpi->zoom, nullptr, rotate);
 }
 
-static void GfxMainBlitter(const Sprite *sprite, int x, int y, BlitterMode mode, const SubSprite *sub, SpriteID sprite_id, ZoomLevel zoom)
+static void GfxMainBlitter(const Sprite *sprite, int x, int y, BlitterMode mode, const SubSprite *sub, SpriteID sprite_id, ZoomLevel zoom, bool rotate)
 {
-	GfxBlitter<1, true>(sprite, x, y, mode, sub, sprite_id, zoom);
+	GfxBlitter<1, true>(sprite, x, y, mode, sub, sprite_id, zoom, nullptr, rotate);
 }
 
 /**

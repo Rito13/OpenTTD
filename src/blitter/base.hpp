@@ -67,7 +67,13 @@ public:
 	/**
 	 * Draw an image to the screen, given an amount of params defined above.
 	 */
-	virtual void Draw(Blitter::BlitterParams *bp, BlitterMode mode, ZoomLevel zoom) = 0;
+	virtual void Draw(Blitter::BlitterParams *bp, BlitterMode mode, ZoomLevel zoom, bool rotate = false) = 0;
+
+	/**
+	 * As now only 40bpp_animated blitter supports sprite rotation it
+	 *  is important not to rotate sizes for others blitters.
+	 */
+	virtual bool CanRotateSprites() { return false; }
 
 	/**
 	 * Draw a colourtable to the screen. This is: the colour of the screen is read

@@ -534,7 +534,7 @@ static void GetRailIcon(EngineID engine, bool rear_head, int &y, EngineImageType
 	result->Set(GetDefaultTrainSprite(spritenum, DIR_W));
 }
 
-void DrawTrainEngine(int left, int right, int preferred_x, int y, EngineID engine, PaletteID pal, EngineImageType image_type)
+void DrawTrainEngine(int left, int right, int preferred_x, int y, EngineID engine, PaletteID pal, EngineImageType image_type, bool rotate)
 {
 	if (RailVehInfo(engine)->railveh_type == RAILVEH_MULTIHEAD) {
 		int yf = y;
@@ -552,8 +552,8 @@ void DrawTrainEngine(int left, int right, int preferred_x, int y, EngineID engin
 				left - UnScaleGUI(rectf.left) + ScaleSpriteTrad(14),
 				right - UnScaleGUI(rectr.right) - ScaleSpriteTrad(15));
 
-		seqf.Draw(preferred_x - ScaleSpriteTrad(14), yf, pal, pal == PALETTE_CRASH);
-		seqr.Draw(preferred_x + ScaleSpriteTrad(15), yr, pal, pal == PALETTE_CRASH);
+		seqf.Draw(preferred_x - ScaleSpriteTrad(14), yf, pal, pal == PALETTE_CRASH, rotate);
+		seqr.Draw(preferred_x + ScaleSpriteTrad(15), yr, pal, pal == PALETTE_CRASH, rotate);
 	} else {
 		VehicleSpriteSeq seq;
 		GetRailIcon(engine, false, y, image_type, &seq);
@@ -564,7 +564,7 @@ void DrawTrainEngine(int left, int right, int preferred_x, int y, EngineID engin
 				left - UnScaleGUI(rect.left),
 				right - UnScaleGUI(rect.right));
 
-		seq.Draw(preferred_x, y, pal, pal == PALETTE_CRASH);
+		seq.Draw(preferred_x, y, pal, pal == PALETTE_CRASH, rotate);
 	}
 }
 

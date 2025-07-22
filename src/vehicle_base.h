@@ -172,7 +172,7 @@ struct VehicleSpriteSeq {
 	}
 
 	void GetBounds(Rect *bounds) const;
-	void Draw(int x, int y, PaletteID default_pal, bool force_pal) const;
+	void Draw(int x, int y, PaletteID default_pal, bool force_pal, bool rotate = false) const;
 };
 
 /**
