@@ -318,13 +318,13 @@ uint Vehicle::Crash(bool)
 
 uint Vehicle::Derail()
 {
-	assert(!this->vehstatus.Test(VehState::Derailed));
+	assert(!this->vehstatus.Any({VehState::Derailed, VehState::Crashed, VehState::WillDerail}));
 	assert(this->Previous() == nullptr); // IsPrimaryVehicle fails for free-wagon-chains
 
 	uint pass = 0;
 	/* Stop the vehicle. */
 	if (this->IsPrimaryVehicle()) this->vehstatus.Set(VehState::TrainSlowing);
-	if (this->IsPrimaryVehicle()) this->vehstatus.Reset(VehState::Stopped);
+	if (this->IsPrimaryVehicle()) this->vehstatus.Set(VehState::Stopped);
 	/* crash all wagons, and count passengers */
 	for (Vehicle *v = this; v != nullptr; v = v->Next()) {
 		/* We do not transfer reserver cargo back, so TotalCount() instead of StoredCount() */
@@ -2800,11 +2800,14 @@ void Vehicle::ShowVisualEffect() const
 	 * - vehicle smoke is disabled by the player
 	 * - the vehicle is slowing down or stopped (by the player)
 	 * - the vehicle is moving very slowly
+	 * - except when slowdown is caused by a derail
 	 */
-	if (_settings_game.vehicle.smoke_amount == 0 ||
-			this->vehstatus.Any({VehState::TrainSlowing, VehState::Stopped}) ||
-			this->cur_speed < 2) {
-		return;
+	if(!this->vehstatus.Test(VehState::WillDerail)) {
+		if (_settings_game.vehicle.smoke_amount == 0 ||
+				this->vehstatus.Any({VehState::TrainSlowing, VehState::Stopped}) ||
+				this->cur_speed < 2) {
+			return;
+		}
 	}
 
 	/* Use the speed as limited by underground and orders. */
@@ -2815,10 +2818,12 @@ void Vehicle::ShowVisualEffect() const
 		/* For trains, do not show any smoke when:
 		 * - the train is reversing
 		 * - is entering a station with an order to stop there and its speed is equal to maximum station entering speed
+		 * - is derailed and not moving
 		 */
 		if (t->flags.Test(VehicleRailFlag::Reversing) ||
 				(IsRailStationTile(t->tile) && t->IsFrontEngine() && t->current_order.ShouldStopAtStation(t, GetStationIndex(t->tile)) &&
-				t->cur_speed >= max_speed)) {
+				t->cur_speed >= max_speed) ||
+				(t->IsFrontEngine() && t->cur_speed < 2 && this->vehstatus.Test(VehState::WillDerail))) {
 			return;
 		}
 	}
@@ -2842,14 +2847,12 @@ void Vehicle::ShowVisualEffect() const
 		}
 
 		/* Show no smoke when:
-		 * - Smoke has been disabled for this vehicle
 		 * - The vehicle is not visible
 		 * - The vehicle is under a bridge
 		 * - The vehicle is on a depot tile
 		 * - The vehicle is on a tunnel tile
 		 * - The vehicle is a train engine that is currently unpowered */
-		if (effect_model == VESM_NONE ||
-				v->vehstatus.Test(VehState::Hidden) ||
+		if (v->vehstatus.Test(VehState::Hidden) ||
 				IsBridgeAbove(v->tile) ||
 				IsDepotTile(v->tile) ||
 				IsTunnelTile(v->tile) ||
@@ -2859,6 +2862,22 @@ void Vehicle::ShowVisualEffect() const
 		}
 
 		EffectVehicleType evt = EV_END;
+		int z = 0;
+
+		// Do sparks animation when derailing a train
+		if(this->type == VEH_TRAIN && this->vehstatus.Test(VehState::WillDerail)) {
+			if(GB(this->tick_counter, 0, 2) != 0) return; // prevent from spamming
+			evt = EV_ELECTRIC_SPARK; // show sparks
+			advanced = false; // if true nothing is shown up
+			z = -10;
+			goto after_switch; // do not show default smoke
+		}
+
+		/* Also Show no smoke when:
+		 * - Smoke has been disabled for this vehicle */
+		if (effect_model == VESM_NONE)
+			continue;
+
 		switch (effect_model) {
 			case VESM_STEAM:
 				/* Steam smoke - amount is gradually falling until vehicle reaches its maximum speed, after that it's normal.
@@ -2911,6 +2930,8 @@ void Vehicle::ShowVisualEffect() const
 				NOT_REACHED();
 		}
 
+		after_switch:
+
 		if (evt != EV_END && advanced) {
 			sound = true;
 			SpawnAdvancedVisualEffect(v);
@@ -2930,7 +2951,7 @@ void Vehicle::ShowVisualEffect() const
 				y = -y;
 			}
 
-			CreateEffectVehicleRel(v, x, y, 10, evt);
+			CreateEffectVehicleRel(v, x, y, 10 + z, evt);
 		}
 	} while ((v = v->Next()) != nullptr);
 

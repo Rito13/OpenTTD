@@ -19,9 +19,6 @@
 #include "rail_map.h"
 #include "ground_vehicle.hpp"
 
-//#include "random_func.hpp"
-#include <iostream>
-
 struct Train;
 
 /** Rail vehicle flags. */
@@ -99,6 +96,8 @@ struct Train final : public GroundVehicle<Train, VEH_TRAIN> {
 	Randomizer randomizer;
 	uint8_t when_next_derail_test = 0;
 
+	const int MAX_MAX_SPEED_VALUE = 32767;
+
 	TrainCache tcache{};
 
 	/* Link between the two ends of a multiheaded engine */
@@ -134,6 +133,7 @@ struct Train final : public GroundVehicle<Train, VEH_TRAIN> {
 	void OnNewEconomyDay() override;
 	uint Crash(bool flooded = false) override;
 	uint Derail() override;
+	void ApplyDerail() override;
 	Trackdir GetVehicleTrackdir() const override;
 	TileIndex GetOrderStationLocation(StationID station) override;
 	ClosestDepot FindClosestDepot() override;

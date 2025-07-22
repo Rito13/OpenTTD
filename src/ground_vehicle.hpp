@@ -112,16 +112,21 @@ struct GroundVehicle : public SpecializedVehicle<T, Type> {
 
 	/**
 	 * Common code executed for derailed ground vehicles
-	 * @return number of victims
+	 * after vehicle has stopped.
 	 */
-	uint Derail() override
+	virtual void ApplyDerail()
 	{
 		/* Crashed vehicles aren't going up or down */
 		for (T *v = T::From(this); v != nullptr; v = v->Next()) {
 			ClrBit(v->gv_flags, GVF_GOINGUP_BIT);
 			ClrBit(v->gv_flags, GVF_GOINGDOWN_BIT);
 		}
-		return this->Vehicle::Derail();
+		// Mark as derailed
+		for (Vehicle *v = this; v != nullptr; v = v->Next()) {
+			v->vehstatus.Reset(VehState::WillDerail);
+			v->vehstatus.Set(VehState::Derailed);
+			v->MarkAllViewportsDirty();
+		}
 	}
 
 	/**

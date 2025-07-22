@@ -3044,6 +3044,18 @@ int Train::UpdateSpeed()
 		return out;
 	}
 
+	if(this->vehstatus.Test(VehState::WillDerail)) {
+		if(!this->vehstatus.Any({VehState::TrainSlowing, VehState::Stopped})) {
+			// Player has unstopped the train.
+			// Do not allow for that
+			this->vehstatus.Set(VehState::TrainSlowing);
+			this->vehstatus.Set(VehState::Stopped);
+		}
+		if(this->cur_speed > 1) // Train has not stopped yet
+			return out;
+		this->ApplyDerail();
+	}
+
 	this->when_next_derail_test -= 1;
 
 	if(last_speed > 50 && !this->when_next_derail_test) {
@@ -3222,6 +3234,22 @@ uint Train::Derail()
 		if(this->vehstatus.Any({VehState::Crashed, VehState::WillDerail}))
 			return 0; // can't derail right now
 		victims += 1; // driver
+	}
+
+	victims += this->GroundVehicleBase::Derail();
+
+	return victims;
+}
+
+/**
+ * The train vehicle derailed!
+ * Update its status and other parts around it.
+ */
+void Train::ApplyDerail()
+{
+	if (this->IsFrontEngine()) {
+		if(this->vehstatus.Any({VehState::Crashed, VehState::Derailed}))
+			return ; // can't derail crashed vehicle
 
 		/* Remove the reserved path in front of the train if it is not stuck.
 		 * Also clear all reserved tracks the train is currently on. */
@@ -3242,11 +3270,12 @@ uint Train::Derail()
 
 		/* Remove the loading indicators (if any) */
 		HideFillingPercent(&this->fill_percent_te_id);
+
 	}
 
-	victims += this->GroundVehicleBase::Derail();
+	this->GroundVehicleBase::ApplyDerail();
 
-	return victims;
+	this->ReserveTrackUnderConsist();
 }
 
 /**
