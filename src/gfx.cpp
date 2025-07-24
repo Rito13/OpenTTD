@@ -1160,7 +1160,6 @@ static void GfxBlitter(const Sprite * sprite, int x, int y, BlitterMode mode, co
 		if(rotate) {
 			bp.height -= -x_unscaled;
 			if (bp.height <= 0) return;
-			bp.skip_top += -x_unscaled;
 		} else {
 			bp.width -= -x_unscaled;
 			if (bp.width <= 0) return;
@@ -1175,7 +1174,9 @@ static void GfxBlitter(const Sprite * sprite, int x, int y, BlitterMode mode, co
 	if(rotate) {
 		x += SCALED_XY ? ScaleByZoom(bp.height - dpi->width, zoom) : ScaleByZoom(bp.height, zoom) - dpi->width;
 		if (x > 0) {
-			bp.height -= UnScaleByZoom(x, zoom);
+			x_unscaled = UnScaleByZoom(x, zoom);
+			bp.height -= x_unscaled;
+			bp.skip_top += x_unscaled;
 			if (bp.height <= 0) return;
 		}
 	} else {

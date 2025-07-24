@@ -1141,7 +1141,34 @@ static void DoDrawVehicle(const Vehicle *v)
 	for (uint i = 0; i < v->sprite_cache.sprite_seq.count; ++i) {
 		PaletteID pal2 = v->sprite_cache.sprite_seq.seq[i].pal;
 		if (!pal2 || v->vehstatus.Any({VehState::Crashed, VehState::Derailed})) pal2 = pal;
-		AddSortableSpriteToDraw(v->sprite_cache.sprite_seq.seq[i].sprite, pal2, v->x_pos, v->y_pos, v->z_pos, v->bounds, shadowed);
+		bool rotate = v->vehstatus.Any({VehState::WillDerail, VehState::Derailed});
+		int x_offset = 0;
+		int y_offset = 0;
+		if(rotate) {
+			switch(v->direction) {
+				case DIR_N:
+				case DIR_S:
+					x_offset = -6;
+					y_offset = -1;
+					break;
+				case DIR_NE:
+				case DIR_SW:
+					y_offset = -2;
+					break;
+				case DIR_E:
+				case DIR_W:
+					y_offset = +6;
+					x_offset = -2;
+					break;
+				case DIR_SE:
+				case DIR_NW:
+					x_offset = -4;
+					break;
+				default:
+					break;
+			}
+		}
+		AddSortableSpriteToDraw(v->sprite_cache.sprite_seq.seq[i].sprite, pal2, v->x_pos + x_offset, v->y_pos + y_offset, v->z_pos, v->bounds, shadowed, nullptr, rotate);
 	}
 	EndSpriteCombine();
 }

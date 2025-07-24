@@ -493,6 +493,8 @@ void Train::GetImage(Direction direction, EngineImageType image_type, VehicleSpr
 {
 	uint8_t spritenum = this->spritenum;
 
+	if(this->vehstatus.Any({VehState::WillDerail, VehState::Derailed})) direction = ChangeDir(direction, DIRDIFF_90LEFT);
+
 	if (this->flags.Test(VehicleRailFlag::Flipped)) direction = ReverseDir(direction);
 
 	if (IsCustomVehicleSpriteNum(spritenum)) {
@@ -3938,7 +3940,7 @@ static bool HandleDerailedTrain(Train *v)
 		} while ((u = u->Next()) != nullptr);
 	}
 */
-	if (state == 4) ChangeTrainDirBy90(v);
+	//if (state == 4) ChangeTrainDirBy90(v);
 
 	if (state >= 4440 && !(v->tick_counter & 0x1F)) {
 		bool ret = v->Next() != nullptr;
