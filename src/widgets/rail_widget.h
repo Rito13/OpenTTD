@@ -19,6 +19,11 @@ enum RailToolbarWidgets : WidgetID {
 	WID_RAT_BUILD_EW,       ///< Build rail along the game view X axis.
 	WID_RAT_BUILD_Y,        ///< Build rail along the game grid Y axis.
 	WID_RAT_AUTORAIL,       ///< Autorail tool.
+	WID_RAT_BUILD_METRO_NS, ///< Build metro rail along the game view Y axis.
+	WID_RAT_BUILD_METRO_X,  ///< Build metro rail along the game grid X axis.
+	WID_RAT_BUILD_METRO_EW, ///< Build metro rail along the game view X axis.
+	WID_RAT_BUILD_METRO_Y,  ///< Build metro rail along the game grid Y axis.
+	WID_RAT_METRO_AUTORAIL, ///< Metro autorail tool.
 	WID_RAT_DEMOLISH,       ///< Destroy something with dynamite!
 	WID_RAT_BUILD_DEPOT,    ///< Build a depot.
 	WID_RAT_BUILD_WAYPOINT, ///< Build a waypoint.

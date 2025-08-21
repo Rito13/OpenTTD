@@ -422,7 +422,7 @@ static inline bool ValParamTrackOrientation(Track track)
  * @param auto_remove_signals false = error on signal in the way, true = auto remove signals when in the way
  * @return the cost of this operation or an error
  */
-CommandCost CmdBuildSingleRail(DoCommandFlags flags, TileIndex tile, RailType railtype, Track track, bool auto_remove_signals)
+CommandCost CmdBuildSingleRail(DoCommandFlags flags, TileIndex tile, RailType railtype, Track track, bool auto_remove_signals, bool is_metro)
 {
 	CommandCost cost(EXPENSES_CONSTRUCTION);
 
@@ -611,7 +611,7 @@ CommandCost CmdBuildSingleRail(DoCommandFlags flags, TileIndex tile, RailType ra
  * @param track rail orientation
  * @return the cost of this operation or an error
  */
-CommandCost CmdRemoveSingleRail(DoCommandFlags flags, TileIndex tile, Track track)
+CommandCost CmdRemoveSingleRail(DoCommandFlags flags, TileIndex tile, Track track, bool is_metro)
 {
 	CommandCost cost(EXPENSES_CONSTRUCTION);
 	bool crossing = false;
@@ -774,7 +774,7 @@ bool FloodHalftile(TileIndex t)
 		TrackBits to_remove = lower_track & rail_bits;
 		if (to_remove != TRACK_BIT_NONE) {
 			Backup<CompanyID> cur_company(_current_company, OWNER_WATER);
-			flooded = Command<CMD_REMOVE_SINGLE_RAIL>::Do(DoCommandFlag::Execute, t, FindFirstTrack(to_remove)).Succeeded();
+			flooded = Command<CMD_REMOVE_SINGLE_RAIL>::Do(DoCommandFlag::Execute, t, FindFirstTrack(to_remove), false).Succeeded();
 			cur_company.Restore();
 			if (!flooded) return flooded; // not yet floodable
 			rail_bits = rail_bits & ~to_remove;
@@ -887,7 +887,7 @@ static CommandCost CmdRailTrackHelper(DoCommandFlags flags, TileIndex tile, Tile
 	bool had_success = false;
 	CommandCost last_error = CMD_ERROR;
 	for (;;) {
-		ret = remove ? Command<CMD_REMOVE_SINGLE_RAIL>::Do(flags, tile, TrackdirToTrack(trackdir)) : Command<CMD_BUILD_SINGLE_RAIL>::Do(flags, tile, railtype, TrackdirToTrack(trackdir), auto_remove_signals);
+		ret = remove ? Command<CMD_REMOVE_SINGLE_RAIL>::Do(flags, tile, TrackdirToTrack(trackdir), false) : Command<CMD_BUILD_SINGLE_RAIL>::Do(flags, tile, railtype, TrackdirToTrack(trackdir), auto_remove_signals, false);
 		if (!remove && !fail_on_obstacle && last_error.GetErrorMessage() == STR_ERROR_ALREADY_BUILT) had_success = true;
 
 		if (ret.Failed()) {
@@ -929,7 +929,7 @@ static CommandCost CmdRailTrackHelper(DoCommandFlags flags, TileIndex tile, Tile
 
  * @see CmdRailTrackHelper
  */
-CommandCost CmdBuildRailroadTrack(DoCommandFlags flags, TileIndex end_tile, TileIndex start_tile, RailType railtype, Track track, bool auto_remove_signals, bool fail_on_obstacle)
+CommandCost CmdBuildRailroadTrack(DoCommandFlags flags, TileIndex end_tile, TileIndex start_tile, RailType railtype, Track track, bool auto_remove_signals, bool fail_on_obstacle, bool is_metro)
 {
 	return CmdRailTrackHelper(flags, start_tile, end_tile, railtype, track, false, auto_remove_signals, fail_on_obstacle);
 }
@@ -944,7 +944,7 @@ CommandCost CmdBuildRailroadTrack(DoCommandFlags flags, TileIndex end_tile, Tile
  * @return the cost of this operation or an error
  * @see CmdRailTrackHelper
  */
-CommandCost CmdRemoveRailroadTrack(DoCommandFlags flags, TileIndex end_tile, TileIndex start_tile, Track track)
+CommandCost CmdRemoveRailroadTrack(DoCommandFlags flags, TileIndex end_tile, TileIndex start_tile, Track track, bool is_metro)
 {
 	return CmdRailTrackHelper(flags, start_tile, end_tile, INVALID_RAILTYPE, track, true, false, false);
 }
@@ -1817,7 +1817,7 @@ static CommandCost ClearTile_Track(TileIndex tile, DoCommandFlags flags)
 			TrackBits tracks = GetTrackBits(tile);
 			while (tracks != TRACK_BIT_NONE) {
 				Track track = RemoveFirstTrack(&tracks);
-				CommandCost ret = Command<CMD_REMOVE_SINGLE_RAIL>::Do(flags, tile, track);
+				CommandCost ret = Command<CMD_REMOVE_SINGLE_RAIL>::Do(flags, tile, track, false);
 				if (ret.Failed()) return ret;
 				cost.AddCost(ret.GetCost());
 			}
