@@ -1009,7 +1009,7 @@ static CommandCost CheckFlatLandRailStation(TileIndex tile_cur, TileIndex north_
 							affected_vehicles.push_back(v);
 						}
 					}
-					ret = Command<CMD_REMOVE_SINGLE_RAIL>::Do(flags, tile_cur, track);
+					ret = Command<CMD_REMOVE_SINGLE_RAIL>::Do(flags, tile_cur, track, false);
 					if (ret.Failed()) return ret;
 					cost.AddCost(ret.GetCost());
 					/* With DoCommandFlags{flags}.Reset(DoCommandFlag::Execute) CmdLandscapeClear would fail since the rail still exists */

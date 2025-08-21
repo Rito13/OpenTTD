@@ -100,14 +100,14 @@ void CcPlaySound_CONSTRUCTION_RAIL(Commands, const CommandCost &result, TileInde
 	if (result.Succeeded() && _settings_client.sound.confirm) SndPlayTileFx(SND_20_CONSTRUCTION_RAIL, tile);
 }
 
-static void GenericPlaceRail(TileIndex tile, Track track)
+static void GenericPlaceRail(TileIndex tile, Track track, bool is_metro = false)
 {
 	if (_remove_button_clicked) {
 		Command<CMD_REMOVE_SINGLE_RAIL>::Post(STR_ERROR_CAN_T_REMOVE_RAILROAD_TRACK, CcPlaySound_CONSTRUCTION_RAIL,
-				tile, track);
+				tile, track, is_metro);
 	} else {
 		Command<CMD_BUILD_SINGLE_RAIL>::Post(STR_ERROR_CAN_T_BUILD_RAILROAD_TRACK, CcPlaySound_CONSTRUCTION_RAIL,
-				tile, _cur_railtype, track, _settings_client.gui.auto_remove_signals);
+				tile, _cur_railtype, track, _settings_client.gui.auto_remove_signals, is_metro);
 	}
 }
 
@@ -124,7 +124,7 @@ static void PlaceExtraDepotRail(TileIndex tile, DiagDirection dir, Track track)
 	if (GetRailTileType(tile) == RAIL_TILE_SIGNALS && !_settings_client.gui.auto_remove_signals) return;
 	if ((GetTrackBits(tile) & DiagdirReachesTracks(dir)) == 0) return;
 
-	Command<CMD_BUILD_SINGLE_RAIL>::Post(tile, _cur_railtype, track, _settings_client.gui.auto_remove_signals);
+	Command<CMD_BUILD_SINGLE_RAIL>::Post(tile, _cur_railtype, track, _settings_client.gui.auto_remove_signals, false);
 }
 
 /** Additional pieces of track to add at the entrance of a depot. */
@@ -382,27 +382,27 @@ static void BuildRailClick_Remove(Window *w)
 	}
 }
 
-static void DoRailroadTrack(Track track)
+static void DoRailroadTrack(Track track, bool is_metro = false)
 {
 	if (_remove_button_clicked) {
 		Command<CMD_REMOVE_RAILROAD_TRACK>::Post(STR_ERROR_CAN_T_REMOVE_RAILROAD_TRACK, CcPlaySound_CONSTRUCTION_RAIL,
-				TileVirtXY(_thd.selend.x, _thd.selend.y), TileVirtXY(_thd.selstart.x, _thd.selstart.y), track);
+				TileVirtXY(_thd.selend.x, _thd.selend.y), TileVirtXY(_thd.selstart.x, _thd.selstart.y), track, is_metro);
 	} else {
 		Command<CMD_BUILD_RAILROAD_TRACK>::Post(STR_ERROR_CAN_T_BUILD_RAILROAD_TRACK, CcPlaySound_CONSTRUCTION_RAIL,
-				TileVirtXY(_thd.selend.x, _thd.selend.y), TileVirtXY(_thd.selstart.x, _thd.selstart.y),  _cur_railtype, track, _settings_client.gui.auto_remove_signals, false);
+				TileVirtXY(_thd.selend.x, _thd.selend.y), TileVirtXY(_thd.selstart.x, _thd.selstart.y),  _cur_railtype, track, _settings_client.gui.auto_remove_signals, false, is_metro);
 	}
 }
 
-static void HandleAutodirPlacement()
+static void HandleAutodirPlacement(bool is_metro = false)
 {
 	Track trackstat = static_cast<Track>( _thd.drawstyle & HT_DIR_MASK); // 0..5
 
 	if (_thd.drawstyle & HT_RAIL) { // one tile case
-		GenericPlaceRail(TileVirtXY(_thd.selend.x, _thd.selend.y), trackstat);
+		GenericPlaceRail(TileVirtXY(_thd.selend.x, _thd.selend.y), trackstat, is_metro);
 		return;
 	}
 
-	DoRailroadTrack(trackstat);
+	DoRailroadTrack(trackstat, is_metro);
 }
 
 /**
@@ -462,6 +462,7 @@ struct BuildRailToolbarWindow : Window {
 	/** List of widgets to be disabled if infrastructure limit prevents building. */
 	static inline const std::initializer_list<WidgetID> can_build_widgets = {
 		WID_RAT_BUILD_NS, WID_RAT_BUILD_X, WID_RAT_BUILD_EW, WID_RAT_BUILD_Y, WID_RAT_AUTORAIL,
+		WID_RAT_BUILD_METRO_NS, WID_RAT_BUILD_METRO_X, WID_RAT_BUILD_METRO_EW, WID_RAT_BUILD_METRO_Y, WID_RAT_METRO_AUTORAIL,
 		WID_RAT_BUILD_DEPOT, WID_RAT_BUILD_WAYPOINT, WID_RAT_BUILD_STATION, WID_RAT_BUILD_SIGNALS,
 		WID_RAT_BUILD_BRIDGE, WID_RAT_BUILD_TUNNEL, WID_RAT_CONVERT_RAIL,
 	};
@@ -507,6 +508,11 @@ struct BuildRailToolbarWindow : Window {
 		this->GetWidget<NWidgetCore>(WID_RAT_BUILD_EW)->SetSprite(rti->gui_sprites.build_ew_rail);
 		this->GetWidget<NWidgetCore>(WID_RAT_BUILD_Y)->SetSprite(rti->gui_sprites.build_y_rail);
 		this->GetWidget<NWidgetCore>(WID_RAT_AUTORAIL)->SetSprite(rti->gui_sprites.auto_rail);
+		this->GetWidget<NWidgetCore>(WID_RAT_BUILD_METRO_NS)->SetSprite(rti->gui_sprites.build_ns_rail);
+		this->GetWidget<NWidgetCore>(WID_RAT_BUILD_METRO_X)->SetSprite(rti->gui_sprites.build_x_rail);
+		this->GetWidget<NWidgetCore>(WID_RAT_BUILD_METRO_EW)->SetSprite(rti->gui_sprites.build_ew_rail);
+		this->GetWidget<NWidgetCore>(WID_RAT_BUILD_METRO_Y)->SetSprite(rti->gui_sprites.build_y_rail);
+		this->GetWidget<NWidgetCore>(WID_RAT_METRO_AUTORAIL)->SetSprite(rti->gui_sprites.auto_rail);
 		this->GetWidget<NWidgetCore>(WID_RAT_BUILD_DEPOT)->SetSprite(rti->gui_sprites.build_depot);
 		this->GetWidget<NWidgetCore>(WID_RAT_CONVERT_RAIL)->SetSprite(rti->gui_sprites.convert_rail);
 		this->GetWidget<NWidgetCore>(WID_RAT_BUILD_TUNNEL)->SetSprite(rti->gui_sprites.build_tunnel);
@@ -535,6 +541,11 @@ struct BuildRailToolbarWindow : Window {
 			case WID_RAT_BUILD_EW:
 			case WID_RAT_BUILD_Y:
 			case WID_RAT_AUTORAIL:
+			case WID_RAT_BUILD_METRO_NS:
+			case WID_RAT_BUILD_METRO_X:
+			case WID_RAT_BUILD_METRO_EW:
+			case WID_RAT_BUILD_METRO_Y:
+			case WID_RAT_METRO_AUTORAIL:
 			case WID_RAT_BUILD_WAYPOINT:
 			case WID_RAT_BUILD_STATION:
 			case WID_RAT_BUILD_SIGNALS:
@@ -593,6 +604,31 @@ struct BuildRailToolbarWindow : Window {
 
 			case WID_RAT_AUTORAIL:
 				HandlePlacePushButton(this, WID_RAT_AUTORAIL, GetRailTypeInfo(_cur_railtype)->cursor.autorail, HT_RAIL);
+				this->last_user_action = widget;
+				break;
+			
+			case WID_RAT_BUILD_METRO_NS:
+				HandlePlacePushButton(this, WID_RAT_BUILD_METRO_NS, GetRailTypeInfo(_cur_railtype)->cursor.rail_ns, HT_LINE | HT_DIR_VL);
+				this->last_user_action = widget;
+				break;
+
+			case WID_RAT_BUILD_METRO_X:
+				HandlePlacePushButton(this, WID_RAT_BUILD_METRO_X, GetRailTypeInfo(_cur_railtype)->cursor.rail_swne, HT_LINE | HT_DIR_X);
+				this->last_user_action = widget;
+				break;
+
+			case WID_RAT_BUILD_METRO_EW:
+				HandlePlacePushButton(this, WID_RAT_BUILD_METRO_EW, GetRailTypeInfo(_cur_railtype)->cursor.rail_ew, HT_LINE | HT_DIR_HL);
+				this->last_user_action = widget;
+				break;
+
+			case WID_RAT_BUILD_METRO_Y:
+				HandlePlacePushButton(this, WID_RAT_BUILD_METRO_Y, GetRailTypeInfo(_cur_railtype)->cursor.rail_nwse, HT_LINE | HT_DIR_Y);
+				this->last_user_action = widget;
+				break;
+
+			case WID_RAT_METRO_AUTORAIL:
+				HandlePlacePushButton(this, WID_RAT_METRO_AUTORAIL, GetRailTypeInfo(_cur_railtype)->cursor.autorail, HT_RAIL);
 				this->last_user_action = widget;
 				break;
 
@@ -684,6 +720,26 @@ struct BuildRailToolbarWindow : Window {
 			case WID_RAT_AUTORAIL:
 				VpStartPlaceSizing(tile, VPM_RAILDIRS, DDSP_PLACE_RAIL);
 				break;
+			
+			case WID_RAT_BUILD_METRO_NS:
+				VpStartPlaceSizing(tile, VPM_FIX_VERTICAL | VPM_RAILDIRS, DDSP_PLACE_METRO);
+				break;
+
+			case WID_RAT_BUILD_METRO_X:
+				VpStartPlaceSizing(tile, VPM_FIX_Y | VPM_RAILDIRS, DDSP_PLACE_METRO);
+				break;
+
+			case WID_RAT_BUILD_METRO_EW:
+				VpStartPlaceSizing(tile, VPM_FIX_HORIZONTAL | VPM_RAILDIRS, DDSP_PLACE_METRO);
+				break;
+
+			case WID_RAT_BUILD_METRO_Y:
+				VpStartPlaceSizing(tile, VPM_FIX_X | VPM_RAILDIRS, DDSP_PLACE_METRO);
+				break;
+
+			case WID_RAT_METRO_AUTORAIL:
+				VpStartPlaceSizing(tile, VPM_RAILDIRS, DDSP_PLACE_METRO);
+				break;
 
 			case WID_RAT_DEMOLISH:
 				PlaceProc_DemolishArea(tile);
@@ -741,6 +797,10 @@ struct BuildRailToolbarWindow : Window {
 
 				case DDSP_PLACE_RAIL:
 					HandleAutodirPlacement();
+					break;
+				
+				case DDSP_PLACE_METRO:
+					HandleAutodirPlacement(true);
 					break;
 
 				case DDSP_BUILD_SIGNALS:
@@ -846,6 +906,11 @@ struct BuildRailToolbarWindow : Window {
 		Hotkey('3', "build_ew", WID_RAT_BUILD_EW),
 		Hotkey('4', "build_y", WID_RAT_BUILD_Y),
 		Hotkey({'5', 'A' | WKC_GLOBAL_HOTKEY}, "autorail", WID_RAT_AUTORAIL),
+//		Hotkey('1', "build_ns", WID_RAT_METRO_BUILD_NS),
+//		Hotkey('2', "build_x", WID_RAT_METRO_BUILD_X),
+//		Hotkey('3', "build_ew", WID_RAT_METRO_BUILD_EW),
+//		Hotkey('4', "build_y", WID_RAT_METRO_BUILD_Y),
+//		Hotkey('5', "autorail", WID_RAT_METRO_AUTORAIL),
 		Hotkey('6', "demolish", WID_RAT_DEMOLISH),
 		Hotkey('7', "depot", WID_RAT_BUILD_DEPOT),
 		Hotkey('8', "waypoint", WID_RAT_BUILD_WAYPOINT),
@@ -874,6 +939,17 @@ static constexpr NWidgetPart _nested_build_rail_widgets[] = {
 		NWidget(WWT_IMGBTN, COLOUR_DARK_GREEN, WID_RAT_BUILD_Y),
 						SetFill(0, 1), SetToolbarMinimalSize(1), SetSpriteTip(SPR_IMG_RAIL_NW, STR_RAIL_TOOLBAR_TOOLTIP_BUILD_RAILROAD_TRACK),
 		NWidget(WWT_IMGBTN, COLOUR_DARK_GREEN, WID_RAT_AUTORAIL),
+						SetFill(0, 1), SetToolbarMinimalSize(1), SetSpriteTip(SPR_IMG_AUTORAIL, STR_RAIL_TOOLBAR_TOOLTIP_BUILD_AUTORAIL),
+
+		NWidget(WWT_IMGBTN, COLOUR_BROWN, WID_RAT_BUILD_METRO_NS),
+						SetFill(0, 1), SetToolbarMinimalSize(1), SetSpriteTip(SPR_IMG_RAIL_NS, STR_RAIL_TOOLBAR_TOOLTIP_BUILD_RAILROAD_TRACK),
+		NWidget(WWT_IMGBTN, COLOUR_BROWN, WID_RAT_BUILD_METRO_X),
+						SetFill(0, 1), SetToolbarMinimalSize(1), SetSpriteTip(SPR_IMG_RAIL_NE, STR_RAIL_TOOLBAR_TOOLTIP_BUILD_RAILROAD_TRACK),
+		NWidget(WWT_IMGBTN, COLOUR_BROWN, WID_RAT_BUILD_METRO_EW),
+						SetFill(0, 1), SetToolbarMinimalSize(1), SetSpriteTip(SPR_IMG_RAIL_EW, STR_RAIL_TOOLBAR_TOOLTIP_BUILD_RAILROAD_TRACK),
+		NWidget(WWT_IMGBTN, COLOUR_BROWN, WID_RAT_BUILD_METRO_Y),
+						SetFill(0, 1), SetToolbarMinimalSize(1), SetSpriteTip(SPR_IMG_RAIL_NW, STR_RAIL_TOOLBAR_TOOLTIP_BUILD_RAILROAD_TRACK),
+		NWidget(WWT_IMGBTN, COLOUR_BROWN, WID_RAT_METRO_AUTORAIL),
 						SetFill(0, 1), SetToolbarMinimalSize(1), SetSpriteTip(SPR_IMG_AUTORAIL, STR_RAIL_TOOLBAR_TOOLTIP_BUILD_AUTORAIL),
 
 		NWidget(WWT_PANEL, COLOUR_DARK_GREEN), SetToolbarSpacerMinimalSize(), EndContainer(),
