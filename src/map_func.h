@@ -25,6 +25,18 @@
 class Tile {
 private:
 	friend struct Map;
+
+	// helper union for TileBase struct
+	union double_uint8_t {
+		uint16_t all;
+		uint8_t single[2];
+		// single[1] - high byte
+		// single[0] - low byte
+    	double_uint8_t(uint16_t a) {
+        	all = a;
+    	}
+	};
+
 	/**
 	 * Data that is stored per tile. Also used TileExtended for this.
 	 * Look at docs/landscape.html for the exact meaning of the members.
@@ -34,9 +46,8 @@ private:
 		uint8_t height = 0; ///< The height of the northern corner.
 		uint16_t m2 = 0; ///< Primarily used for indices to towns, industries and stations
 		uint8_t m1 = 0; ///< Primarily used for ownership information
-		uint8_t m3 = 0; ///< General purpose
-		uint8_t m4 = 0; ///< General purpose
 		uint8_t m5 = 0; ///< General purpose
+		double_uint8_t m34 = 0; ///< General purpose
 	};
 
 	static_assert(sizeof(TileBase) == 8);
@@ -136,7 +147,7 @@ public:
 	 */
 	debug_inline uint8_t &m3()
 	{
-		return base_tiles[this->tile.base()].m3;
+		return base_tiles[this->tile.base()].m34.single[1];
 	}
 
 	/**
@@ -148,7 +159,19 @@ public:
 	 */
 	debug_inline uint8_t &m4()
 	{
-		return base_tiles[this->tile.base()].m4;
+		return base_tiles[this->tile.base()].m34.single[0];
+	}
+
+	/**
+	 * General purpose
+	 *
+	 * Look at docs/landscape.html for the exact meaning of the data.
+	 * @param tile The tile to get the data for.
+	 * @return reference to the byte holding the data.
+	 */
+	debug_inline uint16_t &m34()
+	{
+		return base_tiles[this->tile.base()].m34.all;
 	}
 
 	/**

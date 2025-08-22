@@ -66,6 +66,8 @@
 #include "../timer/timer_game_economy.h"
 #include "../timer/timer_game_tick.h"
 #include "../picker_func.h"
+#include "../before_metro_map.h"
+#include "../console_func.h"
 
 #include "saveload_internal.h"
 
@@ -552,6 +554,9 @@ static void StartScripts()
 	ShowScriptDebugWindowIfScriptError();
 }
 
+bool GET_STATION_TYPE_HELPER_CLASS::USE_OLD_GET_STATION_TYPE = false; // define this variable
+uint16_t GET_STATION_TYPE_HELPER_CLASS::OLD_USE_EVENTS = 0; // also this one
+
 /**
  * Perform a (large) amount of savegame conversion *magic* in order to
  * load older savegames and to fill the caches for various purposes.
@@ -559,6 +564,9 @@ static void StartScripts()
  */
 bool AfterLoadGame()
 {
+	GET_STATION_TYPE_HELPER_CLASS::USE_OLD_GET_STATION_TYPE = true;
+	GET_STATION_TYPE_HELPER_CLASS::OLD_USE_EVENTS = 0;
+
 	SetSignalHandlers();
 
 	extern TileIndex _cur_tileloop_tile; // From landscape.cpp.
@@ -875,38 +883,38 @@ bool AfterLoadGame()
 
 				case MP_STATION: {
 					if (HasBit(t.m6(), 3)) SetBit(t.m6(), 2);
-					StationGfx gfx = GetStationGfx(t);
+					StationGfx gfx = GetStationGfx_BeforeMetro(t);
 					StationType st;
 					if (       IsInsideMM(gfx,   0,   8)) { // Rail station
 						st = StationType::Rail;
-						SetStationGfx(t, gfx - 0);
+						SetStationGfx_BeforeMetro(t, gfx - 0);
 					} else if (IsInsideMM(gfx,   8,  67)) { // Airport
 						st = StationType::Airport;
-						SetStationGfx(t, gfx - 8);
+						SetStationGfx_BeforeMetro(t, gfx - 8);
 					} else if (IsInsideMM(gfx,  67,  71)) { // Truck
 						st = StationType::Truck;
-						SetStationGfx(t, gfx - 67);
+						SetStationGfx_BeforeMetro(t, gfx - 67);
 					} else if (IsInsideMM(gfx,  71,  75)) { // Bus
 						st = StationType::Bus;
-						SetStationGfx(t, gfx - 71);
+						SetStationGfx_BeforeMetro(t, gfx - 71);
 					} else if (gfx == 75) {                 // Oil rig
 						st = StationType::Oilrig;
-						SetStationGfx(t, gfx - 75);
+						SetStationGfx_BeforeMetro(t, gfx - 75);
 					} else if (IsInsideMM(gfx,  76,  82)) { // Dock
 						st = StationType::Dock;
-						SetStationGfx(t, gfx - 76);
+						SetStationGfx_BeforeMetro(t, gfx - 76);
 					} else if (gfx == 82) {                 // Buoy
 						st = StationType::Buoy;
-						SetStationGfx(t, gfx - 82);
+						SetStationGfx_BeforeMetro(t, gfx - 82);
 					} else if (IsInsideMM(gfx,  83, 168)) { // Extended airport
 						st = StationType::Airport;
-						SetStationGfx(t, gfx - 83 + 67 - 8);
+						SetStationGfx_BeforeMetro(t, gfx - 83 + 67 - 8);
 					} else if (IsInsideMM(gfx, 168, 170)) { // Drive through truck
 						st = StationType::Truck;
-						SetStationGfx(t, gfx - 168 + GFX_TRUCK_BUS_DRIVETHROUGH_OFFSET);
+						SetStationGfx_BeforeMetro(t, gfx - 168 + GFX_TRUCK_BUS_DRIVETHROUGH_OFFSET);
 					} else if (IsInsideMM(gfx, 170, 172)) { // Drive through bus
 						st = StationType::Bus;
-						SetStationGfx(t, gfx - 170 + GFX_TRUCK_BUS_DRIVETHROUGH_OFFSET);
+						SetStationGfx_BeforeMetro(t, gfx - 170 + GFX_TRUCK_BUS_DRIVETHROUGH_OFFSET);
 					} else {
 						/* Restore the signals */
 						ResetSignalHandlers();
@@ -934,7 +942,7 @@ bool AfterLoadGame()
 				BaseStation *bst = BaseStation::GetByTile(t);
 
 				/* Sanity check */
-				if (!IsBuoy(t) && bst->owner != GetTileOwner(t)) SlErrorCorrupt("Wrong owner for station tile");
+				if (!IsBuoy_BeforeMetro(t) && bst->owner != GetTileOwner(t)) SlErrorCorrupt("Wrong owner for station tile");
 
 				/* Set up station spread */
 				bst->rect.BeforeAddTile(t, StationRect::ADD_FORCE);
@@ -943,7 +951,7 @@ bool AfterLoadGame()
 				if (!Station::IsExpected(bst)) break;
 				Station *st = Station::From(bst);
 
-				switch (GetStationType(t)) {
+				switch (GetStationType_BeforeMetro(t)) {
 					case StationType::Truck:
 					case StationType::Bus:
 						if (IsSavegameVersionBefore(SLV_6)) {
@@ -961,7 +969,7 @@ bool AfterLoadGame()
 							RoadStop *rs = new RoadStop(t);
 
 							RoadStop **head =
-								IsTruckStop(t) ? &st->truck_stops : &st->bus_stops;
+								IsTruckStop_BeforeMetro(t) ? &st->truck_stops : &st->bus_stops;
 							*head = rs;
 						}
 						break;
@@ -1103,7 +1111,7 @@ bool AfterLoadGame()
 					break;
 
 				case MP_STATION:
-					if (IsStationRoadStop(t)) SB(t.m7(), 6, 2, 1);
+					if (IsStationRoadStop_BeforeMetro(t)) SB(t.m7(), 6, 2, 1);
 					break;
 
 				case MP_TUNNELBRIDGE:
@@ -1149,7 +1157,7 @@ bool AfterLoadGame()
 						case ROAD_TILE_DEPOT:
 							break;
 					}
-					if (!IsRoadDepot(t) && !HasTownOwnedRoad(t)) {
+					if (!IsRoadDepot(t) && !HasTownOwnedRoad_BeforeMetro(t)) {
 						const Town *town = CalcClosestTownFromTile(t);
 						if (town != nullptr) SetTownIndex(t, town->index);
 					}
@@ -1157,7 +1165,7 @@ bool AfterLoadGame()
 					break;
 
 				case MP_STATION:
-					if (!IsStationRoadStop(t)) break;
+					if (!IsStationRoadStop_BeforeMetro(t)) break;
 
 					if (fix_roadtypes) SB(t.m7(), 6, 2, GB(t.m3(), 0, 3));
 					SB(t.m7(), 0, 5, (HasBit(t.m6(), 2) ? OWNER_TOWN : GetTileOwner(t)).base());
@@ -1191,24 +1199,24 @@ bool AfterLoadGame()
 		for (auto t : Map::Iterate()) {
 			switch (GetTileType(t)) {
 				case MP_RAILWAY:
-					SetRailType(t, (RailType)GB(t.m3(), 0, 4));
+					SetRailType_BeforeMetro(t, (RailType)GB(t.m3(), 0, 4));
 					break;
 
 				case MP_ROAD:
 					if (IsLevelCrossing(t)) {
-						SetRailType(t, (RailType)GB(t.m3(), 0, 4));
+						SetRailType_BeforeMetro(t, (RailType)GB(t.m3(), 0, 4));
 					}
 					break;
 
 				case MP_STATION:
-					if (HasStationRail(t)) {
-						SetRailType(t, (RailType)GB(t.m3(), 0, 4));
+					if (HasStationRail_BeforeMetro(t)) {
+						SetRailType_BeforeMetro(t, (RailType)GB(t.m3(), 0, 4));
 					}
 					break;
 
 				case MP_TUNNELBRIDGE:
 					if (GetTunnelBridgeTransportType(t) == TRANSPORT_RAIL) {
-						SetRailType(t, (RailType)GB(t.m3(), 0, 4));
+						SetRailType_BeforeMetro(t, (RailType)GB(t.m3(), 0, 4));
 					}
 					break;
 
@@ -1227,11 +1235,11 @@ bool AfterLoadGame()
 
 					if (HasBit(t.m5(), 5)) { // transport route under bridge?
 						if (GB(t.m5(), 3, 2) == TRANSPORT_RAIL) {
-							MakeRailNormal(
+							MakeRailNormal_BeforeMetro(
 								t,
 								GetTileOwner(t),
 								axis == AXIS_X ? TRACK_BIT_Y : TRACK_BIT_X,
-								GetRailType(t)
+								GetRailType_BeforeMetro(t)
 							);
 						} else {
 							TownID town = IsTileOwner(t, OWNER_TOWN) ? ClosestTownFromTile(t, UINT_MAX)->index : TownID::Begin();
@@ -1308,7 +1316,7 @@ bool AfterLoadGame()
 					has_road = true;
 					break;
 				case MP_STATION:
-					has_road = IsAnyRoadStop(t);
+					has_road = IsAnyRoadStop_BeforeMetro(t);
 					break;
 				case MP_TUNNELBRIDGE:
 					has_road = GetTunnelBridgeTransportType(t) == TRANSPORT_ROAD;
@@ -1322,7 +1330,7 @@ bool AfterLoadGame()
 				RoadType tram_rt = HasBit(t.m7(), 7) ? ROADTYPE_TRAM : INVALID_ROADTYPE;
 
 				assert(road_rt != INVALID_ROADTYPE || tram_rt != INVALID_ROADTYPE);
-				SetRoadTypes(t, road_rt, tram_rt);
+				SetRoadTypes_BeforeMetro(t, road_rt, tram_rt);
 				SB(t.m7(), 6, 2, 0); // Clear pre-NRT road type bits.
 			}
 		}
@@ -1343,24 +1351,24 @@ bool AfterLoadGame()
 		for (const auto t : Map::Iterate()) {
 			switch (GetTileType(t)) {
 				case MP_RAILWAY:
-					SetRailType(t, UpdateRailType(GetRailType(t), min_rail));
+					SetRailType_BeforeMetro(t, UpdateRailType(GetRailType_BeforeMetro(t), min_rail));
 					break;
 
 				case MP_ROAD:
 					if (IsLevelCrossing(t)) {
-						SetRailType(t, UpdateRailType(GetRailType(t), min_rail));
+						SetRailType_BeforeMetro(t, UpdateRailType(GetRailType_BeforeMetro(t), min_rail));
 					}
 					break;
 
 				case MP_STATION:
-					if (HasStationRail(t)) {
-						SetRailType(t, UpdateRailType(GetRailType(t), min_rail));
+					if (HasStationRail_BeforeMetro(t)) {
+						SetRailType_BeforeMetro(t, UpdateRailType(GetRailType_BeforeMetro(t), min_rail));
 					}
 					break;
 
 				case MP_TUNNELBRIDGE:
 					if (GetTunnelBridgeTransportType(t) == TRANSPORT_RAIL) {
-						SetRailType(t, UpdateRailType(GetRailType(t), min_rail));
+						SetRailType_BeforeMetro(t, UpdateRailType(GetRailType_BeforeMetro(t), min_rail));
 					}
 					break;
 
@@ -1444,8 +1452,6 @@ bool AfterLoadGame()
 		c->avail_railtypes = GetCompanyRailTypes(c->index);
 		c->avail_roadtypes = GetCompanyRoadTypes(c->index);
 	}
-
-	AfterLoadStations();
 
 	/* Time starts at 0 instead of 1920.
 	 * Account for this in older games by adding an offset */
@@ -1547,7 +1553,7 @@ bool AfterLoadGame()
 		for (auto t : Map::Iterate()) {
 			if (IsTileType(t, MP_HOUSE)) {
 				/* House type is moved from m4 + m3[6] to m8. */
-				SetHouseType(t, t.m4() | (GB(t.m3(), 6, 1) << 8));
+				SetHouseType_BeforeMetro(t, t.m4() | (GB(t.m3(), 6, 1) << 8));
 				t.m4() = 0;
 				ClrBit(t.m3(), 6);
 			}
@@ -1558,8 +1564,8 @@ bool AfterLoadGame()
 		for (auto t : Map::Iterate()) {
 			if (IsTileType(t, MP_HOUSE)) {
 				/* We now store house protection status in the map. Set this based on the house spec flags. */
-				const HouseSpec *hs = HouseSpec::Get(GetHouseType(t));
-				SetHouseProtected(t, hs->extra_flags.Test(HouseExtraFlag::BuildingIsProtected));
+				const HouseSpec *hs = HouseSpec::Get(GetHouseType_BeforeMetro(t));
+				SetHouseProtected_BeforeMetro(t, hs->extra_flags.Test(HouseExtraFlag::BuildingIsProtected));
 			}
 		}
 	}
@@ -1712,7 +1718,7 @@ bool AfterLoadGame()
 		for (auto t : Map::Iterate()) {
 			if (IsTileType(t, MP_RAILWAY) && HasSignals(t)) {
 				/* move signal states */
-				SetSignalStates(t, GB(t.m2(), 4, 4));
+				SetSignalStates_BeforeMetro(t, GB(t.m2(), 4, 4));
 				SB(t.m2(), 4, 4, 0);
 				/* clone signal type and variant */
 				SB(t.m2(), 4, 3, GB(t.m2(), 0, 3));
@@ -1862,7 +1868,7 @@ bool AfterLoadGame()
 		for (auto t : Map::Iterate()) {
 			switch (GetTileType(t)) {
 				case MP_STATION:
-					switch (GetStationType(t)) {
+					switch (GetStationType_BeforeMetro(t)) {
 						case StationType::Oilrig:
 						case StationType::Dock:
 						case StationType::Buoy:
@@ -1919,28 +1925,28 @@ bool AfterLoadGame()
 			if (!IsTileFlat(t)) continue;
 
 			if (IsTileType(t, MP_WATER) && IsLock(t)) SetWaterClassDependingOnSurroundings(t, false);
-			if (IsTileType(t, MP_STATION) && (IsDock(t) || IsBuoy(t))) SetWaterClassDependingOnSurroundings(t, false);
+			if (IsTileType(t, MP_STATION) && (IsDock_BeforeMetro(t) || IsBuoy_BeforeMetro(t))) SetWaterClassDependingOnSurroundings(t, false);
 		}
 	}
 
 	if (IsSavegameVersionBefore(SLV_87)) {
 		for (const auto t : Map::Iterate()) {
 			/* skip oil rigs at borders! */
-			if ((IsTileType(t, MP_WATER) || IsBuoyTile(t)) &&
+			if ((IsTileType(t, MP_WATER) || IsBuoyTile_BeforeMetro(t)) &&
 					(TileX(t) == 0 || TileY(t) == 0 || TileX(t) == Map::MaxX() - 1 || TileY(t) == Map::MaxY() - 1)) {
 				/* Some version 86 savegames have wrong water class at map borders (under buoy, or after removing buoy).
 				 * This conversion has to be done before buoys with invalid owner are removed. */
 				SetWaterClass(t, WATER_CLASS_SEA);
 			}
 
-			if (IsBuoyTile(t) || IsDriveThroughStopTile(t) || IsTileType(t, MP_WATER)) {
+			if (IsBuoyTile_BeforeMetro(t) || IsDriveThroughStopTile_BeforeMetro(t) || IsTileType(t, MP_WATER)) {
 				Owner o = GetTileOwner(t);
 				if (o < MAX_COMPANIES && !Company::IsValidID(o)) {
 					Backup<CompanyID> cur_company(_current_company, o);
 					ChangeTileOwner(t, o, INVALID_OWNER);
 					cur_company.Restore();
 				}
-				if (IsBuoyTile(t)) {
+				if (IsBuoyTile_BeforeMetro(t)) {
 					/* reset buoy owner to OWNER_NONE in the station struct
 					 * (even if it is owned by active company) */
 					Waypoint::GetByTile(t)->owner = OWNER_NONE;
@@ -1973,7 +1979,7 @@ bool AfterLoadGame()
 	if (IsSavegameVersionBefore(SLV_91)) {
 		/* Increase HouseAnimationFrame from 5 to 7 bits */
 		for (auto t : Map::Iterate()) {
-			if (IsTileType(t, MP_HOUSE) && GetHouseType(t) >= NEW_HOUSE_OFFSET) {
+			if (IsTileType(t, MP_HOUSE) && GetHouseType_BeforeMetro(t) >= NEW_HOUSE_OFFSET) {
 				SB(t.m6(), 2, 6, GB(t.m6(), 3, 5));
 				SB(t.m3(), 5, 1, 0);
 			}
@@ -1995,7 +2001,7 @@ bool AfterLoadGame()
 	if (IsSavegameVersionBefore(SLV_99)) {
 		for (auto t : Map::Iterate()) {
 			/* Set newly introduced WaterClass of industry tiles */
-			if (IsTileType(t, MP_STATION) && IsOilRig(t)) {
+			if (IsTileType(t, MP_STATION) && IsOilRig_BeforeMetro(t)) {
 				SetWaterClassDependingOnSurroundings(t, true);
 			}
 			if (IsTileType(t, MP_INDUSTRY)) {
@@ -2041,7 +2047,7 @@ bool AfterLoadGame()
 					break;
 
 				case MP_STATION: // Clear PBS reservation on station
-					if (HasStationRail(t)) SetRailStationReservation(t, false);
+					if (HasStationRail_BeforeMetro(t)) SetRailStationReservation_BeforeMetro(t, false);
 					break;
 
 				case MP_TUNNELBRIDGE: // Clear PBS reservation on tunnels/bridges
@@ -2466,17 +2472,17 @@ bool AfterLoadGame()
 			{140,  4}, // APT_GRASS_FENCE_NE_FLAG_2
 		};
 		for (const auto t : Map::Iterate()) {
-			if (IsAirportTile(t)) {
-				StationGfx old_gfx = GetStationGfx(t);
+			if (IsAirportTile_BeforeMetro(t)) {
+				StationGfx old_gfx = GetStationGfx_BeforeMetro(t);
 				uint8_t offset = 0;
 				for (const auto &atc : atcs) {
 					if (old_gfx < atc.old_start) {
-						SetStationGfx(t, old_gfx - offset);
+						SetStationGfx_BeforeMetro(t, old_gfx - offset);
 						break;
 					}
 					if (old_gfx < atc.old_start + atc.num_frames) {
 						SetAnimationFrame(t, old_gfx - atc.old_start);
-						SetStationGfx(t, atc.old_start - offset);
+						SetStationGfx_BeforeMetro(t, atc.old_start - offset);
 						break;
 					}
 					offset += atc.num_frames - 1;
@@ -2554,7 +2560,7 @@ bool AfterLoadGame()
 		for (auto t : Map::Iterate()) {
 			switch (GetTileType(t)) {
 				case MP_HOUSE:
-					if (GetHouseType(t) >= NEW_HOUSE_OFFSET) {
+					if (GetHouseType_BeforeMetro(t) >= NEW_HOUSE_OFFSET) {
 						uint per_proc = t.m7();
 						t.m7() = GB(t.m6(), 2, 6) | (GB(t.m3(), 5, 1) << 6);
 						SB(t.m3(), 5, 1, 0);
@@ -2592,7 +2598,7 @@ bool AfterLoadGame()
 	if (IsSavegameVersionBefore(SLV_149)) {
 		for (const auto t : Map::Iterate()) {
 			if (!IsTileType(t, MP_STATION)) continue;
-			if (!IsBuoy(t) && !IsOilRig(t) && !(IsDock(t) && IsTileFlat(t))) {
+			if (!IsBuoy_BeforeMetro(t) && !IsOilRig_BeforeMetro(t) && !(IsDock_BeforeMetro(t) && IsTileFlat(t))) {
 				SetWaterClass(t, WATER_CLASS_INVALID);
 			}
 		}
@@ -2916,6 +2922,81 @@ bool AfterLoadGame()
 			SB(t.m4(), 5, 3, 0);
 		}
 	}
+
+	// Rearrangement of tile memory in order to free up m8
+	if (IsSavegameVersionBefore(SLV_FREE_UP_M8_FOR_METRO)) {
+		for (auto t : Map::Iterate()) {
+			switch (GetTileType(t)) {
+				case MP_RAILWAY:
+					SB(t.m2(), 0xC, 4, GB(t.m4(), 4, 4)); // Move signals colours
+					SB(t.m34(), 6, 6, GB(t.m8(), 0, 6)); // Move railway type
+					// clean
+					SB(t.m4(), 4, 2, 0);
+					SB(t.m8(), 0, 16, 0);
+					break;
+
+				case MP_ROAD:
+					SB(t.m1(), 5, 3, GB(t.m6(), 3, 3)); // Move pavement type
+					SB(t.m6(), 2, 6, GB(t.m8(), 6, 6)); // Move tram type
+					SB(t.m7(), 7, 1, GB(t.m7(), 5, 1)); // Move snow / desert present
+					if(IsLevelCrossing(t)) SB(t.m34(), 6, 6, GB(t.m8(), 0, 6)); // Move railway type
+					// clean
+					SB(t.m7(), 5, 1, 0);
+					SB(t.m8(), 0, 16, 0);
+					break;
+
+				case MP_HOUSE:
+					SB(t.m3(), 6, 1, GB(t.m3(), 5, 1)); // Move house protection
+					SB(t.m3(), 4, 2, GB(t.m3(), 0, 2)); // Move activated triggers
+					SB(t.m34(), 0, 12, GB(t.m8(), 0, 12)); // Move house type
+					// clean
+					SB(t.m8(), 0, 16, 0);
+					break;
+
+				case MP_STATION:{
+					uint8_t station_type = GB(t.m6(), 3, 4);
+					bool has_rail = HasStationRail_BeforeMetro(t);
+					bool is_any_road = IsAnyRoadStop_BeforeMetro(t);
+					if(has_rail) {
+						SB(t.m6(), 4, 4, GB(t.m3(), 0, 4)); // Move traction info
+					} else {
+						SB(t.m4(), 6, 2, GB(t.m3(), 2, 2)); // Move pavement type
+						SB(t.m6(), 2, 6, GB(t.m8(), 6, 6)); // Move tram type
+					}
+					if(is_any_road) {
+						SB(t.m7(), 5, 3, GB(t.m5(), 0, 3)); // Move GFX
+						SB(t.m5(), 0, 6, GB(t.m8(), 0, 6)); // Move custom road info
+						SB(t.m5(), 7, 1, GB(t.m8(), 15, 1)); // Move snow / desert present
+					}
+					SB(t.m3(), 0, 4, station_type); // Move station type
+					// clean
+					if(has_rail) {
+						SB(t.m8(), 6, 10, 0);
+					} else {
+						SB(t.m8(), 0, 16, 0);
+					}
+					break;
+				}
+				case MP_TUNNELBRIDGE:
+					SB(t.m2(), 0, 4, GB(t.m6(), 2, 4)); // Move bridge type
+					SB(t.m6(), 2, 6, GB(t.m8(), 6, 6)); // Move tram type
+					SB(t.m34(), 6, 6, GB(t.m8(), 0, 6)); // Move railway type
+					// clean
+					SB(t.m8(), 0, 16, 0);
+					break;
+
+				default:
+					break;
+			}
+		}
+	}
+
+	GET_STATION_TYPE_HELPER_CLASS::USE_OLD_GET_STATION_TYPE = false;
+	if(GET_STATION_TYPE_HELPER_CLASS::OLD_USE_EVENTS > 0) {
+		IConsolePrint(CC_WARNING, fmt::format("During loading of a save file GetStationType was called {} times when GetStationType_BeforeMetro should have been called", GET_STATION_TYPE_HELPER_CLASS::OLD_USE_EVENTS));
+	}
+
+	AfterLoadStations();
 
 	if (IsSavegameVersionBefore(SLV_165)) {
 		for (Town *t : Town::Iterate()) {

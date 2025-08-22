@@ -69,6 +69,8 @@ void SetRailStationPlatformReservation(TileIndex start, DiagDirection dir, bool 
 	} while (IsCompatibleTrainStationTile(tile, start));
 }
 
+
+#include <iostream>
 /**
  * Try to reserve a specific track on a tile
  * @param tile the tile
@@ -79,6 +81,8 @@ void SetRailStationPlatformReservation(TileIndex start, DiagDirection dir, bool 
  */
 bool TryReserveRailTrack(TileIndex tile, Track t, bool trigger_stations)
 {
+	//std::cout << (int)GetTileType(tile) << std::endl;
+
 	assert(HasTrack(TrackStatusToTrackBits(GetTileTrackStatus(tile, TRANSPORT_RAIL, 0)), t));
 
 	if (_settings_client.gui.show_track_reservation) {
