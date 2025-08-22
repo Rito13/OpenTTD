@@ -114,7 +114,8 @@ debug_inline static bool IsRailDepotTile(Tile t)
  */
 inline RailType GetRailType(Tile t)
 {
-	return (RailType)GB(t.m8(), 0, 6);
+	if(IsTileType(t, MP_STATION)) return (RailType)GB(t.m8(), 0, 6);
+	return (RailType)GB(t.m34(), 6, 6);
 }
 
 /**
@@ -124,7 +125,11 @@ inline RailType GetRailType(Tile t)
  */
 inline void SetRailType(Tile t, RailType r)
 {
-	SB(t.m8(), 0, 6, r);
+	if(IsTileType(t, MP_STATION)) {
+		SB(t.m8(), 0, 6, r);
+		return;
+	}
+	SB(t.m34(), 6, 6, r);
 }
 
 
@@ -160,6 +165,18 @@ inline void SetTrackBits(Tile t, TrackBits b)
 inline bool HasTrack(Tile tile, Track track)
 {
 	return HasBit(GetTrackBits(tile), track);
+}
+
+/**
+ * Returns whether the given metro track is present on the given tile.
+ * @param tile  the tile to check the track presence of
+ * @param track the track to search for on the tile
+ * @pre IsPlainRailTile(tile)
+ * @return true if and only if the given metro track exists on the tile
+ */
+inline bool HasMetroTrack(Tile tile, Track track)
+{
+	return HasBit(GetMetroTrackBits(tile), track);
 }
 
 /**
@@ -350,7 +367,7 @@ inline void SetSignalVariant(Tile t, Track track, SignalVariant v)
  */
 inline void SetSignalStates(Tile tile, uint state)
 {
-	SB(tile.m4(), 4, 4, state);
+	SB(tile.m2(), 0xC, 4, state);
 }
 
 /**
@@ -360,7 +377,7 @@ inline void SetSignalStates(Tile tile, uint state)
  */
 inline uint GetSignalStates(Tile tile)
 {
-	return GB(tile.m4(), 4, 4);
+	return GB(tile.m2(), 0xC, 4);
 }
 
 /**
@@ -526,7 +543,7 @@ inline void MakeRailNormal(Tile t, Owner o, TrackBits b, RailType r)
 	t.m5() = RAIL_TILE_NORMAL << 6 | b;
 	SB(t.m6(), 2, 4, 0);
 	t.m7() = 0;
-	t.m8() = r;
+	SetRailType(t, r);
 }
 
 /**
@@ -559,7 +576,7 @@ inline void MakeRailDepot(Tile tile, Owner owner, DepotID depot_id, DiagDirectio
 	tile.m5() = RAIL_TILE_DEPOT << 6 | dir;
 	SB(tile.m6(), 2, 4, 0);
 	tile.m7() = 0;
-	tile.m8() = rail_type;
+	SetRailType(tile, rail_type);
 }
 
 #endif /* RAIL_MAP_H */
