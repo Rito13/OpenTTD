@@ -48,7 +48,7 @@ inline void SetTownIndex(Tile t, TownID index)
 inline HouseID GetCleanHouseType(Tile t)
 {
 	assert(IsTileType(t, MP_HOUSE));
-	return GB(t.m8(), 0, 12);
+	return GB(t.m34(), 0, 12);
 }
 
 /**
@@ -71,7 +71,7 @@ inline HouseID GetHouseType(Tile t)
 inline void SetHouseType(Tile t, HouseID house_id)
 {
 	assert(IsTileType(t, MP_HOUSE));
-	SB(t.m8(), 0, 12, house_id);
+	SB(t.m34(), 0, 12, house_id);
 }
 
 /**
@@ -82,7 +82,7 @@ inline void SetHouseType(Tile t, HouseID house_id)
 inline bool IsHouseProtected(Tile t)
 {
 	assert(IsTileType(t, MP_HOUSE));
-	return HasBit(t.m3(), 5);
+	return HasBit(t.m3(), 6);
 }
 
 /**
@@ -93,7 +93,7 @@ inline bool IsHouseProtected(Tile t)
 inline void SetHouseProtected(Tile t, bool house_protected)
 {
 	assert(IsTileType(t, MP_HOUSE));
-	SB(t.m3(), 5, 1, house_protected ? 1 : 0);
+	SB(t.m3(), 6, 1, house_protected ? 1 : 0);
 }
 
 /**
@@ -310,7 +310,7 @@ inline uint8_t GetHouseRandomBits(Tile t)
 inline void SetHouseRandomTriggers(Tile t, HouseRandomTriggers triggers)
 {
 	assert(IsTileType(t, MP_HOUSE));
-	SB(t.m3(), 0, 5, triggers.base());
+	SB(t.m3(), 4, 2, triggers.base());
 }
 
 /**
@@ -323,7 +323,7 @@ inline void SetHouseRandomTriggers(Tile t, HouseRandomTriggers triggers)
 inline HouseRandomTriggers GetHouseRandomTriggers(Tile t)
 {
 	assert(IsTileType(t, MP_HOUSE));
-	return static_cast<HouseRandomTriggers>(GB(t.m3(), 0, 5));
+	return static_cast<HouseRandomTriggers>(GB(t.m3(), 4, 2));
 }
 
 /**
@@ -379,7 +379,7 @@ inline void MakeHouseTile(Tile t, TownID tid, uint8_t counter, uint8_t stage, Ho
 	SetTileType(t, MP_HOUSE);
 	t.m1() = random_bits;
 	t.m2() = tid.base();
-	t.m3() = 0;
+	t.m34() = 0;
 	SetHouseType(t, type);
 	SetHouseCompleted(t, stage == TOWN_HOUSE_COMPLETED);
 	t.m5() = IsHouseCompleted(t) ? 0 : (stage << 3 | counter);

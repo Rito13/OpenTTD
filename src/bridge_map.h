@@ -56,7 +56,7 @@ inline bool IsBridgeAbove(Tile t)
 inline BridgeType GetBridgeType(Tile t)
 {
 	assert(IsBridgeTile(t));
-	return GB(t.m6(), 2, 4);
+	return GB(t.m2(), 0, 4);
 }
 
 /**
@@ -134,9 +134,8 @@ inline void MakeBridgeRamp(Tile t, Owner o, BridgeType bridgetype, DiagDirection
 	t.m3() = 0;
 	t.m4() = 0;
 	t.m5() = 1 << 7 | tt << 2 | d;
-	SB(t.m6(), 2, 4, bridgetype);
+	SB(t.m2(), 2, 4, bridgetype);
 	t.m7() = 0;
-	t.m8() = 0;
 }
 
 /**

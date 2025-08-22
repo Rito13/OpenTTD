@@ -409,6 +409,8 @@ enum SaveLoadVersion : uint16_t {
 	SLV_TOWN_SUPPLY_HISTORY,                ///< 358  PR#14461 Town supply history.
 	SLV_STATIONS_UNDER_BRIDGES,             ///< 359  PR#14477 Allow stations under bridges.
 
+	SLV_FREE_UP_M8_FOR_METRO,               ///< 360  Metro / Underground trains.
+
 	SL_MAX_VERSION,                         ///< Highest possible saveload version
 };
 
