@@ -168,18 +168,6 @@ inline bool HasTrack(Tile tile, Track track)
 }
 
 /**
- * Returns whether the given metro track is present on the given tile.
- * @param tile  the tile to check the track presence of
- * @param track the track to search for on the tile
- * @pre IsPlainRailTile(tile)
- * @return true if and only if the given metro track exists on the tile
- */
-inline bool HasMetroTrack(Tile tile, Track track)
-{
-	return HasBit(GetMetroTrackBits(tile), track);
-}
-
-/**
  * Returns the direction the depot is facing to
  * @param t the tile to get the depot facing from
  * @pre IsRailDepotTile(t)
