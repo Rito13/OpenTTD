@@ -47,6 +47,10 @@ enum TrackBits : uint8_t {
 	TRACK_BIT_3WAY_SE = TRACK_BIT_Y     | TRACK_BIT_LOWER | TRACK_BIT_RIGHT,///< "Arrow" to the south-east
 	TRACK_BIT_3WAY_SW = TRACK_BIT_X     | TRACK_BIT_LOWER | TRACK_BIT_LEFT, ///< "Arrow" to the south-west
 	TRACK_BIT_3WAY_NW = TRACK_BIT_Y     | TRACK_BIT_UPPER | TRACK_BIT_LEFT, ///< "Arrow" to the north-west
+	TRACK_BIT_N       = TRACK_BIT_LEFT  | TRACK_BIT_UPPER | TRACK_BIT_RIGHT,///< "Letter n"
+    TRACK_BIT_U       = TRACK_BIT_LEFT  | TRACK_BIT_LOWER | TRACK_BIT_RIGHT,///< "Letter u"
+    TRACK_BIT_C       = TRACK_BIT_LEFT  | TRACK_BIT_UPPER | TRACK_BIT_LOWER,///< "Letter c"
+    TRACK_BIT_RC      = TRACK_BIT_UPPER | TRACK_BIT_LOWER | TRACK_BIT_RIGHT,///< "Reversed letter c" something like )
 	TRACK_BIT_ALL     = TRACK_BIT_CROSS | TRACK_BIT_HORZ  | TRACK_BIT_VERT, ///< All possible tracks
 	TRACK_BIT_MASK    = 0x3FU,                                              ///< Bitmask for the first 6 bits
 	TRACK_BIT_WORMHOLE = 0x40U,                                             ///< Bitflag for a wormhole (used for tunnels)
