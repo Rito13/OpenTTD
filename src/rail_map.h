@@ -353,9 +353,9 @@ inline void SetSignalVariant(Tile t, Track track, SignalVariant v)
  * @param tile  the tile to set the states for
  * @param state the new state
  */
-inline void SetSignalStates(Tile tile, uint state)
+inline void SetSignalStates(Tile tile, uint8_t state)
 {
-	SB(tile.m2(), 0xC, 4, state);
+	SB(tile.m2(), 12, 4, state);
 }
 
 /**
@@ -363,9 +363,9 @@ inline void SetSignalStates(Tile tile, uint state)
  * @param tile  the tile to set the states for
  * @return the state of the signals
  */
-inline uint GetSignalStates(Tile tile)
+inline uint8_t GetSignalStates(Tile tile)
 {
-	return GB(tile.m2(), 0xC, 4);
+	return GB(tile.m2(), 12, 4);
 }
 
 /**
@@ -384,7 +384,7 @@ inline SignalState GetSingleSignalState(Tile t, uint8_t signalbit)
  * @param tile    the tile to set the present signals for
  * @param signals the signals that have to be present
  */
-inline void SetPresentSignals(Tile tile, uint signals)
+inline void SetPresentSignals(Tile tile, uint8_t signals)
 {
 	SB(tile.m3(), 4, 4, signals);
 }
@@ -394,7 +394,7 @@ inline void SetPresentSignals(Tile tile, uint signals)
  * @param tile the tile to get the present signals for
  * @return the signals that are present
  */
-inline uint GetPresentSignals(Tile tile)
+inline uint8_t GetPresentSignals(Tile tile)
 {
 	return GB(tile.m3(), 4, 4);
 }
