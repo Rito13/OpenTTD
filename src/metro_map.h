@@ -20,21 +20,26 @@
 #include "rail_map.h"
 #include "clear_map.h"
 
-/** The ground 'under' the rail */
+/** The direction of tracks when only two are available */
 enum DoubleTrackDirection : bool {
 	DOUBLE_TRACK_DIR_HORZ = false,
     DOUBLE_TRACK_DIR_VERT = true,
 };
 
-const uint8_t TRACK_RESERVATION_BOTH = 0x07;
+/** 
+ * As metro uses only 3 bits for track reservation it
+ * uses this value for every combination of two tracks.
+ */
+static const uint8_t TRACK_RESERVATION_BOTH = 0x07;
 
 /**
  * Checks if tile can have or has metro
  * @param t the tile to get the information from
  * @return true if tile has metro or can have it
  */
-debug_inline bool IsMetroTile(Tile t) {
-    return !IsTileType(t, MP_VOID); // metro is not possible under void
+debug_inline bool IsMetroTile(Tile t)
+{
+    return !IsTileType(t, MP_VOID); ///< metro is not possible under void
 }
 
 /**
@@ -42,7 +47,7 @@ debug_inline bool IsMetroTile(Tile t) {
  * @param t the tile to get the information from
  * @return true if and only if the tile has signals
  */
-debug_inline bool _MetroHasSignals(Tile t)
+debug_inline bool InnerMetroHasSignals(Tile t)
 {
 	return HasBit(t.m8(), 15);
 }
@@ -52,7 +57,7 @@ debug_inline bool _MetroHasSignals(Tile t)
  * @param tile the tile to add/remove the signals to/from
  * @param signals whether the metro tile should have signals or not
  */
-debug_inline void _SetMetroHasSignals(Tile tile, bool signals)
+debug_inline void InnerSetMetroHasSignals(Tile tile, bool signals)
 {
 	AssignBit(tile.m8(), 15, signals);
 }
@@ -62,7 +67,7 @@ debug_inline void _SetMetroHasSignals(Tile tile, bool signals)
  * @param t the tile to get the information from
  * @return true if and only if the tile has double track
  */
-debug_inline bool _MetroHasDoubleTrack(Tile t)
+debug_inline bool InnerMetroHasDoubleTrack(Tile t)
 {
 	return HasBit(t.m8(), 14);
 }
@@ -72,7 +77,7 @@ debug_inline bool _MetroHasDoubleTrack(Tile t)
  * @param tile the tile to set the bit of
  * @param dt whether the metro tile should have double track or not
  */
-debug_inline void _SetMetroHasDoubleTrack(Tile tile, bool dt)
+debug_inline void InnerSetMetroHasDoubleTrack(Tile tile, bool dt)
 {
 	AssignBit(tile.m8(), 14, dt);
 }
@@ -86,7 +91,7 @@ debug_inline void _SetMetroHasDoubleTrack(Tile tile, bool dt)
 inline static RailTileType GetMetroTileType(Tile t)
 {
     assert(IsMetroTile(t));
-    if(_MetroHasSignals(t)) {
+    if(InnerMetroHasSignals(t)) {
         return RailTileType::RAIL_TILE_SIGNALS;
     }
     return RailTileType::RAIL_TILE_NORMAL; 
@@ -101,7 +106,7 @@ inline static RailTileType GetMetroTileType(Tile t)
 inline bool MetroHasSignals(Tile t)
 {
     assert(IsMetroTile(t));
-	return _MetroHasSignals(t);
+	return InnerMetroHasSignals(t);
 }
 
 /**
@@ -173,8 +178,10 @@ inline void SetMetroDoubleTrackDirection(Tile t, DoubleTrackDirection d)
 inline TrackBits GetMetroTrackBits(Tile t)
 {
     assert(IsMetroTile(t));
-    if(_MetroHasSignals(t)) {
-        if(_MetroHasDoubleTrack(t)) return GetMetroDoubleTrackDirection(t) == DOUBLE_TRACK_DIR_HORZ ? TRACK_BIT_HORZ : TRACK_BIT_VERT;
+    if(InnerMetroHasSignals(t)) {
+        if(InnerMetroHasDoubleTrack(t)) {
+            return GetMetroDoubleTrackDirection(t) == DOUBLE_TRACK_DIR_HORZ ? TRACK_BIT_HORZ : TRACK_BIT_VERT;
+        }
         return TrackToTrackBits(GetMetroTrack(t));
     }
 	return (TrackBits)GB(t.m8(), 0, 6);
@@ -209,42 +216,42 @@ inline bool IsPowerOfTwo(uint8_t i) {
 inline void SetMetroTrackBits(Tile t, TrackBits b)
 {
     assert(IsMetroTile(t));
-    if(_MetroHasSignals(t)) {
+    if(InnerMetroHasSignals(t)) {
         switch(b) {
             case TRACK_BIT_X:
-                _SetMetroHasDoubleTrack(t, false);
+                InnerSetMetroHasDoubleTrack(t, false);
                 SetMetroTrack(t, TRACK_X);
                 return;
             case TRACK_BIT_Y:
-                _SetMetroHasDoubleTrack(t, false);
+                InnerSetMetroHasDoubleTrack(t, false);
                 SetMetroTrack(t, TRACK_Y);
                 return;
             case TRACK_BIT_UPPER:
-                _SetMetroHasDoubleTrack(t, false);
+                InnerSetMetroHasDoubleTrack(t, false);
                 SetMetroTrack(t, TRACK_UPPER);
                 return;
             case TRACK_BIT_LOWER:
-                _SetMetroHasDoubleTrack(t, false);
+                InnerSetMetroHasDoubleTrack(t, false);
                 SetMetroTrack(t, TRACK_LOWER);
                 return;
             case TRACK_BIT_LEFT:
-                _SetMetroHasDoubleTrack(t, false);
+                InnerSetMetroHasDoubleTrack(t, false);
                 SetMetroTrack(t, TRACK_LEFT);
                 return;
             case TRACK_BIT_RIGHT:
-                _SetMetroHasDoubleTrack(t, false);
+                InnerSetMetroHasDoubleTrack(t, false);
                 SetMetroTrack(t, TRACK_RIGHT);
                 return;
             case TRACK_BIT_HORZ:
-                _SetMetroHasDoubleTrack(t, true);
+                InnerSetMetroHasDoubleTrack(t, true);
                 SetMetroDoubleTrackDirection(t, DOUBLE_TRACK_DIR_HORZ);
                 return;
             case TRACK_BIT_VERT:
-                _SetMetroHasDoubleTrack(t, true);
+                InnerSetMetroHasDoubleTrack(t, true);
                 SetMetroDoubleTrackDirection(t, DOUBLE_TRACK_DIR_VERT);
                 return;
             default:
-                _SetMetroHasSignals(t,false);
+                InnerSetMetroHasSignals(t,false);
                 break;
         }
     }
@@ -260,8 +267,8 @@ inline void SetMetroTrackBits(Tile t, TrackBits b)
 inline TrackBits GetMetroRailReservationTrackBits(Tile t)
 {
 	assert(IsMetroTile(t));
-    if(_MetroHasSignals(t)) {
-        if(_MetroHasDoubleTrack(t)) {
+    if(InnerMetroHasSignals(t)) {
+        if(InnerMetroHasDoubleTrack(t)) {
             uint8_t out = 0;
             switch(GetMetroDoubleTrackDirection(t)) {
                 case DOUBLE_TRACK_DIR_HORZ:
@@ -318,10 +325,11 @@ inline void SetMetroTrackReservation(Tile t, TrackBits b)
             break;
     }
     assert(!TracksOverlap(b));
-    if(_MetroHasSignals(t)) {
-        if(_MetroHasDoubleTrack(t)) {
-            if((b & TRACK_BIT_RIGHT) || (b & TRACK_BIT_LOWER))
+    if(InnerMetroHasSignals(t)) {
+        if(InnerMetroHasDoubleTrack(t)) {
+            if((b & TRACK_BIT_RIGHT) || (b & TRACK_BIT_LOWER)) {
                 AssignBit(t.m8(), 5, true);
+            }
             if(!(b & TRACK_BIT_LEFT) && !(b & TRACK_BIT_UPPER)) {
                 AssignBit(t.m8(), 2, false);
                 return;
@@ -370,6 +378,8 @@ inline void UnreserveMetroTrack(Tile tile, Track t)
 
 /**
  * Add/remove the 'has signal' bit from the RailTileType
+ * May be slow as reservation and track storage method
+ * depends on value of this bit.
  * @param tile the tile to add/remove the signals to/from
  * @param signals whether the metro tile should have signals or not
  * @pre IsMetroTile(tile)
@@ -379,17 +389,34 @@ inline void SetMetroHasSignals(Tile tile, bool signals)
     assert(IsMetroTile(tile));
     TrackBits reservation = GetMetroRailReservationTrackBits(tile);
     TrackBits tracks = GetMetroTrackBits(tile);
-	_SetMetroHasSignals(tile, signals);
+	InnerSetMetroHasSignals(tile, signals);
     SetMetroTrackBits(tile, tracks);
     SetMetroTrackReservation(tile, reservation);
 }
 
+/**
+ * Returns metro signal type on a given track
+ * @param t the tile to get the information from
+ * @param track the track to get the information from
+ * @pre IsMetroTile(t)
+ * @pre MetroHasSignals(t)
+ * @return signal type
+ */
 inline SignalType GetMetroSignalType(Tile t, Track track)
 {
 	assert(MetroHasSignals(t));
 	return HasBit(t.m8(), 13) ? SIGTYPE_PBS : SIGTYPE_PBS_ONEWAY;
 }
 
+/**
+ * Sets metro signal type on a given track
+ * @param t the tile to get the information from
+ * @param track the track to get the information from
+ * @param s signal type
+ * @pre IsMetroTile(t)
+ * @pre MetroHasSignals(t)
+ * @pre IsPbsSignal(s)
+ */
 inline void SetMetroSignalType(Tile t, Track track, SignalType s)
 {
 	assert(MetroHasSignals(t));
@@ -397,36 +424,72 @@ inline void SetMetroSignalType(Tile t, Track track, SignalType s)
     AssignBit(t.m8(), 13, s == SIGTYPE_PBS);
 }
 
+/** DO NOT USE - Helper function, should be deleted */
 inline bool IsMetroPresignalEntry(Tile t, Track track) { return false; }
+/** DO NOT USE - Helper function, should be deleted */
 inline bool IsMetroPresignalExit(Tile t, Track track) { return false; }
 
-/** One-way signals can't be passed the 'wrong' way. */
+/**
+ * Checks if metro signal on a given track is one way
+ * @param t the tile to get the information from
+ * @param track the track to get the information from
+ * @pre IsMetroTile(t)
+ * @pre MetroHasSignals(t)
+ * @return true if and only if signal on a given track is one way signal
+ */
 inline bool IsMetroOnewaySignal(Tile t, Track track)
 {
     assert(MetroHasSignals(t));
 	return !HasBit(t.m8(), 13);
 }
 
+/**
+ * Cycles signal on a given track through possible positions on that track
+ * @param t the tile to get the information from
+ * @param track the track to get the information from
+ * @pre IsMetroTile(t)
+ * @pre MetroHasSignals(t)
+ */
 inline void CycleMetroSignalSide(Tile t, Track track)
 {
 	assert(MetroHasSignals(t));
     AssignBit(t.m8(), 0, !HasBit(t.m8(), 0));
 }
 
+/**
+ * Returns signal variant (e.g. electric, semaphore) on a given track
+ * @param t the tile to get the information from
+ * @param track the track to get the information from
+ * @pre IsMetroTile(t)
+ * @pre MetroHasSignals(t)
+ */
 inline SignalVariant GetMetroSignalVariant(Tile t, Track track)
 {
 	assert(MetroHasSignals(t));
 	return (SignalVariant)GB(t.m8(), 12, 1);
 }
 
+/**
+ * Sets signal variant (e.g. electric, semaphore) on a given track
+ * @param t the tile to get the information from
+ * @param track the track to get the information from
+ * @param v signal variant (e.g. electric, semaphore)
+ * @pre IsMetroTile(t)
+ * @pre MetroHasSignals(t)
+ */
 inline void SetMetroSignalVariant(Tile t, Track track, SignalVariant v)
 {
 	assert(MetroHasSignals(t));
 	SB(t.m8(), 12, 1, v);
 }
 
+/**
+ * Returns the direction of the double track of the given tile as an track value
+ * Used mainly for signal related functions as one metro tile can have max one signal
+ * @param t the tile to get the information from
+ */
 inline Track GetMetroDoubleTrackDirAsTrack(Tile t) {
-    // check if operations for signalled double track tiles are valid
+    /* check if operations for signalled double track tiles are valid */
     static_assert(((1U << (1+DOUBLE_TRACK_DIR_HORZ)) | false) == TRACK_UPPER);
     static_assert(((1U << (1+DOUBLE_TRACK_DIR_HORZ)) | true ) == TRACK_LOWER);
     static_assert(((1U << (1+DOUBLE_TRACK_DIR_VERT)) | false) == TRACK_LEFT );
@@ -435,13 +498,16 @@ inline Track GetMetroDoubleTrackDirAsTrack(Tile t) {
 }
 
 /**
- * Checks for the presence of metro signal (either way) on the given track on the
- * given rail tile.
+ * Checks for the presence of metro signal on the given track on the given rail tile.
+ * @param t the tile to get the information from
+ * @param track the track to get the information from
+ * @pre IsValidTrack(track)
+ * @return true if and only if there is a signal on the given track
  */
 inline bool HasMetroSignalOnTrack(Tile t, Track track)
 {
 	assert(IsValidTrack(track));
-    if(_MetroHasDoubleTrack(t)) {
+    if(InnerMetroHasDoubleTrack(t)) {
         return MetroHasSignals(t) && GetMetroDoubleTrackDirAsTrack(t) == track;
     }
 	return MetroHasSignals(t) && GetMetroTrack(t) == track;
@@ -453,13 +519,17 @@ inline bool HasMetroSignalOnTrack(Tile t, Track track)
  *
  * Along meaning if you are currently driving on the given metro trackdir, this is
  * the signal that is facing us (for which we stop when it's red).
+ * @param t the tile to get the information from
+ * @param trackdir the track and the direction to get the information from
+ * @pre IsValidTrackdir(trackdir)
+ * @return true if and only if there is a signal on the given trackdir
  */
 inline bool HasMetroSignalOnTrackdir(Tile t, Trackdir trackdir)
 {
 	assert (IsValidTrackdir(trackdir));
     if(!MetroHasSignals(t)) return false;
     Track track = GetMetroTrack(t);
-    if(_MetroHasDoubleTrack(t)) track = GetMetroDoubleTrackDirAsTrack(t);
+    if(InnerMetroHasDoubleTrack(t)) track = GetMetroDoubleTrackDirAsTrack(t);
 	return HasBit(t.m8(),0) ? TrackToTrackdir(track) == trackdir : TrackToTrackdir(track) == ReverseTrackdir(trackdir);
 }
 
@@ -468,6 +538,11 @@ inline bool HasMetroSignalOnTrackdir(Tile t, Trackdir trackdir)
  *
  * Along meaning if you are currently driving on the given metro trackdir, this is
  * the signal that is facing us (for which we stop when it's red).
+ * @param t the tile to get the information from
+ * @param trackdir the track and the direction to get the information from
+ * @pre IsValidTrackdir(trackdir)
+ * @pre HasMetroSignalOnTrack(tile, TrackdirToTrack(trackdir))
+ * @return signal state e.g. Red, Green
  */
 inline SignalState GetMetroSignalStateByTrackdir(Tile tile, Trackdir trackdir)
 {
@@ -479,6 +554,11 @@ inline SignalState GetMetroSignalStateByTrackdir(Tile tile, Trackdir trackdir)
 
 /**
  * Sets the state of the metro signal along the given metro trackdir.
+ * @param t the tile to get the information from
+ * @param trackdir the track and the direction to get the information from
+ * @param state the new signal state e.g. Red, Green
+ * @pre IsValidTrackdir(trackdir)
+ * @pre HasMetroSignalOnTrackdir(tile, trackdir)
  */
 inline void SetMetroSignalStateByTrackdir(Tile tile, Trackdir trackdir, SignalState state)
 {
@@ -508,13 +588,6 @@ inline bool HasOnewayMetroSignalBlockingTrackdir(Tile tile, Trackdir td)
             HasMetroSignalOnTrackdir(tile, ReverseTrackdir(td));
 }
 
-inline void MakeMetroNormal(Tile t, Owner o, TrackBits b, RailType r)
-{
-//	SetTileOwner(t, o);
-    t.m8() = 0;
-    if(!IsMetroTile(t)) MakeClear(t, CLEAR_GRASS, 0);
-	SetMetroRailType(t, r);
-    SetMetroTrackBits(t, b);
-}
+
 
 #endif /* METRO_MAP_H */

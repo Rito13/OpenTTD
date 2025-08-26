@@ -59,7 +59,7 @@ enum TileType : uint8_t {
 	MP_INDUSTRY_TYPE_2 = 12,///< Same as MP_INDUSTRY but used to store last bit of metro owner
 };
 
-static_assert((MP_INDUSTRY ^ 0b0100) == MP_INDUSTRY_TYPE_2); ///< There should be only one bite difference
+static_assert((MP_INDUSTRY ^ 0b0100) == MP_INDUSTRY_TYPE_2); ///< There should be only one bit difference
 
 /**
  * Additional infos of a tile on a tropic game.

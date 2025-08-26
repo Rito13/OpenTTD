@@ -114,7 +114,9 @@ debug_inline static bool IsRailDepotTile(Tile t)
  */
 inline RailType GetRailType(Tile t)
 {
-	if(IsTileType(t, MP_STATION)) return (RailType)GB(t.m8(), 0, 6);
+	if(IsTileType(t, MP_STATION)) {
+		return (RailType)GB(t.m8(), 0, 6);
+	}
 	return (RailType)GB(t.m34(), 6, 6);
 }
 

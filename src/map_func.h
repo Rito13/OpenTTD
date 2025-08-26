@@ -26,13 +26,15 @@ class Tile {
 private:
 	friend struct Map;
 
-	// helper union for TileBase struct
-	union double_uint8_t {
+	/** 
+	 * helper union for TileBase struct
+	 * single[1] - high byte
+	 * single[0] - low byte
+	 */
+	union Double_uint8_t {
 		uint16_t all;
 		uint8_t single[2];
-		// single[1] - high byte
-		// single[0] - low byte
-    	double_uint8_t(uint16_t a) {
+    	Double_uint8_t(uint16_t a) {
         	all = a;
     	}
 	};
@@ -47,7 +49,7 @@ private:
 		uint16_t m2 = 0; ///< Primarily used for indices to towns, industries and stations
 		uint8_t m1 = 0; ///< Primarily used for ownership information
 		uint8_t m5 = 0; ///< General purpose
-		double_uint8_t m34 = 0; ///< General purpose
+		Double_uint8_t m34 = 0; ///< General purpose
 	};
 
 	static_assert(sizeof(TileBase) == 8);
