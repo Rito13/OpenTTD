@@ -49,6 +49,7 @@ bool IsTunnelInWayDir(TileIndex tile, int z, DiagDirection dir);
  */
 inline void MakeRoadTunnel(Tile t, Owner o, DiagDirection d, RoadType road_rt, RoadType tram_rt)
 {
+	Owner metro_owner = GetMetroTileOwner(t);
 	SetTileType(t, MP_TUNNELBRIDGE);
 	SetTileOwner(t, o);
 	t.m2() = 0;
@@ -60,6 +61,7 @@ inline void MakeRoadTunnel(Tile t, Owner o, DiagDirection d, RoadType road_rt, R
 	SetRoadOwner(t, RTT_ROAD, o);
 	if (o != OWNER_TOWN) SetRoadOwner(t, RTT_TRAM, o);
 	SetRoadTypes(t, road_rt, tram_rt);
+	UpdateMetroTileOwner(t, metro_owner);
 }
 
 /**
@@ -71,6 +73,7 @@ inline void MakeRoadTunnel(Tile t, Owner o, DiagDirection d, RoadType road_rt, R
  */
 inline void MakeRailTunnel(Tile t, Owner o, DiagDirection d, RailType r)
 {
+	Owner metro_owner = GetMetroTileOwner(t);
 	SetTileType(t, MP_TUNNELBRIDGE);
 	SetTileOwner(t, o);
 	t.m2() = 0;
@@ -80,6 +83,7 @@ inline void MakeRailTunnel(Tile t, Owner o, DiagDirection d, RailType r)
 	SB(t.m6(), 2, 4, 0);
 	t.m7() = 0;
 	SetRailType(t, r);
+	UpdateMetroTileOwner(t, metro_owner);
 }
 
 #endif /* TUNNEL_MAP_H */

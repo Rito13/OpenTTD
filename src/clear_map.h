@@ -246,6 +246,7 @@ inline void SetFence(Tile t, DiagDirection side, uint h)
  */
 inline void MakeClear(Tile t, ClearGround g, uint density)
 {
+	Owner metro_owner = GetMetroTileOwner(t);
 	SetTileType(t, MP_CLEAR);
 	t.m1() = 0;
 	SetTileOwner(t, OWNER_NONE);
@@ -255,6 +256,7 @@ inline void MakeClear(Tile t, ClearGround g, uint density)
 	SetClearGroundDensity(t, g, density); // Sets m5
 	t.m6() = 0;
 	t.m7() = 0;
+	UpdateMetroTileOwner(t, metro_owner);
 }
 
 
@@ -266,6 +268,7 @@ inline void MakeClear(Tile t, ClearGround g, uint density)
  */
 inline void MakeField(Tile t, uint field_type, IndustryID industry)
 {
+	Owner metro_owner = GetMetroTileOwner(t);
 	SetTileType(t, MP_CLEAR);
 	t.m1() = 0;
 	SetTileOwner(t, OWNER_NONE);
@@ -275,6 +278,7 @@ inline void MakeField(Tile t, uint field_type, IndustryID industry)
 	SetClearGroundDensity(t, CLEAR_FIELDS, 3);
 	SB(t.m6(), 2, 4, 0);
 	t.m7() = 0;
+	UpdateMetroTileOwner(t, metro_owner);
 }
 
 /**

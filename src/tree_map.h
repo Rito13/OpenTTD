@@ -243,6 +243,7 @@ inline void SetTreeGrowth(Tile t, TreeGrowthStage g)
  */
 inline void MakeTree(Tile t, TreeType type, uint count, TreeGrowthStage growth, TreeGround ground, uint density)
 {
+	Owner metro_owner = GetMetroTileOwner(t);
 	SetTileType(t, MP_TREES);
 	SetTileOwner(t, OWNER_NONE);
 	SetWaterClass(t, ground == TREE_GROUND_SHORE ? WATER_CLASS_SEA : WATER_CLASS_INVALID);
@@ -252,6 +253,7 @@ inline void MakeTree(Tile t, TreeType type, uint count, TreeGrowthStage growth, 
 	t.m5() = count << 6 | static_cast<uint>(growth);
 	SB(t.m6(), 2, 4, 0);
 	t.m7() = 0;
+	UpdateMetroTileOwner(t, metro_owner);
 }
 
 #endif /* TREE_MAP_H */

@@ -277,6 +277,7 @@ inline void SetIndustryRandomTriggers(Tile tile, IndustryRandomTriggers triggers
  */
 inline void MakeIndustry(Tile t, IndustryID index, IndustryGfx gfx, uint8_t random, WaterClass wc)
 {
+	Owner metro_owner = GetMetroTileOwner(t);
 	SetTileType(t, MP_INDUSTRY);
 	t.m1() = 0;
 	t.m2() = index.base();
@@ -286,6 +287,7 @@ inline void MakeIndustry(Tile t, IndustryID index, IndustryGfx gfx, uint8_t rand
 	SetIndustryRandomTriggers(t, {}); // rest of m6
 	SetWaterClass(t, wc);
 	t.m7() = 0;
+	UpdateMetroTileOwner(t, metro_owner);
 }
 
 #endif /* INDUSTRY_MAP_H */

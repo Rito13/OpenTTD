@@ -614,6 +614,7 @@ inline void SetRoadTypes(Tile t, RoadType road_rt, RoadType tram_rt)
  */
 inline void MakeRoadNormal(Tile t, RoadBits bits, RoadType road_rt, RoadType tram_rt, TownID town, Owner road, Owner tram)
 {
+	Owner metro_owner = GetMetroTileOwner(t);
 	SetTileType(t, MP_ROAD);
 	SetTileOwner(t, road);
 	t.m2() = town.base();
@@ -624,6 +625,7 @@ inline void MakeRoadNormal(Tile t, RoadBits bits, RoadType road_rt, RoadType tra
 	t.m7() = 0;
 	SetRoadTypes(t, road_rt, tram_rt);
 	SetRoadOwner(t, RTT_TRAM, tram);
+	UpdateMetroTileOwner(t, metro_owner);
 }
 
 /**
@@ -640,6 +642,7 @@ inline void MakeRoadNormal(Tile t, RoadBits bits, RoadType road_rt, RoadType tra
  */
 inline void MakeRoadCrossing(Tile t, Owner road, Owner tram, Owner rail, Axis roaddir, RailType rat, RoadType road_rt, RoadType tram_rt, TownID town)
 {
+	Owner metro_owner = GetMetroTileOwner(t);
 	SetTileType(t, MP_ROAD);
 	SetTileOwner(t, rail);
 	t.m2() = town.base();
@@ -650,6 +653,7 @@ inline void MakeRoadCrossing(Tile t, Owner road, Owner tram, Owner rail, Axis ro
 	t.m7() = road.base();
 	SetRoadTypes(t, road_rt, tram_rt);
 	SetRoadOwner(t, RTT_TRAM, tram);
+	UpdateMetroTileOwner(t, metro_owner);
 }
 
 /**
@@ -673,6 +677,7 @@ inline void SetRoadDepotExitDirection(Tile tile, DiagDirection dir)
  */
 inline void MakeRoadDepot(Tile tile, Owner owner, DepotID depot_id, DiagDirection dir, RoadType rt)
 {
+	Owner metro_owner = GetMetroTileOwner(tile);
 	SetTileType(tile, MP_ROAD);
 	SetTileOwner(tile, owner);
 	tile.m2() = depot_id.base();
@@ -684,6 +689,7 @@ inline void MakeRoadDepot(Tile tile, Owner owner, DepotID depot_id, DiagDirectio
 	tile.m7() = owner.base();
 	SetRoadType(tile, GetRoadTramType(rt), rt);
 	SetRoadOwner(tile, RTT_TRAM, owner);
+	UpdateMetroTileOwner(tile, metro_owner);
 }
 
 #endif /* ROAD_MAP_H */

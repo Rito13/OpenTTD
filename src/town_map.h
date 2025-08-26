@@ -376,6 +376,7 @@ inline void MakeHouseTile(Tile t, TownID tid, uint8_t counter, uint8_t stage, Ho
 {
 	assert(IsTileType(t, MP_CLEAR));
 
+	Owner metro_owner = GetMetroTileOwner(t);
 	SetTileType(t, MP_HOUSE);
 	t.m1() = random_bits;
 	t.m2() = tid.base();
@@ -386,6 +387,7 @@ inline void MakeHouseTile(Tile t, TownID tid, uint8_t counter, uint8_t stage, Ho
 	SetHouseProtected(t, house_protected);
 	SetAnimationFrame(t, 0);
 	SetHouseProcessingTime(t, HouseSpec::Get(type)->processing_time);
+	UpdateMetroTileOwner(t, metro_owner);
 }
 
 #endif /* TOWN_MAP_H */

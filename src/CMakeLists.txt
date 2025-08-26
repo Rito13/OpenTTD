@@ -83,6 +83,7 @@ add_files(
     base_media_music.h
     base_media_sounds.h
     base_station_base.h
+    before_metro_map.h
     bitmap_type.h
     bmp.cpp
     bmp.h
@@ -260,6 +261,8 @@ add_files(
     map.cpp
     map_func.h
     map_type.h
+    metro_map.cpp
+    metro_map.h
     misc.cpp
     misc_cmd.cpp
     misc_cmd.h
