@@ -127,6 +127,7 @@ inline void SetBridgeMiddle(Tile t, Axis a)
  */
 inline void MakeBridgeRamp(Tile t, Owner o, BridgeType bridgetype, DiagDirection d, TransportType tt)
 {
+	Owner metro_owner = GetMetroTileOwner(t);
 	SetTileType(t, MP_TUNNELBRIDGE);
 	SetTileOwner(t, o);
 	SetDockingTile(t, false);
@@ -136,6 +137,7 @@ inline void MakeBridgeRamp(Tile t, Owner o, BridgeType bridgetype, DiagDirection
 	t.m5() = 1 << 7 | tt << 2 | d;
 	SB(t.m2(), 2, 4, bridgetype);
 	t.m7() = 0;
+	UpdateMetroTileOwner(t, metro_owner);
 }
 
 /**

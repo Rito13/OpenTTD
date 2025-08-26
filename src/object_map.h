@@ -73,6 +73,7 @@ inline uint8_t GetObjectRandomBits(Tile t)
  */
 inline void MakeObject(Tile t, Owner o, ObjectID index, WaterClass wc, uint8_t random)
 {
+	Owner metro_owner = GetMetroTileOwner(t);
 	SetTileType(t, MP_OBJECT);
 	SetTileOwner(t, o);
 	SetWaterClass(t, wc);
@@ -82,6 +83,7 @@ inline void MakeObject(Tile t, Owner o, ObjectID index, WaterClass wc, uint8_t r
 	t.m5() = index.base() >> 16;
 	SB(t.m6(), 2, 4, 0);
 	t.m7() = 0;
+	UpdateMetroTileOwner(t, metro_owner);
 }
 
 #endif /* OBJECT_MAP_H */

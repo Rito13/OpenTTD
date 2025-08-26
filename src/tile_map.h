@@ -96,7 +96,8 @@ inline uint TilePixelHeightOutsideMap(int x, int y)
 debug_inline static TileType GetTileType(Tile tile)
 {
 	assert(tile < Map::Size());
-	return (TileType)GB(tile.type(), 4, 4);
+	/* Two lines in one line in order to maintain debug_inline */
+	{TileType out = (TileType)GB(tile.type(), 4, 4); return out == MP_INDUSTRY_TYPE_2 ? MP_INDUSTRY : out;}
 }
 
 /**
@@ -203,6 +204,10 @@ inline void SetTileOwner(Tile tile, Owner owner)
 
 	SB(tile.m1(), 0, 5, owner.base());
 }
+
+Owner GetMetroTileOwner(Tile tile);
+void SetMetroTileOwner(Tile tile, Owner owner);
+void UpdateMetroTileOwner(Tile tile, Owner owner);
 
 /**
  * Checks if a tile belongs to the given owner

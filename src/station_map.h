@@ -836,7 +836,9 @@ inline void MakeDriveThroughRoadStop(Tile t, Owner station, Owner road, Owner tr
  */
 inline void MakeAirport(Tile t, Owner o, StationID sid, uint8_t section, WaterClass wc)
 {
+	Owner metro_owner = GetMetroTileOwner(t);
 	MakeStation(t, o, sid, StationType::Airport, section, wc);
+	UpdateMetroTileOwner(t, metro_owner);
 }
 
 /**
@@ -847,10 +849,12 @@ inline void MakeAirport(Tile t, Owner o, StationID sid, uint8_t section, WaterCl
  */
 inline void MakeBuoy(Tile t, StationID sid, WaterClass wc)
 {
+	Owner metro_owner = GetMetroTileOwner(t);
 	/* Make the owner of the buoy tile the same as the current owner of the
 	 * water tile. In this way, we can reset the owner of the water to its
 	 * original state when the buoy gets removed. */
 	MakeStation(t, GetTileOwner(t), sid, StationType::Buoy, 0, wc);
+	UpdateMetroTileOwner(t, metro_owner);
 }
 
 /**
@@ -863,8 +867,10 @@ inline void MakeBuoy(Tile t, StationID sid, WaterClass wc)
  */
 inline void MakeDock(Tile t, Owner o, StationID sid, DiagDirection d, WaterClass wc)
 {
+	Owner metro_owner = GetMetroTileOwner(t);
 	MakeStation(t, o, sid, StationType::Dock, d);
 	MakeStation(TileIndex(t) + TileOffsByDiagDir(d), o, sid, StationType::Dock, GFX_DOCK_BASE_WATER_PART + DiagDirToAxis(d), wc);
+	UpdateMetroTileOwner(t, metro_owner);
 }
 
 /**
@@ -875,7 +881,9 @@ inline void MakeDock(Tile t, Owner o, StationID sid, DiagDirection d, WaterClass
  */
 inline void MakeOilrig(Tile t, StationID sid, WaterClass wc)
 {
+	Owner metro_owner = GetMetroTileOwner(t);
 	MakeStation(t, OWNER_NONE, sid, StationType::Oilrig, 0, wc);
+	UpdateMetroTileOwner(t, metro_owner);
 }
 
 #endif /* STATION_MAP_H */

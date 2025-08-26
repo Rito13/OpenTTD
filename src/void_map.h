@@ -11,7 +11,6 @@
 #define VOID_MAP_H
 
 #include "tile_map.h"
-#include "metro_map.h"
 
 /**
  * Make a nice void tile ;)

@@ -39,6 +39,7 @@
 #include "terraform_cmd.h"
 #include "station_func.h"
 #include "pathfinder/water_regions.h"
+#include "metro_map.h"
 
 #include "table/strings.h"
 #include "table/sprites.h"
@@ -573,6 +574,8 @@ void ChangeTileOwner(TileIndex tile, Owner old_owner, Owner new_owner)
 void GetTileDesc(TileIndex tile, TileDesc &td)
 {
 	_tile_type_procs[GetTileType(tile)]->get_tile_desc_proc(tile, td);
+	td.owner[3] = GetMetroTileOwner(tile);
+	td.owner_type[3] = STR_LAND_AREA_INFORMATION_METRO_OWNER;
 }
 
 /**

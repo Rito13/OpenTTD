@@ -522,6 +522,7 @@ inline bool IsSnowRailGround(Tile t)
 
 inline void MakeRailNormal(Tile t, Owner o, TrackBits b, RailType r)
 {
+	Owner metro_owner = GetMetroTileOwner(t);
 	SetTileType(t, MP_RAILWAY);
 	SetTileOwner(t, o);
 	SetDockingTile(t, false);
@@ -532,6 +533,7 @@ inline void MakeRailNormal(Tile t, Owner o, TrackBits b, RailType r)
 	SB(t.m6(), 2, 4, 0);
 	t.m7() = 0;
 	SetRailType(t, r);
+	UpdateMetroTileOwner(t, metro_owner);
 }
 
 /**
@@ -555,6 +557,7 @@ inline void SetRailDepotExitDirection(Tile tile, DiagDirection dir)
  */
 inline void MakeRailDepot(Tile tile, Owner owner, DepotID depot_id, DiagDirection dir, RailType rail_type)
 {
+	Owner metro_owner = GetMetroTileOwner(tile);
 	SetTileType(tile, MP_RAILWAY);
 	SetTileOwner(tile, owner);
 	SetDockingTile(tile, false);
@@ -565,6 +568,7 @@ inline void MakeRailDepot(Tile tile, Owner owner, DepotID depot_id, DiagDirectio
 	SB(tile.m6(), 2, 4, 0);
 	tile.m7() = 0;
 	SetRailType(tile, rail_type);
+	UpdateMetroTileOwner(tile, metro_owner);
 }
 
 #endif /* RAIL_MAP_H */
