@@ -554,8 +554,8 @@ static void StartScripts()
 	ShowScriptDebugWindowIfScriptError();
 }
 
-bool GET_STATION_TYPE_HELPER_CLASS::USE_OLD_GET_STATION_TYPE = false; // define this variable
-uint16_t GET_STATION_TYPE_HELPER_CLASS::OLD_USE_EVENTS = 0; // also this one
+bool GetStationTypeHelperClass::use_old_get_station_type = false; // define this variable
+uint16_t GetStationTypeHelperClass::old_use_events = 0; // also this one
 
 /**
  * Perform a (large) amount of savegame conversion *magic* in order to
@@ -564,8 +564,8 @@ uint16_t GET_STATION_TYPE_HELPER_CLASS::OLD_USE_EVENTS = 0; // also this one
  */
 bool AfterLoadGame()
 {
-	GET_STATION_TYPE_HELPER_CLASS::USE_OLD_GET_STATION_TYPE = true;
-	GET_STATION_TYPE_HELPER_CLASS::OLD_USE_EVENTS = 0;
+	GetStationTypeHelperClass::use_old_get_station_type = true;
+	GetStationTypeHelperClass::old_use_events = 0;
 
 	SetSignalHandlers();
 
@@ -2923,33 +2923,33 @@ bool AfterLoadGame()
 		}
 	}
 
-	// Rearrangement of tile memory in order to free up m8
+	/* Rearrangement of tile memory in order to free up m8 */
 	if (IsSavegameVersionBefore(SLV_FREE_UP_M8_FOR_METRO)) {
 		for (auto t : Map::Iterate()) {
 			switch (GetTileType(t)) {
 				case MP_RAILWAY:
-					SB(t.m2(), 0xC, 4, GB(t.m4(), 4, 4)); // Move signals colours
-					SB(t.m34(), 6, 6, GB(t.m8(), 0, 6)); // Move railway type
-					// clean
+					SB(t.m2(), 0xC, 4, GB(t.m4(), 4, 4)); ///< Move signals colours
+					SB(t.m34(), 6, 6, GB(t.m8(), 0, 6)); ///< Move railway type
+					/* clean */
 					SB(t.m4(), 4, 2, 0);
 					SB(t.m8(), 0, 16, 0);
 					break;
 
 				case MP_ROAD:
-					SB(t.m1(), 5, 3, GB(t.m6(), 3, 3)); // Move pavement type
-					SB(t.m6(), 2, 6, GB(t.m8(), 6, 6)); // Move tram type
-					SB(t.m7(), 7, 1, GB(t.m7(), 5, 1)); // Move snow / desert present
-					if(IsLevelCrossing(t)) SB(t.m34(), 6, 6, GB(t.m8(), 0, 6)); // Move railway type
-					// clean
+					SB(t.m1(), 5, 3, GB(t.m6(), 3, 3)); ///< Move pavement type
+					SB(t.m6(), 2, 6, GB(t.m8(), 6, 6)); ///< Move tram type
+					SB(t.m7(), 7, 1, GB(t.m7(), 5, 1)); ///< Move snow / desert present
+					if(IsLevelCrossing(t)) SB(t.m34(), 6, 6, GB(t.m8(), 0, 6)); ///< Move railway type
+					/* clean */
 					SB(t.m7(), 5, 1, 0);
 					SB(t.m8(), 0, 16, 0);
 					break;
 
 				case MP_HOUSE:
-					SB(t.m3(), 6, 1, GB(t.m3(), 5, 1)); // Move house protection
-					SB(t.m3(), 4, 2, GB(t.m3(), 0, 2)); // Move activated triggers
-					SB(t.m34(), 0, 12, GB(t.m8(), 0, 12)); // Move house type
-					// clean
+					SB(t.m3(), 6, 1, GB(t.m3(), 5, 1)); ///< Move house protection
+					SB(t.m3(), 4, 2, GB(t.m3(), 0, 2)); ///< Move activated triggers
+					SB(t.m34(), 0, 12, GB(t.m8(), 0, 12)); ///< Move house type
+					/* clean */
 					SB(t.m8(), 0, 16, 0);
 					break;
 
@@ -2958,18 +2958,18 @@ bool AfterLoadGame()
 					bool has_rail = HasStationRail_BeforeMetro(t);
 					bool is_any_road = IsAnyRoadStop_BeforeMetro(t);
 					if(has_rail) {
-						SB(t.m6(), 4, 4, GB(t.m3(), 0, 4)); // Move traction info
+						SB(t.m6(), 4, 4, GB(t.m3(), 0, 4)); ///< Move traction info
 					} else {
-						SB(t.m4(), 6, 2, GB(t.m3(), 2, 2)); // Move pavement type
-						SB(t.m6(), 2, 6, GB(t.m8(), 6, 6)); // Move tram type
+						SB(t.m4(), 6, 2, GB(t.m3(), 2, 2)); ///< Move pavement type
+						SB(t.m6(), 2, 6, GB(t.m8(), 6, 6)); ///< Move tram type
 					}
 					if(is_any_road) {
-						SB(t.m7(), 5, 3, GB(t.m5(), 0, 3)); // Move GFX
-						SB(t.m5(), 0, 6, GB(t.m8(), 0, 6)); // Move custom road info
-						SB(t.m5(), 7, 1, GB(t.m8(), 15, 1)); // Move snow / desert present
+						SB(t.m7(), 5, 3, GB(t.m5(), 0, 3)); ///< Move GFX
+						SB(t.m5(), 0, 6, GB(t.m8(), 0, 6)); ///< Move custom road info
+						SB(t.m5(), 7, 1, GB(t.m8(), 15, 1)); ///< Move snow / desert present
 					}
-					SB(t.m3(), 0, 4, station_type); // Move station type
-					// clean
+					SB(t.m3(), 0, 4, station_type); ///< Move station type
+					/* clean */
 					if(has_rail) {
 						SB(t.m8(), 6, 10, 0);
 					} else {
@@ -2978,10 +2978,10 @@ bool AfterLoadGame()
 					break;
 				}
 				case MP_TUNNELBRIDGE:
-					SB(t.m2(), 0, 4, GB(t.m6(), 2, 4)); // Move bridge type
-					SB(t.m6(), 2, 6, GB(t.m8(), 6, 6)); // Move tram type
-					SB(t.m34(), 6, 6, GB(t.m8(), 0, 6)); // Move railway type
-					// clean
+					SB(t.m2(), 0, 4, GB(t.m6(), 2, 4)); ///< Move bridge type
+					SB(t.m6(), 2, 6, GB(t.m8(), 6, 6)); ///< Move tram type
+					SB(t.m34(), 6, 6, GB(t.m8(), 0, 6)); ///< Move railway type
+					/* clean */
 					SB(t.m8(), 0, 16, 0);
 					break;
 
@@ -2991,9 +2991,9 @@ bool AfterLoadGame()
 		}
 	}
 
-	GET_STATION_TYPE_HELPER_CLASS::USE_OLD_GET_STATION_TYPE = false;
-	if(GET_STATION_TYPE_HELPER_CLASS::OLD_USE_EVENTS > 0) {
-		IConsolePrint(CC_WARNING, fmt::format("During loading of a save file GetStationType was called {} times when GetStationType_BeforeMetro should have been called", GET_STATION_TYPE_HELPER_CLASS::OLD_USE_EVENTS));
+	GetStationTypeHelperClass::use_old_get_station_type = false;
+	if(GetStationTypeHelperClass::old_use_events > 0) {
+		IConsolePrint(CC_WARNING, fmt::format("During loading of a save file GetStationType was called {} times when GetStationType_BeforeMetro should have been called", GetStationTypeHelperClass::old_use_events));
 	}
 
 	AfterLoadStations();
