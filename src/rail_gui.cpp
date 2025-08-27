@@ -464,7 +464,7 @@ struct BuildRailToolbarWindow : Window {
 		WID_RAT_BUILD_NS, WID_RAT_BUILD_X, WID_RAT_BUILD_EW, WID_RAT_BUILD_Y, WID_RAT_AUTORAIL,
 		WID_RAT_BUILD_METRO_NS, WID_RAT_BUILD_METRO_X, WID_RAT_BUILD_METRO_EW, WID_RAT_BUILD_METRO_Y, WID_RAT_METRO_AUTORAIL,
 		WID_RAT_BUILD_DEPOT, WID_RAT_BUILD_WAYPOINT, WID_RAT_BUILD_STATION, WID_RAT_BUILD_SIGNALS,
-		WID_RAT_BUILD_BRIDGE, WID_RAT_BUILD_TUNNEL, WID_RAT_CONVERT_RAIL,
+		WID_RAT_BUILD_BRIDGE, WID_RAT_BUILD_TUNNEL, WID_RAT_BUILD_METRO_ENTRANCE, WID_RAT_CONVERT_RAIL,
 	};
 
 	void OnInvalidateData([[maybe_unused]] int data = 0, [[maybe_unused]] bool gui_scope = true) override
@@ -516,6 +516,7 @@ struct BuildRailToolbarWindow : Window {
 		this->GetWidget<NWidgetCore>(WID_RAT_BUILD_DEPOT)->SetSprite(rti->gui_sprites.build_depot);
 		this->GetWidget<NWidgetCore>(WID_RAT_CONVERT_RAIL)->SetSprite(rti->gui_sprites.convert_rail);
 		this->GetWidget<NWidgetCore>(WID_RAT_BUILD_TUNNEL)->SetSprite(rti->gui_sprites.build_tunnel);
+		this->GetWidget<NWidgetCore>(WID_RAT_BUILD_METRO_ENTRANCE)->SetSprite(rti->gui_sprites.build_tunnel);
 	}
 
 	/**
@@ -676,6 +677,11 @@ struct BuildRailToolbarWindow : Window {
 				HandlePlacePushButton(this, WID_RAT_BUILD_TUNNEL, GetRailTypeInfo(_cur_railtype)->cursor.tunnel, HT_SPECIAL);
 				this->last_user_action = widget;
 				break;
+			
+			case WID_RAT_BUILD_METRO_ENTRANCE:
+				HandlePlacePushButton(this, WID_RAT_BUILD_METRO_ENTRANCE, GetRailTypeInfo(_cur_railtype)->cursor.tunnel, HT_SPECIAL);
+				this->last_user_action = widget;
+				break;
 
 			case WID_RAT_REMOVE:
 				BuildRailClick_Remove(this);
@@ -767,6 +773,10 @@ struct BuildRailToolbarWindow : Window {
 
 			case WID_RAT_BUILD_TUNNEL:
 				Command<CMD_BUILD_TUNNEL>::Post(STR_ERROR_CAN_T_BUILD_TUNNEL_HERE, CcBuildRailTunnel, tile, TRANSPORT_RAIL, _cur_railtype);
+				break;
+
+			case WID_RAT_BUILD_METRO_ENTRANCE:
+				Command<CMD_BUILD_METRO_ENTRANCE>::Post(STR_ERROR_CAN_T_BUILD_TUNNEL_HERE, CcBuildRailTunnel, tile, TRANSPORT_RAIL, _cur_railtype);
 				break;
 
 			case WID_RAT_CONVERT_RAIL:
@@ -871,6 +881,7 @@ struct BuildRailToolbarWindow : Window {
 	void OnPlacePresize([[maybe_unused]] Point pt, TileIndex tile) override
 	{
 		Command<CMD_BUILD_TUNNEL>::Do(DoCommandFlag::Auto, tile, TRANSPORT_RAIL, _cur_railtype);
+		Command<CMD_BUILD_METRO_ENTRANCE>::Do(DoCommandFlag::Auto, tile, TRANSPORT_RAIL, _cur_railtype);
 		VpSetPresizeRange(tile, _build_tunnel_endtile == 0 ? tile : _build_tunnel_endtile);
 	}
 
@@ -968,6 +979,8 @@ static constexpr NWidgetPart _nested_build_rail_widgets[] = {
 						SetFill(0, 1), SetToolbarMinimalSize(2), SetSpriteTip(SPR_IMG_BRIDGE, STR_RAIL_TOOLBAR_TOOLTIP_BUILD_RAILROAD_BRIDGE),
 		NWidget(WWT_IMGBTN, COLOUR_DARK_GREEN, WID_RAT_BUILD_TUNNEL),
 						SetFill(0, 1), SetToolbarMinimalSize(1), SetSpriteTip(SPR_IMG_TUNNEL_RAIL, STR_RAIL_TOOLBAR_TOOLTIP_BUILD_RAILROAD_TUNNEL),
+		NWidget(WWT_IMGBTN, COLOUR_BROWN, WID_RAT_BUILD_METRO_ENTRANCE),
+						SetFill(0, 1), SetToolbarMinimalSize(1), SetSpriteTip(SPR_IMG_TUNNEL_RAIL, STR_RAIL_TOOLBAR_TOOLTIP_BUILD_METRO_ENTRANCE),
 		NWidget(WWT_IMGBTN, COLOUR_DARK_GREEN, WID_RAT_REMOVE),
 						SetFill(0, 1), SetToolbarMinimalSize(1), SetSpriteTip(SPR_IMG_REMOVE, STR_RAIL_TOOLBAR_TOOLTIP_TOGGLE_BUILD_REMOVE_FOR),
 		NWidget(WWT_IMGBTN, COLOUR_DARK_GREEN, WID_RAT_CONVERT_RAIL),

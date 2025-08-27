@@ -57,7 +57,8 @@ extern const TileTypeProcs
 	_tile_type_void_procs,
 	_tile_type_industry_procs,
 	_tile_type_tunnelbridge_procs,
-	_tile_type_object_procs;
+	_tile_type_object_procs,
+	_tile_type_metro_entrance_procs;
 
 /**
  * Tile callback functions for each type of tile.
@@ -76,6 +77,7 @@ const TileTypeProcs * const _tile_type_procs[16] = {
 	&_tile_type_industry_procs,     ///< Callback functions for MP_INDUSTRY tiles
 	&_tile_type_tunnelbridge_procs, ///< Callback functions for MP_TUNNELBRIDGE tiles
 	&_tile_type_object_procs,       ///< Callback functions for MP_OBJECT tiles
+	&_tile_type_metro_entrance_procs,       ///< Callback functions for MP_OBJECT tiles
 };
 
 /** landscape slope => sprite */
@@ -424,7 +426,7 @@ bool HasFoundationNE(TileIndex tile, Slope slope_here, uint z_here)
  * @param ti Tile to draw foundation on
  * @param f  Foundation to draw
  */
-void DrawFoundation(TileInfo *ti, Foundation f)
+void DrawFoundation(TileInfo *ti, Foundation f, bool draw_underground)
 {
 	if (!IsFoundation(f)) return;
 
@@ -452,7 +454,7 @@ void DrawFoundation(TileInfo *ti, Foundation f)
 		if (!IsNonContinuousFoundation(f)) {
 			/* Lower part of foundation */
 			static constexpr SpriteBounds bounds{{}, {TILE_SIZE, TILE_SIZE, TILE_HEIGHT - 1}, {}};
-			AddSortableSpriteToDraw(leveled_base + (ti->tileh & ~SLOPE_STEEP), PAL_NONE, *ti, bounds);
+			AddSortableSpriteToDraw(leveled_base + (ti->tileh & ~SLOPE_STEEP), PAL_NONE, *ti, bounds, false, nullptr, draw_underground);
 		}
 
 		Corner highest_corner = GetHighestSlopeCorner(ti->tileh);
@@ -465,11 +467,11 @@ void DrawFoundation(TileInfo *ti, Foundation f)
 			SpriteBounds bounds{{}, {1, 1, TILE_HEIGHT}, {}};
 			if (f == FOUNDATION_INCLINED_X) bounds.extent.x = TILE_SIZE;
 			if (f == FOUNDATION_INCLINED_Y) bounds.extent.y = TILE_SIZE;
-			AddSortableSpriteToDraw(inclined_base + inclined, PAL_NONE, *ti, bounds);
+			AddSortableSpriteToDraw(inclined_base + inclined, PAL_NONE, *ti, bounds, false, nullptr, draw_underground);
 			OffsetGroundSprite(0, 0);
 		} else if (IsLeveledFoundation(f)) {
 			static constexpr SpriteBounds bounds{{0, 0, -(int)TILE_HEIGHT}, {TILE_SIZE, TILE_SIZE, TILE_HEIGHT - 1}, {}};
-			AddSortableSpriteToDraw(leveled_base + SlopeWithOneCornerRaised(highest_corner), PAL_NONE, *ti, bounds);
+			AddSortableSpriteToDraw(leveled_base + SlopeWithOneCornerRaised(highest_corner), PAL_NONE, *ti, bounds, false, nullptr, draw_underground);
 			OffsetGroundSprite(0, -(int)TILE_HEIGHT);
 		} else if (f == FOUNDATION_STEEP_LOWER) {
 			/* one corner raised */
@@ -480,7 +482,7 @@ void DrawFoundation(TileInfo *ti, Foundation f)
 			int8_t y_bb = (((highest_corner == CORNER_S) || (highest_corner == CORNER_E)) ? TILE_SIZE / 2 : 0);
 
 			SpriteBounds bounds{{x_bb, y_bb, TILE_HEIGHT}, {TILE_SIZE / 2, TILE_SIZE / 2, TILE_HEIGHT - 1}, {}};
-			AddSortableSpriteToDraw(halftile_base + highest_corner, PAL_NONE, *ti, bounds);
+			AddSortableSpriteToDraw(halftile_base + highest_corner, PAL_NONE, *ti, bounds, false, nullptr, draw_underground);
 			/* Reposition ground sprite back to original position after bounding box change above. This is similar to
 			 * RemapCoords() but without zoom scaling. */
 			Point pt = {(y_bb - x_bb) * 2, y_bb + x_bb};
@@ -490,7 +492,7 @@ void DrawFoundation(TileInfo *ti, Foundation f)
 		if (IsLeveledFoundation(f)) {
 			/* leveled foundation */
 			static constexpr SpriteBounds bounds{{}, {TILE_SIZE, TILE_SIZE, TILE_HEIGHT - 1}, {}};
-			AddSortableSpriteToDraw(leveled_base + ti->tileh, PAL_NONE, *ti, bounds);
+			AddSortableSpriteToDraw(leveled_base + ti->tileh, PAL_NONE, *ti, bounds, false, nullptr, draw_underground);
 			OffsetGroundSprite(0, -(int)TILE_HEIGHT);
 		} else if (IsNonContinuousFoundation(f)) {
 			/* halftile foundation */
@@ -499,7 +501,7 @@ void DrawFoundation(TileInfo *ti, Foundation f)
 			int8_t y_bb = (((halftile_corner == CORNER_S) || (halftile_corner == CORNER_E)) ? TILE_SIZE / 2 : 0);
 
 			SpriteBounds bounds{{x_bb, y_bb, 0}, {TILE_SIZE / 2, TILE_SIZE / 2, TILE_HEIGHT - 1}, {}};
-			AddSortableSpriteToDraw(halftile_base + halftile_corner, PAL_NONE, *ti, bounds);
+			AddSortableSpriteToDraw(halftile_base + halftile_corner, PAL_NONE, *ti, bounds, false, nullptr, draw_underground);
 			/* Reposition ground sprite back to original position after bounding box change above. This is similar to
 			 * RemapCoords() but without zoom scaling. */
 			Point pt = {(y_bb - x_bb) * 2, y_bb + x_bb};
@@ -515,7 +517,7 @@ void DrawFoundation(TileInfo *ti, Foundation f)
 				spr = inclined_base + 2 * GetRailFoundationCorner(f) + ((ti->tileh == SLOPE_SW || ti->tileh == SLOPE_NE) ? 1 : 0);
 			}
 			static constexpr SpriteBounds bounds{{}, {TILE_SIZE, TILE_SIZE, TILE_HEIGHT - 1}, {}};
-			AddSortableSpriteToDraw(spr, PAL_NONE, *ti, bounds);
+			AddSortableSpriteToDraw(spr, PAL_NONE, *ti, bounds, false, nullptr, draw_underground);
 			OffsetGroundSprite(0, 0);
 		} else {
 			/* inclined foundation */
@@ -524,7 +526,7 @@ void DrawFoundation(TileInfo *ti, Foundation f)
 			SpriteBounds bounds{{}, {1, 1, TILE_HEIGHT}, {}};
 			if (f == FOUNDATION_INCLINED_X) bounds.extent.x = TILE_SIZE;
 			if (f == FOUNDATION_INCLINED_Y) bounds.extent.y = TILE_SIZE;
-			AddSortableSpriteToDraw(inclined_base + inclined, PAL_NONE, *ti, bounds);
+			AddSortableSpriteToDraw(inclined_base + inclined, PAL_NONE, *ti, bounds, false, nullptr, draw_underground);
 			OffsetGroundSprite(0, 0);
 		}
 		ti->z += ApplyPixelFoundationToSlope(f, ti->tileh);

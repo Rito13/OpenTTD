@@ -31,6 +31,7 @@ enum RailToolbarWidgets : WidgetID {
 	WID_RAT_BUILD_SIGNALS,  ///< Build signals.
 	WID_RAT_BUILD_BRIDGE,   ///< Build a bridge.
 	WID_RAT_BUILD_TUNNEL,   ///< Build a tunnel.
+	WID_RAT_BUILD_METRO_ENTRANCE, ///< Build a metro entrance.
 	WID_RAT_REMOVE,         ///< Bulldozer to remove rail.
 	WID_RAT_CONVERT_RAIL,   ///< Convert other rail to this type.
 

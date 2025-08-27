@@ -30,11 +30,13 @@ enum TransparencyOption : uint8_t {
 	TO_STRUCTURES, ///< other objects such as transmitters and lighthouses
 	TO_CATENARY,   ///< catenary
 	TO_TEXT,       ///< loading and cost/income text
+	TO_METRO,      ///< underground constructions will be visible if it is turned on
 	TO_END,
 	TO_INVALID,    ///< Invalid transparency option
 };
 
 typedef uint TransparencyOptionBits; ///< transparency option bits
+static_assert((sizeof(TransparencyOptionBits)*8) >= (TransparencyOption::TO_END-1));
 extern TransparencyOptionBits _transparency_opt;
 extern TransparencyOptionBits _transparency_lock;
 extern TransparencyOptionBits _invisibility_opt;

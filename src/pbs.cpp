@@ -12,6 +12,7 @@
 #include "vehicle_func.h"
 #include "newgrf_station.h"
 #include "pathfinder/follow_track.hpp"
+#include "metro_map.h"
 
 #include "safeguards.h"
 
@@ -45,6 +46,17 @@ TrackBits GetReservedTrackbits(TileIndex t)
 			break;
 	}
 	return TRACK_BIT_NONE;
+}
+
+/**
+ * Get the reserved metro trackbits for any tile, regardless of type.
+ * @param t the tile
+ * @return the reserved trackbits. TRACK_BIT_NONE on nothing reserved or
+ *     a tile without rail.
+ */
+TrackBits GetMetroReservedTrackbits(TileIndex t)
+{
+	return GetMetroRailReservationTrackBits(t);
 }
 
 /**

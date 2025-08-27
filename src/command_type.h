@@ -208,6 +208,7 @@ enum Commands : uint8_t {
 	CMD_BUILD_OBJECT,                 ///< build an object
 	CMD_BUILD_OBJECT_AREA,            ///< build an area of objects
 	CMD_BUILD_TUNNEL,                 ///< build a tunnel
+	CMD_BUILD_METRO_ENTRANCE,         ///< build a metro entrance
 
 	CMD_REMOVE_FROM_RAIL_STATION,     ///< remove a (rectangle of) tiles from a rail station
 	CMD_CONVERT_RAIL,                 ///< convert a rail type

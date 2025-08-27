@@ -588,6 +588,28 @@ inline bool HasOnewayMetroSignalBlockingTrackdir(Tile tile, Trackdir td)
             HasMetroSignalOnTrackdir(tile, ReverseTrackdir(td));
 }
 
-
+/**
+ * Makes a metro entrance
+ * @param t the entrance of the tunnel
+ * @param o the owner of the entrance
+ * @param d the direction facing out of the tunnel
+ * @param r the rail type used in the tunnel
+ */
+inline void MakeMetroEntrance(Tile t, Owner o, DiagDirection d, RailType r)
+{
+	SetTileType(t, MP_METRO_ENTRANCE);
+	SetTileOwner(t, o);
+	t.m2() = 0;
+	t.m3() = 0;
+	t.m4() = 0;
+	t.m5() = TRANSPORT_RAIL << 2 | d;
+	SB(t.m6(), 2, 4, 0);
+	t.m7() = 0;
+	SetRailType(t, r);
+    t.m8() = 0;
+    SetMetroRailType(t, r);
+	SetMetroTileOwner(t, o);
+    SetMetroTrackBits(t, DiagDirToDiagTrackBits(d));
+}
 
 #endif /* METRO_MAP_H */

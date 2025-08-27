@@ -26,6 +26,7 @@ CommandCost CmdRemoveSingleSignal(DoCommandFlags flags, TileIndex tile, Track tr
 CommandCost CmdConvertRail(DoCommandFlags flags, TileIndex tile, TileIndex area_start, RailType totype, bool diagonal);
 CommandCost CmdBuildSignalTrack(DoCommandFlags flags, TileIndex tile, TileIndex end_tile, Track track, SignalType sigtype, SignalVariant sigvar, bool mode, bool autofill, bool minimise_gaps, uint8_t signal_density);
 CommandCost CmdRemoveSignalTrack(DoCommandFlags flags, TileIndex tile, TileIndex end_tile, Track track, bool autofill);
+CommandCost CmdBuildMetroEntrance(DoCommandFlags flags, TileIndex start_tile, TransportType transport_type, uint8_t road_rail_type);
 
 DEF_CMD_TRAIT(CMD_BUILD_RAILROAD_TRACK,  CmdBuildRailroadTrack,  CommandFlags({CommandFlag::Auto, CommandFlag::NoWater}), CMDT_LANDSCAPE_CONSTRUCTION)
 DEF_CMD_TRAIT(CMD_REMOVE_RAILROAD_TRACK, CmdRemoveRailroadTrack, CommandFlag::Auto,                CMDT_LANDSCAPE_CONSTRUCTION)
@@ -37,10 +38,13 @@ DEF_CMD_TRAIT(CMD_REMOVE_SINGLE_SIGNAL,  CmdRemoveSingleSignal,  CommandFlag::Au
 DEF_CMD_TRAIT(CMD_CONVERT_RAIL,          CmdConvertRail,         {},                               CMDT_LANDSCAPE_CONSTRUCTION)
 DEF_CMD_TRAIT(CMD_BUILD_SIGNAL_TRACK,    CmdBuildSignalTrack,    CommandFlag::Auto,                CMDT_LANDSCAPE_CONSTRUCTION)
 DEF_CMD_TRAIT(CMD_REMOVE_SIGNAL_TRACK,   CmdRemoveSignalTrack,   CommandFlag::Auto,                CMDT_LANDSCAPE_CONSTRUCTION)
+DEF_CMD_TRAIT(CMD_BUILD_METRO_ENTRANCE,  CmdBuildMetroEntrance,  CommandFlag::Auto,                CMDT_LANDSCAPE_CONSTRUCTION)
 
 CommandCallback CcPlaySound_CONSTRUCTION_RAIL;
 CommandCallback CcStation;
 CommandCallback CcBuildRailTunnel;
 void CcRailDepot(Commands cmd, const CommandCost &result, TileIndex tile, RailType rt, DiagDirection dir);
+
+void DrawMetroTile(TileInfo *ti);
 
 #endif /* RAIL_CMD_H */
