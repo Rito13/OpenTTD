@@ -18,12 +18,12 @@
 /**
  * Checks if this is a bridge, instead of a tunnel
  * @param t The tile to analyze
- * @pre IsTileType(t, MP_TUNNELBRIDGE)
+ * @pre IsTileType(t, MP_TUNNELBRIDGE) || IsTileType(t, MP_METRO_ENTRANCE)
  * @return true if the structure is a bridge one
  */
 inline bool IsBridge(Tile t)
 {
-	assert(IsTileType(t, MP_TUNNELBRIDGE));
+	assert(IsTileType(t, MP_TUNNELBRIDGE) || IsTileType(t, MP_METRO_ENTRANCE));
 	return HasBit(t.m5(), 7);
 }
 
@@ -34,7 +34,7 @@ inline bool IsBridge(Tile t)
  */
 inline bool IsBridgeTile(Tile t)
 {
-	return IsTileType(t, MP_TUNNELBRIDGE) && IsBridge(t);
+	return (IsTileType(t, MP_TUNNELBRIDGE) || IsTileType(t, MP_METRO_ENTRANCE)) && IsBridge(t);
 }
 
 /**

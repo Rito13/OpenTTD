@@ -2127,3 +2127,21 @@ extern const TileTypeProcs _tile_type_tunnelbridge_procs = {
 	TerraformTile_TunnelBridge,      // terraform_tile_proc
 	CheckBuildAbove_TunnelBridge, // check_build_above_proc
 };
+
+extern const TileTypeProcs _tile_type_metro_entrance_procs = {
+	DrawTile_TunnelBridge,           // draw_tile_proc
+	GetSlopePixelZ_TunnelBridge,     // get_slope_z_proc
+	ClearTile_TunnelBridge,          // clear_tile_proc
+	nullptr,                            // add_accepted_cargo_proc
+	GetTileDesc_TunnelBridge,        // get_tile_desc_proc
+	GetTileTrackStatus_TunnelBridge, // get_tile_track_status_proc
+	nullptr,                            // click_tile_proc
+	nullptr,                            // animate_tile_proc
+	TileLoop_TunnelBridge,           // tile_loop_proc
+	ChangeTileOwner_TunnelBridge,    // change_tile_owner_proc
+	nullptr,                            // add_produced_cargo_proc
+	VehicleEnter_TunnelBridge,       // vehicle_enter_tile_proc
+	GetFoundation_TunnelBridge,      // get_foundation_proc
+	TerraformTile_TunnelBridge,      // terraform_tile_proc
+	CheckBuildAbove_TunnelBridge, // check_build_above_proc
+};

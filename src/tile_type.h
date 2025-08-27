@@ -56,7 +56,8 @@ enum TileType : uint8_t {
 	MP_INDUSTRY,            ///< Part of an industry
 	MP_TUNNELBRIDGE,        ///< Tunnel entry/exit and bridge heads
 	MP_OBJECT,              ///< Contains objects such as transmitters and owned land
-	MP_INDUSTRY_TYPE_2 = 12,///< Same as MP_INDUSTRY but used to store last bit of metro owner
+	MP_METRO_ENTRANCE,      ///< Metro entance, uses same sprites as tunel entrance
+	MP_INDUSTRY_TYPE_2,     ///< Same as MP_INDUSTRY but used to store last bit of metro owner
 };
 
 static_assert((MP_INDUSTRY ^ 0b0100) == MP_INDUSTRY_TYPE_2); ///< There should be only one bit difference

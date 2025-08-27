@@ -34,6 +34,8 @@
 #include "rail_cmd.h"
 #include "landscape_cmd.h"
 #include "metro_map.h"
+#include "tunnelbridge_cmd.h"
+#include "tunnelbridge_map.h"
 
 #include "table/strings.h"
 #include "table/railtypes.h"
@@ -483,6 +485,10 @@ CommandCost CmdBuildSingleRail(DoCommandFlags flags, TileIndex tile, RailType ra
 		Owner owner = GetMetroTileOwner(tile);
 		CommandCost ret;
 
+		if(IsTileType(tile, MP_METRO_ENTRANCE)) {
+			return CommandCost(STR_ERROR_IMPOSSIBLE_TRACK_COMBINATION);
+		}
+
 		switch(owner.base()) {
 			case OWNER_TOWN.base():
 			case OWNER_NONE.base():
@@ -498,7 +504,9 @@ CommandCost CmdBuildSingleRail(DoCommandFlags flags, TileIndex tile, RailType ra
 
 		if (!IsMetroTile(tile)) return Command<CMD_LANDSCAPE_CLEAR>::Do(flags, tile); // just get appropriate error message
 
-		if (!IsCompatibleRail(GetMetroRailType(tile), railtype)) return CommandCost(STR_ERROR_IMPOSSIBLE_TRACK_COMBINATION);
+		if(GetMetroTrackBits(tile) != TRACK_BIT_NONE) {
+			if (!IsCompatibleRail(GetMetroRailType(tile), railtype)) return CommandCost(STR_ERROR_IMPOSSIBLE_TRACK_COMBINATION);
+		}
 
 		ret = CheckMetroTrackCombination(tile, trackbit);
 		if (ret.Succeeded()) ret = EnsureNoTrainOnTrack(tile, track);
@@ -524,14 +532,18 @@ CommandCost CmdBuildSingleRail(DoCommandFlags flags, TileIndex tile, RailType ra
 		/* If the rail types don't match, try to convert only if engines of
 		* the new rail type are not powered on the present rail type and engines of
 		* the present rail type are powered on the new rail type. */
-		if (GetMetroRailType(tile) != railtype && !HasPowerOnRail(railtype, GetMetroRailType(tile))) {
-			if (HasPowerOnRail(GetMetroRailType(tile), railtype)) {
-				ret = Command<CMD_CONVERT_RAIL>::Do(flags, tile, tile, railtype, false);
-				if (ret.Failed()) return ret;
-				cost.AddCost(ret.GetCost());
-			} else {
-				return CMD_ERROR;
+		if (GetMetroTrackBits(tile) != TRACK_BIT_NONE) {
+			if (GetMetroRailType(tile) != railtype && !HasPowerOnRail(railtype, GetMetroRailType(tile))) {
+				if (HasPowerOnRail(GetMetroRailType(tile), railtype)) {
+					ret = Command<CMD_CONVERT_RAIL>::Do(flags, tile, tile, railtype, false);
+					if (ret.Failed()) return ret;
+					cost.AddCost(ret.GetCost());
+				} else {
+					return CMD_ERROR;
+				}
 			}
+		} else if (flags.Test(DoCommandFlag::Execute)) {
+			SetMetroRailType(tile, railtype);
 		}
 
 		if (flags.Test(DoCommandFlag::Execute)) {
@@ -540,11 +552,11 @@ CommandCost CmdBuildSingleRail(DoCommandFlags flags, TileIndex tile, RailType ra
 			/* Subtract old infrastructure count. */
 			uint pieces = CountBits(bits);
 			if (TracksOverlap(bits)) pieces *= pieces;
-			Company::Get(owner)->infrastructure.rail[GetRailType(tile)] -= pieces;
+			Company::Get(owner)->infrastructure.rail[GetMetroRailType(tile)] -= pieces;
 			/* Add new infrastructure count. */
 			pieces = CountBits(bits | trackbit);
 			if (TracksOverlap(bits | trackbit)) pieces *= pieces;
-			Company::Get(owner)->infrastructure.rail[GetRailType(tile)] += pieces;
+			Company::Get(owner)->infrastructure.rail[GetMetroRailType(tile)] += pieces;
 			DirtyCompanyInfrastructureWindows(owner);
 		}
 	} else {
@@ -750,9 +762,10 @@ CommandCost CmdRemoveSingleRail(DoCommandFlags flags, TileIndex tile, Track trac
 		owner = GetMetroTileOwner(tile);
 		CommandCost ret;
 
-		/* There are no rails present at depots. */
-		if (!IsMetroTile(tile)) return CommandCost(STR_ERROR_THERE_IS_NO_RAILROAD_TRACK);
-		if (owner == OWNER_NONE) return CommandCost(STR_ERROR_THERE_IS_NO_RAILROAD_TRACK);
+		/* There are no rails present at entrance. */
+		if (!IsMetroTile(tile) || (owner == OWNER_NONE) || IsTileType(tile, MP_METRO_ENTRANCE)) {
+			return CommandCost(STR_ERROR_THERE_IS_NO_RAILROAD_TRACK);
+		}
 
 		if (_current_company != OWNER_WATER) {
 			assert(owner != OWNER_TOWN);
@@ -1623,6 +1636,66 @@ static CommandCost CmdSignalTrackHelper(DoCommandFlags flags, TileIndex tile, Ti
 CommandCost CmdBuildSignalTrack(DoCommandFlags flags, TileIndex tile, TileIndex end_tile, Track track, SignalType sigtype, SignalVariant sigvar, bool mode, bool autofill, bool minimise_gaps, uint8_t signal_density)
 {
 	return CmdSignalTrackHelper(flags, tile, end_tile, track, sigtype, sigvar, mode, false, autofill, minimise_gaps, signal_density);
+}
+
+/**
+ * Build Metro Entrance.
+ * @param flags type of operation
+ * @param start_tile start tile of tunnel
+ * @param transport_type transport type
+ * @param road_rail_type railtype or roadtype
+ * @return the cost of this operation or an error
+ */
+CommandCost CmdBuildMetroEntrance(DoCommandFlags flags, TileIndex start_tile, TransportType transport_type, uint8_t road_rail_type)
+{
+	CompanyID company = _current_company;
+
+	_build_tunnel_endtile = start_tile;
+
+	if(transport_type != TRANSPORT_RAIL) {
+		return CMD_ERROR;
+	}
+
+	if(GetMetroTrackBits(start_tile) != 0) {
+		/* Metro exists under this tile. Needs to be destroyed first */
+		return CommandCost(STR_ERROR_UNABLE_TO_EXCAVATE_LAND);
+	}
+
+	RailType railtype = (RailType)road_rail_type;
+	if (!ValParamRailType(railtype)) return CMD_ERROR;
+
+	auto [start_tileh, start_z] = GetTileSlopeZ(start_tile);
+	DiagDirection direction = GetInclinedSlopeDirection(start_tileh);
+	if (direction == INVALID_DIAGDIR) return CommandCost(STR_ERROR_SITE_UNSUITABLE_FOR_TUNNEL);
+
+	if (HasTileWaterGround(start_tile)) return CommandCost(STR_ERROR_CAN_T_BUILD_ON_WATER);
+
+	CommandCost ret = Command<CMD_LANDSCAPE_CLEAR>::Do(flags, start_tile);
+	if (ret.Failed()) return ret;
+
+	/* Number of tiles from start of tunnel */
+	int tiles = 0;
+
+	CommandCost cost(EXPENSES_CONSTRUCTION);
+
+	/* Add the cost of the entrance */
+	cost.AddCost(_price[PR_BUILD_TUNNEL]);
+	cost.AddCost(ret.GetCost());
+
+	/* Pay for the rail/road in the tunnel including entrances */
+	cost.AddCost((tiles + 2) * RailBuildCost(railtype));
+
+	if (flags.Test(DoCommandFlag::Execute)) {
+		Company *c = Company::GetIfValid(company);
+		uint num_pieces = (tiles + 2) * TUNNELBRIDGE_TRACKBIT_FACTOR;
+		if (c != nullptr) c->infrastructure.rail[railtype] += num_pieces;
+		MakeMetroEntrance(start_tile, company, direction, railtype);
+		AddSideToSignalBuffer(start_tile, direction, company);
+		YapfNotifyTrackLayoutChange(start_tile, DiagDirToDiagTrack(direction));
+		DirtyCompanyInfrastructureWindows(company);
+	}
+
+	return cost;
 }
 
 /**
@@ -2707,6 +2780,381 @@ static void DrawTile_Track(TileInfo *ti)
 		/* Depots can't have bridges above so no blocked pillars. */
 	}
 	DrawBridgeMiddle(ti, blocked_pillars);
+}
+
+// /**
+// * Draws metro entrance tile.
+// * @param ti TileInfo of the structure to draw
+// * <ul><li>Bit 0: direction</li>
+// * <li>Bit 1: northern or southern heads</li>
+// * <li>Bit 2: Set if the bridge head is sloped</li>
+// * <li>Bit 3 and more: Railtype Specific subset</li>
+// * </ul>
+// * Please note that in this code, "roads" are treated as railtype 1, whilst the real railtypes are 0, 2 and 3
+// */
+// static void DrawTile_MetroEntrance(TileInfo *ti)
+// {
+// 	TransportType transport_type = GetTunnelBridgeTransportType(ti->tile);
+// 	DiagDirection tunnelbridge_direction = GetTunnelBridgeDirection(ti->tile);
+
+// 	if (IsTunnel(ti->tile)) {
+// 		/* Front view of tunnel bounding boxes:
+// 		*
+// 		*   122223  <- BB_Z_SEPARATOR
+// 		*   1    3
+// 		*   1    3                1,3 = empty helper BB
+// 		*   1    3                  2 = SpriteCombine of tunnel-roof and catenary (tram & elrail)
+// 		*
+// 		*/
+
+// 		/* Tunnel sprites are positioned at 15,15, but the bounding box covers most of the tile. */
+// 		static constexpr SpriteBounds roof_bounds[DIAGDIR_END] = {
+// 			{{0, 1, BB_Z_SEPARATOR}, {TILE_SIZE, TILE_SIZE - 1, 1}, {TILE_SIZE - 1, TILE_SIZE - 2, -BB_Z_SEPARATOR}}, // NE
+// 			{{1, 0, BB_Z_SEPARATOR}, {TILE_SIZE - 1, TILE_SIZE, 1}, {TILE_SIZE - 2, TILE_SIZE - 1, -BB_Z_SEPARATOR}}, // SE
+// 			{{0, 1, BB_Z_SEPARATOR}, {TILE_SIZE, TILE_SIZE - 1, 1}, {TILE_SIZE - 1, TILE_SIZE - 2, -BB_Z_SEPARATOR}}, // SW
+// 			{{1, 0, BB_Z_SEPARATOR}, {TILE_SIZE - 1, TILE_SIZE, 1}, {TILE_SIZE - 2, TILE_SIZE - 1, -BB_Z_SEPARATOR}}, // NW
+// 		};
+
+// 		/* Catenary sprites are positioned at 0,0, with the same bounding box as above. */
+// 		static constexpr SpriteBounds catenary_bounds[DIAGDIR_END] = {
+// 			{{0, 1, BB_Z_SEPARATOR}, {TILE_SIZE, TILE_SIZE - 1, 1}, {0, -1, -BB_Z_SEPARATOR}}, // NE
+// 			{{1, 0, BB_Z_SEPARATOR}, {TILE_SIZE - 1, TILE_SIZE, 1}, {-1, 0, -BB_Z_SEPARATOR}}, // SE
+// 			{{0, 1, BB_Z_SEPARATOR}, {TILE_SIZE, TILE_SIZE - 1, 1}, {0, -1, -BB_Z_SEPARATOR}}, // SW
+// 			{{1, 0, BB_Z_SEPARATOR}, {TILE_SIZE - 1, TILE_SIZE, 1}, {-1, 0, -BB_Z_SEPARATOR}}, // NW
+// 		};
+
+// 		static constexpr SpriteBounds rear_sep[DIAGDIR_END] = {
+// 			{{}, {TILE_SIZE, 1, TILE_HEIGHT}, {}}, // NE
+// 			{{}, {1, TILE_SIZE, TILE_HEIGHT}, {}}, // SE
+// 			{{}, {TILE_SIZE, 1, TILE_HEIGHT}, {}}, // SW
+// 			{{}, {1, TILE_SIZE, TILE_HEIGHT}, {}}, // NW
+// 		};
+
+// 		static constexpr SpriteBounds front_sep[DIAGDIR_END] = {
+// 			{{0, TILE_SIZE - 1, 0}, {TILE_SIZE, 1, TILE_HEIGHT}, {}}, // NE
+// 			{{TILE_SIZE - 1, 0, 0}, {1, TILE_SIZE, TILE_HEIGHT}, {}}, // SE
+// 			{{0, TILE_SIZE - 1, 0}, {TILE_SIZE, 1, TILE_HEIGHT}, {}}, // SW
+// 			{{TILE_SIZE - 1, 0, 0}, {1, TILE_SIZE, TILE_HEIGHT}, {}}, // NW
+// 		};
+
+// 		bool catenary = false;
+
+// 		SpriteID image;
+// 		SpriteID railtype_overlay = 0;
+
+// 		const RailTypeInfo *rti = GetRailTypeInfo(GetRailType(ti->tile));
+// 		image = rti->base_sprites.tunnel;
+// 		if (rti->UsesOverlay()) {
+// 			/* Check if the railtype has custom tunnel portals. */
+// 			railtype_overlay = GetCustomRailSprite(rti, ti->tile, RTSG_TUNNEL_PORTAL);
+// 			if (railtype_overlay != 0) image = SPR_RAILTYPE_TUNNEL_BASE; // Draw blank grass tunnel base.
+// 		}
+
+// 		if (HasTunnelBridgeSnowOrDesert(ti->tile)) image += railtype_overlay != 0 ? 8 : 32;
+
+// 		image += tunnelbridge_direction * 2;
+// 		DrawGroundSprite(image, PAL_NONE);
+
+// 		if (rti->UsesOverlay()) {
+// 			SpriteID surface = GetCustomRailSprite(rti, ti->tile, RTSG_TUNNEL);
+// 			if (surface != 0) DrawGroundSprite(surface + tunnelbridge_direction, PAL_NONE);
+// 		}
+
+// 		/* PBS debugging, draw reserved tracks darker */
+// 		if (_game_mode != GM_MENU && _settings_client.gui.show_track_reservation && HasTunnelBridgeReservation(ti->tile)) {
+// 			if (rti->UsesOverlay()) {
+// 				SpriteID overlay = GetCustomRailSprite(rti, ti->tile, RTSG_OVERLAY);
+// 				DrawGroundSprite(overlay + RTO_X + DiagDirToAxis(tunnelbridge_direction), PALETTE_CRASH);
+// 			} else {
+// 				DrawGroundSprite(DiagDirToAxis(tunnelbridge_direction) == AXIS_X ? rti->base_sprites.single_x : rti->base_sprites.single_y, PALETTE_CRASH);
+// 			}
+// 		}
+
+// 		if (HasRailCatenaryDrawn(GetRailType(ti->tile))) {
+// 			/* Maybe draw pylons on the entry side */
+// 			DrawRailCatenary(ti);
+
+// 			catenary = true;
+// 			StartSpriteCombine();
+// 			/* Draw wire above the ramp */
+// 			DrawRailCatenaryOnTunnel(ti);
+// 		}
+
+// 		if (railtype_overlay != 0 && !catenary) StartSpriteCombine();
+
+// 		AddSortableSpriteToDraw(image + 1, PAL_NONE, *ti, roof_bounds[tunnelbridge_direction], false);
+// 		/* Draw railtype tunnel portal overlay if defined. */
+// 		if (railtype_overlay != 0) AddSortableSpriteToDraw(railtype_overlay + tunnelbridge_direction, PAL_NONE, *ti, roof_bounds[tunnelbridge_direction], false);
+
+// 		if (catenary || railtype_overlay != 0) EndSpriteCombine();
+
+// 		/* Add helper BB for sprite sorting that separates the tunnel from things beside of it. */
+// 		AddSortableSpriteToDraw(SPR_EMPTY_BOUNDING_BOX, PAL_NONE, *ti, rear_sep[tunnelbridge_direction]);
+// 		AddSortableSpriteToDraw(SPR_EMPTY_BOUNDING_BOX, PAL_NONE, *ti, front_sep[tunnelbridge_direction]);
+
+// 		DrawBridgeMiddle(ti, BridgePillarFlag::EdgeNE + tunnelbridge_direction);
+// 	}
+// }
+
+static void DrawMetroTrackBitsOverlay(TileInfo *ti, TrackBits track, const RailTypeInfo *rti)
+{
+	bool is_entrance = IsTileType(ti->tile, MP_METRO_ENTRANCE);
+	Slope tileh = is_entrance ? SLOPE_FLAT : ti->tileh;
+
+	Foundation f = GetRailFoundation(tileh, track);
+	Corner halftile_corner = CORNER_INVALID;
+
+	if (IsNonContinuousFoundation(f)) {
+		/* Save halftile corner */
+		halftile_corner = (f == FOUNDATION_STEEP_BOTH ? GetHighestSlopeCorner(tileh) : GetHalftileFoundationCorner(f));
+		/* Draw lower part first */
+		track &= ~CornerToTrackBits(halftile_corner);
+		f = (f == FOUNDATION_STEEP_BOTH ? FOUNDATION_STEEP_LOWER : FOUNDATION_NONE);
+	}
+
+	DrawFoundation(ti, f, true);
+	/* DrawFoundation modifies ti */
+
+	/* Draw ground */
+	SpriteID image;
+	image = SPR_FLAT_BARE_LAND;
+	image += SlopeToSpriteOffset(tileh);
+	DrawGroundSprite(image, PAL_NONE, nullptr, 0, 0, true);
+
+	bool no_combine = tileh == SLOPE_FLAT && rti->flags.Test(RailTypeFlag::NoSpriteCombine);
+	SpriteID overlay = GetCustomRailSprite(rti, ti->tile, RTSG_OVERLAY);
+	SpriteID ground = GetCustomRailSprite(rti, ti->tile, no_combine ? RTSG_GROUND_COMPLETE : RTSG_GROUND);
+	TrackBits pbs = _settings_client.gui.show_track_reservation ? GetMetroRailReservationTrackBits(ti->tile) : TRACK_BIT_NONE;
+
+	if (track == TRACK_BIT_NONE) {
+		/* Half-tile foundation, no track here? */
+	} else if (no_combine) {
+		/* Use trackbits as direct index from ground sprite, subtract 1
+		 * because there is no sprite for no bits. */
+		DrawGroundSprite(ground + track - 1, PAL_NONE, nullptr, 0, 0, true);
+
+		/* Draw reserved track bits */
+		if (pbs & TRACK_BIT_X)     DrawGroundSprite(overlay + RTO_X, PALETTE_CRASH, nullptr, 0, 0, true);
+		if (pbs & TRACK_BIT_Y)     DrawGroundSprite(overlay + RTO_Y, PALETTE_CRASH, nullptr, 0, 0, true);
+		if (pbs & TRACK_BIT_UPPER) DrawTrackSprite(overlay + RTO_N, PALETTE_CRASH, ti, SLOPE_N);
+		if (pbs & TRACK_BIT_LOWER) DrawTrackSprite(overlay + RTO_S, PALETTE_CRASH, ti, SLOPE_S);
+		if (pbs & TRACK_BIT_RIGHT) DrawTrackSprite(overlay + RTO_E, PALETTE_CRASH, ti, SLOPE_E);
+		if (pbs & TRACK_BIT_LEFT)  DrawTrackSprite(overlay + RTO_W, PALETTE_CRASH, ti, SLOPE_W);
+	} else if (tileh == SLOPE_NW && track == TRACK_BIT_Y) {
+		DrawGroundSprite(ground + RTO_SLOPE_NW, PAL_NONE, nullptr, 0, 0, true);
+		if (pbs != TRACK_BIT_NONE) DrawGroundSprite(overlay + RTO_SLOPE_NW, PALETTE_CRASH, nullptr, 0, 0, true);
+	} else if (tileh == SLOPE_NE && track == TRACK_BIT_X) {
+		DrawGroundSprite(ground + RTO_SLOPE_NE, PAL_NONE, nullptr, 0, 0, true);
+		if (pbs != TRACK_BIT_NONE) DrawGroundSprite(overlay + RTO_SLOPE_NE, PALETTE_CRASH, nullptr, 0, 0, true);
+	} else if (tileh == SLOPE_SE && track == TRACK_BIT_Y) {
+		DrawGroundSprite(ground + RTO_SLOPE_SE, PAL_NONE, nullptr, 0, 0, true);
+		if (pbs != TRACK_BIT_NONE) DrawGroundSprite(overlay + RTO_SLOPE_SE, PALETTE_CRASH, nullptr, 0, 0, true);
+	} else if (tileh == SLOPE_SW && track == TRACK_BIT_X) {
+		DrawGroundSprite(ground + RTO_SLOPE_SW, PAL_NONE, nullptr, 0, 0, true);
+		if (pbs != TRACK_BIT_NONE) DrawGroundSprite(overlay + RTO_SLOPE_SW, PALETTE_CRASH, nullptr, 0, 0, true);
+	} else {
+		switch (track) {
+			/* Draw single ground sprite when not overlapping. No track overlay
+			 * is necessary for these sprites. */
+			case TRACK_BIT_X:     DrawGroundSprite(ground + RTO_X, PAL_NONE, nullptr, 0, 0, true); break;
+			case TRACK_BIT_Y:     DrawGroundSprite(ground + RTO_Y, PAL_NONE, nullptr, 0, 0, true); break;
+			case TRACK_BIT_UPPER: DrawTrackSprite(ground + RTO_N, PAL_NONE, ti, SLOPE_N); break;
+			case TRACK_BIT_LOWER: DrawTrackSprite(ground + RTO_S, PAL_NONE, ti, SLOPE_S); break;
+			case TRACK_BIT_RIGHT: DrawTrackSprite(ground + RTO_E, PAL_NONE, ti, SLOPE_E); break;
+			case TRACK_BIT_LEFT:  DrawTrackSprite(ground + RTO_W, PAL_NONE, ti, SLOPE_W); break;
+			case TRACK_BIT_CROSS: DrawGroundSprite(ground + RTO_CROSSING_XY, PAL_NONE, nullptr, 0, 0, true); break;
+			case TRACK_BIT_HORZ:  DrawTrackSprite(ground + RTO_N, PAL_NONE, ti, SLOPE_N);
+			                      DrawTrackSprite(ground + RTO_S, PAL_NONE, ti, SLOPE_S); break;
+			case TRACK_BIT_VERT:  DrawTrackSprite(ground + RTO_E, PAL_NONE, ti, SLOPE_E);
+			                      DrawTrackSprite(ground + RTO_W, PAL_NONE, ti, SLOPE_W); break;
+
+			default:
+				/* We're drawing a junction tile */
+				if ((track & TRACK_BIT_3WAY_NE) == 0) {
+					DrawGroundSprite(ground + RTO_JUNCTION_SW, PAL_NONE, nullptr, 0, 0, true);
+				} else if ((track & TRACK_BIT_3WAY_SW) == 0) {
+					DrawGroundSprite(ground + RTO_JUNCTION_NE, PAL_NONE, nullptr, 0, 0, true);
+				} else if ((track & TRACK_BIT_3WAY_NW) == 0) {
+					DrawGroundSprite(ground + RTO_JUNCTION_SE, PAL_NONE, nullptr, 0, 0, true);
+				} else if ((track & TRACK_BIT_3WAY_SE) == 0) {
+					DrawGroundSprite(ground + RTO_JUNCTION_NW, PAL_NONE, nullptr, 0, 0, true);
+				} else {
+					DrawGroundSprite(ground + RTO_JUNCTION_NSEW, PAL_NONE, nullptr, 0, 0, true);
+				}
+
+				/* Mask out PBS bits as we shall draw them afterwards anyway. */
+				track &= ~pbs;
+
+				/* Draw regular track bits */
+				if (track & TRACK_BIT_X)     DrawGroundSprite(overlay + RTO_X, PAL_NONE, nullptr, 0, 0, true);
+				if (track & TRACK_BIT_Y)     DrawGroundSprite(overlay + RTO_Y, PAL_NONE, nullptr, 0, 0, true);
+				if (track & TRACK_BIT_UPPER) DrawGroundSprite(overlay + RTO_N, PAL_NONE, nullptr, 0, 0, true);
+				if (track & TRACK_BIT_LOWER) DrawGroundSprite(overlay + RTO_S, PAL_NONE, nullptr, 0, 0, true);
+				if (track & TRACK_BIT_RIGHT) DrawGroundSprite(overlay + RTO_E, PAL_NONE, nullptr, 0, 0, true);
+				if (track & TRACK_BIT_LEFT)  DrawGroundSprite(overlay + RTO_W, PAL_NONE, nullptr, 0, 0, true);
+		}
+
+		/* Draw reserved track bits */
+		if (pbs & TRACK_BIT_X)     DrawGroundSprite(overlay + RTO_X, PALETTE_CRASH, nullptr, 0, 0, true);
+		if (pbs & TRACK_BIT_Y)     DrawGroundSprite(overlay + RTO_Y, PALETTE_CRASH, nullptr, 0, 0, true);
+		if (pbs & TRACK_BIT_UPPER) DrawTrackSprite(overlay + RTO_N, PALETTE_CRASH, ti, SLOPE_N);
+		if (pbs & TRACK_BIT_LOWER) DrawTrackSprite(overlay + RTO_S, PALETTE_CRASH, ti, SLOPE_S);
+		if (pbs & TRACK_BIT_RIGHT) DrawTrackSprite(overlay + RTO_E, PALETTE_CRASH, ti, SLOPE_E);
+		if (pbs & TRACK_BIT_LEFT)  DrawTrackSprite(overlay + RTO_W, PALETTE_CRASH, ti, SLOPE_W);
+	}
+
+	if (IsValidCorner(halftile_corner)) {
+		DrawFoundation(ti, HalftileFoundation(halftile_corner));
+		overlay = GetCustomRailSprite(rti, ti->tile, RTSG_OVERLAY, TCX_UPPER_HALFTILE);
+		ground = GetCustomRailSprite(rti, ti->tile, RTSG_GROUND, TCX_UPPER_HALFTILE);
+
+		/* Draw higher halftile-overlay: Use the sloped sprites with three corners raised. They probably best fit the lightning. */
+		Slope fake_slope = SlopeWithThreeCornersRaised(OppositeCorner(halftile_corner));
+
+		SpriteID image;
+		image = SPR_FLAT_BARE_LAND;
+
+		image += SlopeToSpriteOffset(fake_slope);
+
+		DrawGroundSprite(image, PAL_NONE, &(_halftile_sub_sprite[halftile_corner]), 0, 0, true);
+
+		track = CornerToTrackBits(halftile_corner);
+
+		int offset;
+		switch (track) {
+			default: NOT_REACHED();
+			case TRACK_BIT_UPPER: offset = RTO_N; break;
+			case TRACK_BIT_LOWER: offset = RTO_S; break;
+			case TRACK_BIT_RIGHT: offset = RTO_E; break;
+			case TRACK_BIT_LEFT:  offset = RTO_W; break;
+		}
+
+		DrawTrackSprite(ground + offset, PAL_NONE, ti, fake_slope);
+		if (_settings_client.gui.show_track_reservation && HasMetroReservedTracks(ti->tile, track)) {
+			DrawTrackSprite(overlay + offset, PALETTE_CRASH, ti, fake_slope);
+		}
+	}
+}
+
+void DrawMetroTile(TileInfo *ti)
+{
+	if (!IsMetroTile(ti->tile)) {
+		return;
+	}
+
+	bool is_entrance = IsTileType(ti->tile, MP_METRO_ENTRANCE);
+	Slope tileh = is_entrance ? SLOPE_FLAT : ti->tileh;
+
+	SpriteID image = SPR_FLAT_BARE_LAND;
+	const SubSprite *sub = nullptr;
+	image += SlopeToSpriteOffset(tileh);
+	DrawGroundSprite(image, PAL_NONE, nullptr, 0, 0, true);
+
+	TrackBits track = GetMetroTrackBits(ti->tile);
+	if(track == 0) return; ///< Do not draw rails if tile is empty
+	const RailTypeInfo *rti = GetRailTypeInfo(GetMetroRailType(ti->tile));
+
+	if(is_entrance)DrawFoundation(ti, FOUNDATION_LEVELED);
+
+	if (rti->UsesOverlay()) {
+		DrawMetroTrackBitsOverlay(ti, track, rti);
+		return;
+	}
+
+	PaletteID pal = GetCompanyPalette(GetMetroTileOwner(ti->tile));
+	Corner halftile_corner = CORNER_INVALID;
+	bool junction = false;
+
+	if (tileh != SLOPE_FLAT) {
+		/* track on non-flat ground */
+		image = _track_sloped_sprites[tileh - 1] + rti->base_sprites.track_y;
+	} else {
+		/* track on flat ground */
+		switch (track) {
+			/* single track, select combined track + ground sprite*/
+			case TRACK_BIT_Y:     image = rti->base_sprites.track_y;     break;
+			case TRACK_BIT_X:     image = rti->base_sprites.track_y + 1; break;
+			case TRACK_BIT_UPPER: image = rti->base_sprites.track_y + 2; break;
+			case TRACK_BIT_LOWER: image = rti->base_sprites.track_y + 3; break;
+			case TRACK_BIT_RIGHT: image = rti->base_sprites.track_y + 4; break;
+			case TRACK_BIT_LEFT:  image = rti->base_sprites.track_y + 5; break;
+			case TRACK_BIT_CROSS: image = rti->base_sprites.track_y + 6; break;
+
+			/* double diagonal track, select combined track + ground sprite*/
+			case TRACK_BIT_HORZ:  image = rti->base_sprites.track_ns;     break;
+			case TRACK_BIT_VERT:  image = rti->base_sprites.track_ns + 1; break;
+
+			/* junction, select only ground sprite, handle track sprite later */
+			default:
+				junction = true;
+				if ((track & TRACK_BIT_3WAY_NE) == 0) { image = rti->base_sprites.ground;     break; }
+				if ((track & TRACK_BIT_3WAY_SW) == 0) { image = rti->base_sprites.ground + 1; break; }
+				if ((track & TRACK_BIT_3WAY_NW) == 0) { image = rti->base_sprites.ground + 2; break; }
+				if ((track & TRACK_BIT_3WAY_SE) == 0) { image = rti->base_sprites.ground + 3; break; }
+				image = rti->base_sprites.ground + 4;
+				break;
+		}
+	}
+
+	pal = PALETTE_TO_BARE_LAND;
+
+	if (image != 0) DrawGroundSprite(image, pal, sub, 0, 0, true);
+
+	if (junction) {
+		if (track & TRACK_BIT_X)     DrawGroundSprite(rti->base_sprites.single_x, PAL_NONE, nullptr, 0, 0, true);
+		if (track & TRACK_BIT_Y)     DrawGroundSprite(rti->base_sprites.single_y, PAL_NONE, nullptr, 0, 0, true);
+		if (track & TRACK_BIT_UPPER) DrawGroundSprite(rti->base_sprites.single_n, PAL_NONE, nullptr, 0, 0, true);
+		if (track & TRACK_BIT_LOWER) DrawGroundSprite(rti->base_sprites.single_s, PAL_NONE, nullptr, 0, 0, true);
+		if (track & TRACK_BIT_LEFT)  DrawGroundSprite(rti->base_sprites.single_w, PAL_NONE, nullptr, 0, 0, true);
+		if (track & TRACK_BIT_RIGHT) DrawGroundSprite(rti->base_sprites.single_e, PAL_NONE, nullptr, 0, 0, true);
+	}
+
+	/* PBS debugging, draw reserved tracks darker */
+	if (_game_mode != GM_MENU && _settings_client.gui.show_track_reservation) {
+		/* Get reservation, but mask track on halftile slope */
+		TrackBits pbs = GetMetroRailReservationTrackBits(ti->tile) & track;
+		if (pbs & TRACK_BIT_X) {
+			if (tileh == SLOPE_FLAT || tileh == SLOPE_ELEVATED) {
+				DrawGroundSprite(rti->base_sprites.single_x, PALETTE_CRASH, nullptr, 0, 0, true);
+			} else {
+				DrawGroundSprite(_track_sloped_sprites[tileh - 1] + rti->base_sprites.single_sloped - 20, PALETTE_CRASH, nullptr, 0, 0, true);
+			}
+		}
+		if (pbs & TRACK_BIT_Y) {
+			if (tileh == SLOPE_FLAT || tileh == SLOPE_ELEVATED) {
+				DrawGroundSprite(rti->base_sprites.single_y, PALETTE_CRASH, nullptr, 0, 0, true);
+			} else {
+				DrawGroundSprite(_track_sloped_sprites[tileh - 1] + rti->base_sprites.single_sloped - 20, PALETTE_CRASH, nullptr, 0, 0, true);
+			}
+		}
+		if (pbs & TRACK_BIT_UPPER) DrawGroundSprite(rti->base_sprites.single_n, PALETTE_CRASH, nullptr, 0, tileh & SLOPE_N ? -(int)TILE_HEIGHT : 0, true);
+		if (pbs & TRACK_BIT_LOWER) DrawGroundSprite(rti->base_sprites.single_s, PALETTE_CRASH, nullptr, 0, tileh & SLOPE_S ? -(int)TILE_HEIGHT : 0, true);
+		if (pbs & TRACK_BIT_LEFT)  DrawGroundSprite(rti->base_sprites.single_w, PALETTE_CRASH, nullptr, 0, tileh & SLOPE_W ? -(int)TILE_HEIGHT : 0, true);
+		if (pbs & TRACK_BIT_RIGHT) DrawGroundSprite(rti->base_sprites.single_e, PALETTE_CRASH, nullptr, 0, tileh & SLOPE_E ? -(int)TILE_HEIGHT : 0, true);
+	}
+
+	if (IsValidCorner(halftile_corner)) {
+		DrawFoundation(ti, HalftileFoundation(halftile_corner));
+
+		/* Draw higher halftile-overlay: Use the sloped sprites with three corners raised. They probably best fit the lightning. */
+		Slope fake_slope = SlopeWithThreeCornersRaised(OppositeCorner(halftile_corner));
+		image = _track_sloped_sprites[fake_slope - 1] + rti->base_sprites.track_y;
+		pal = PALETTE_TO_BARE_LAND;
+		DrawGroundSprite(image, pal, &(_halftile_sub_sprite[halftile_corner]), 0, 0, true);
+
+		if (_game_mode != GM_MENU && _settings_client.gui.show_track_reservation && HasMetroReservedTracks(ti->tile, CornerToTrackBits(halftile_corner))) {
+			static const uint8_t _corner_to_track_sprite[] = {3, 1, 2, 0};
+			DrawGroundSprite(_corner_to_track_sprite[halftile_corner] + rti->base_sprites.single_n, PALETTE_CRASH, nullptr, 0, -(int)TILE_HEIGHT, true);
+		}
+	}
+
+	return;
+
+	if (HasBit(_display_opt, DO_FULL_DETAIL)) DrawTrackDetails(ti, rti, pal);
+
+	if (HasRailCatenaryDrawn(GetRailType(ti->tile))) DrawRailCatenary(ti);
+
+	if (HasSignals(ti->tile)) DrawSignals(ti->tile, track, rti);
 }
 
 void DrawTrainDepotSprite(int x, int y, int dir, RailType railtype)

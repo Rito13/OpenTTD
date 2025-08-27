@@ -16,6 +16,7 @@
 #include "vehicle_type.h"
 
 TrackBits GetReservedTrackbits(TileIndex t);
+TrackBits GetMetroReservedTrackbits(TileIndex t);
 
 void SetRailStationPlatformReservation(TileIndex start, DiagDirection dir, bool b);
 
@@ -58,6 +59,18 @@ Train *GetTrainForReservation(TileIndex tile, Track track);
 inline bool HasReservedTracks(TileIndex tile, TrackBits tracks)
 {
 	return (GetReservedTrackbits(tile) & tracks) != TRACK_BIT_NONE;
+}
+
+/**
+ * Check whether some of metro tracks is reserved on a tile.
+ *
+ * @param tile the tile
+ * @param tracks the tracks to test
+ * @return true if at least on of metro tracks is reserved
+ */
+inline bool HasMetroReservedTracks(TileIndex tile, TrackBits tracks)
+{
+	return (GetMetroReservedTrackbits(tile) & tracks) != TRACK_BIT_NONE;
 }
 
 #endif /* PBS_H */
