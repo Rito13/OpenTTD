@@ -40,6 +40,7 @@
 #include "tunnelbridge_cmd.h"
 #include "landscape_cmd.h"
 #include "terraform_cmd.h"
+#include "metro_map.h"
 
 #include "table/strings.h"
 #include "table/bridge_land.h"
@@ -853,7 +854,12 @@ static CommandCost DoClearTunnel(TileIndex tile, DoCommandFlags flags)
 	CommandCost ret = CheckAllowRemoveTunnelBridge(tile);
 	if (ret.Failed()) return ret;
 
-	TileIndex endtile = GetOtherTunnelEnd(tile);
+	TileIndex endtile = tile;
+	uint len = 1;
+	if(!IsTileType(tile, MP_METRO_ENTRANCE)) {
+		endtile = GetOtherTunnelEnd(tile);
+		len = GetTunnelBridgeLength(tile, endtile) + 2; // Don't forget the end tiles.
+	}
 
 	ret = TunnelBridgeIsFree(tile, endtile);
 	if (ret.Failed()) return ret;
@@ -877,9 +883,13 @@ static CommandCost DoClearTunnel(TileIndex tile, DoCommandFlags flags)
 	}
 
 	Money base_cost = TunnelBridgeClearCost(tile, PR_CLEAR_TUNNEL);
-	uint len = GetTunnelBridgeLength(tile, endtile) + 2; // Don't forget the end tiles.
 
 	if (flags.Test(DoCommandFlag::Execute)) {
+		if (IsTileType(tile, MP_METRO_ENTRANCE)) {
+			SetMetroTrackBits(tile, TRACK_BIT_NONE);
+			SetMetroTileOwner(tile, OWNER_NONE);
+		}
+
 		if (GetTunnelBridgeTransportType(tile) == TRANSPORT_RAIL) {
 			/* We first need to request values before calling DoClearSquare */
 			DiagDirection dir = GetTunnelBridgeDirection(tile);
@@ -1742,7 +1752,7 @@ static void GetTileDesc_TunnelBridge(TileIndex tile, TileDesc &td)
 	TransportType tt = GetTunnelBridgeTransportType(tile);
 
 	if (IsTunnel(tile)) {
-		td.str = (tt == TRANSPORT_RAIL) ? STR_LAI_TUNNEL_DESCRIPTION_RAILROAD : STR_LAI_TUNNEL_DESCRIPTION_ROAD;
+		td.str = (tt == TRANSPORT_RAIL) ? (IsTileType(tile, MP_METRO_ENTRANCE) ? STR_LAI_METRO_ENTRANCE_DESCRIPTION : STR_LAI_TUNNEL_DESCRIPTION_RAILROAD) : STR_LAI_TUNNEL_DESCRIPTION_ROAD;
 	} else { // IsBridge(tile)
 		td.str = (tt == TRANSPORT_WATER) ? STR_LAI_BRIDGE_DESCRIPTION_AQUEDUCT : GetBridgeSpec(GetBridgeType(tile))->transport_name[tt];
 	}
@@ -1892,6 +1902,26 @@ static void ChangeTileOwner_TunnelBridge(TileIndex tile, Owner old_owner, Owner 
 			/* In any other case, we can safely reassign the ownership to OWNER_NONE. */
 			SetTileOwner(tile, OWNER_NONE);
 		}
+	}
+}
+
+static void ChangeTileOwner_MetroEntance(TileIndex tile, Owner old_owner, Owner new_owner)
+{
+	if (!IsTileOwner(tile, old_owner)) return;
+
+	/* Update company infrastructure counts for rail and water as well.
+	 * No need to dirty windows here, we'll redraw the whole screen anyway. */
+	Company *old = Company::Get(old_owner);
+	old->infrastructure.rail[GetRailType(tile)] -= TUNNELBRIDGE_TRACKBIT_FACTOR;
+
+	if (new_owner != INVALID_OWNER) {
+		Company::Get(new_owner)->infrastructure.rail[GetRailType(tile)] += TUNNELBRIDGE_TRACKBIT_FACTOR;
+		SetTileOwner(tile, new_owner);
+		SetMetroTileOwner(tile, new_owner);
+	} else {
+		/* Since all of our vehicles have been removed, it is safe to remove the metro */
+		[[maybe_unused]] CommandCost ret = Command<CMD_LANDSCAPE_CLEAR>::Do({DoCommandFlag::Execute, DoCommandFlag::Bankrupt}, tile);
+		assert(ret.Succeeded());
 	}
 }
 
@@ -2138,7 +2168,7 @@ extern const TileTypeProcs _tile_type_metro_entrance_procs = {
 	nullptr,                            // click_tile_proc
 	nullptr,                            // animate_tile_proc
 	TileLoop_TunnelBridge,           // tile_loop_proc
-	ChangeTileOwner_TunnelBridge,    // change_tile_owner_proc
+	ChangeTileOwner_MetroEntance,    // change_tile_owner_proc
 	nullptr,                            // add_produced_cargo_proc
 	VehicleEnter_TunnelBridge,       // vehicle_enter_tile_proc
 	GetFoundation_TunnelBridge,      // get_foundation_proc

@@ -45,6 +45,7 @@ Owner GetMetroTileOwner(Tile tile)
             owner = (Owner)(GB(tile.m7(), 4, 4)-1);
             break;
         case MP_TUNNELBRIDGE:
+        case MP_METRO_ENTRANCE:
             owner = (Owner)(GB(tile.m2(), 12, 4)-1);
             break;
         case MP_STATION:
@@ -94,6 +95,7 @@ void SetMetroTileOwner(Tile tile, Owner owner)
             SB(tile.m7(), 4, 4, owner.base());
             break;
         case MP_TUNNELBRIDGE:
+        case MP_METRO_ENTRANCE:
             SB(tile.m2(), 12, 4, owner.base());
             break;
         case MP_STATION:
