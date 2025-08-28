@@ -3235,6 +3235,7 @@ STR_LAI_WATER_DESCRIPTION_SHIP_DEPOT                            :Ship depot
 
 STR_LAI_TUNNEL_DESCRIPTION_RAILROAD                             :Railway tunnel
 STR_LAI_TUNNEL_DESCRIPTION_ROAD                                 :Road tunnel
+STR_LAI_METRO_ENTRANCE_DESCRIPTION                              :Metro entrance
 
 STR_LAI_BRIDGE_DESCRIPTION_RAIL_SUSPENSION_STEEL                :Steel suspension rail bridge
 STR_LAI_BRIDGE_DESCRIPTION_RAIL_GIRDER_STEEL                    :Steel girder rail bridge

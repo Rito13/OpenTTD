@@ -1673,9 +1673,6 @@ CommandCost CmdBuildMetroEntrance(DoCommandFlags flags, TileIndex start_tile, Tr
 	CommandCost ret = Command<CMD_LANDSCAPE_CLEAR>::Do(flags, start_tile);
 	if (ret.Failed()) return ret;
 
-	/* Number of tiles from start of tunnel */
-	int tiles = 0;
-
 	CommandCost cost(EXPENSES_CONSTRUCTION);
 
 	/* Add the cost of the entrance */
@@ -1683,11 +1680,11 @@ CommandCost CmdBuildMetroEntrance(DoCommandFlags flags, TileIndex start_tile, Tr
 	cost.AddCost(ret.GetCost());
 
 	/* Pay for the rail/road in the tunnel including entrances */
-	cost.AddCost((tiles + 2) * RailBuildCost(railtype));
+	cost.AddCost(RailBuildCost(railtype));
 
 	if (flags.Test(DoCommandFlag::Execute)) {
 		Company *c = Company::GetIfValid(company);
-		uint num_pieces = (tiles + 2) * TUNNELBRIDGE_TRACKBIT_FACTOR;
+		uint num_pieces = TUNNELBRIDGE_TRACKBIT_FACTOR;
 		if (c != nullptr) c->infrastructure.rail[railtype] += num_pieces;
 		MakeMetroEntrance(start_tile, company, direction, railtype);
 		AddSideToSignalBuffer(start_tile, direction, company);
@@ -2299,9 +2296,9 @@ static const SubSprite _halftile_sub_sprite[4] = {
 	{ -INF    , -INF  , INF    , 30 - 23 }  // CORNER_N, clip 23 pixels from bottom
 };
 
-static inline void DrawTrackSprite(SpriteID sprite, PaletteID pal, const TileInfo *ti, Slope s)
+static inline void DrawTrackSprite(SpriteID sprite, PaletteID pal, const TileInfo *ti, Slope s, bool is_underground = false)
 {
-	DrawGroundSprite(sprite, pal, nullptr, 0, (ti->tileh & s) ? -8 : 0);
+	DrawGroundSprite(sprite, pal, nullptr, 0, (ti->tileh & s) ? -8 : 0, is_underground);
 }
 
 static void DrawTrackBitsOverlay(TileInfo *ti, TrackBits track, const RailTypeInfo *rti)
@@ -2782,124 +2779,10 @@ static void DrawTile_Track(TileInfo *ti)
 	DrawBridgeMiddle(ti, blocked_pillars);
 }
 
-// /**
-// * Draws metro entrance tile.
-// * @param ti TileInfo of the structure to draw
-// * <ul><li>Bit 0: direction</li>
-// * <li>Bit 1: northern or southern heads</li>
-// * <li>Bit 2: Set if the bridge head is sloped</li>
-// * <li>Bit 3 and more: Railtype Specific subset</li>
-// * </ul>
-// * Please note that in this code, "roads" are treated as railtype 1, whilst the real railtypes are 0, 2 and 3
-// */
-// static void DrawTile_MetroEntrance(TileInfo *ti)
-// {
-// 	TransportType transport_type = GetTunnelBridgeTransportType(ti->tile);
-// 	DiagDirection tunnelbridge_direction = GetTunnelBridgeDirection(ti->tile);
-
-// 	if (IsTunnel(ti->tile)) {
-// 		/* Front view of tunnel bounding boxes:
-// 		*
-// 		*   122223  <- BB_Z_SEPARATOR
-// 		*   1    3
-// 		*   1    3                1,3 = empty helper BB
-// 		*   1    3                  2 = SpriteCombine of tunnel-roof and catenary (tram & elrail)
-// 		*
-// 		*/
-
-// 		/* Tunnel sprites are positioned at 15,15, but the bounding box covers most of the tile. */
-// 		static constexpr SpriteBounds roof_bounds[DIAGDIR_END] = {
-// 			{{0, 1, BB_Z_SEPARATOR}, {TILE_SIZE, TILE_SIZE - 1, 1}, {TILE_SIZE - 1, TILE_SIZE - 2, -BB_Z_SEPARATOR}}, // NE
-// 			{{1, 0, BB_Z_SEPARATOR}, {TILE_SIZE - 1, TILE_SIZE, 1}, {TILE_SIZE - 2, TILE_SIZE - 1, -BB_Z_SEPARATOR}}, // SE
-// 			{{0, 1, BB_Z_SEPARATOR}, {TILE_SIZE, TILE_SIZE - 1, 1}, {TILE_SIZE - 1, TILE_SIZE - 2, -BB_Z_SEPARATOR}}, // SW
-// 			{{1, 0, BB_Z_SEPARATOR}, {TILE_SIZE - 1, TILE_SIZE, 1}, {TILE_SIZE - 2, TILE_SIZE - 1, -BB_Z_SEPARATOR}}, // NW
-// 		};
-
-// 		/* Catenary sprites are positioned at 0,0, with the same bounding box as above. */
-// 		static constexpr SpriteBounds catenary_bounds[DIAGDIR_END] = {
-// 			{{0, 1, BB_Z_SEPARATOR}, {TILE_SIZE, TILE_SIZE - 1, 1}, {0, -1, -BB_Z_SEPARATOR}}, // NE
-// 			{{1, 0, BB_Z_SEPARATOR}, {TILE_SIZE - 1, TILE_SIZE, 1}, {-1, 0, -BB_Z_SEPARATOR}}, // SE
-// 			{{0, 1, BB_Z_SEPARATOR}, {TILE_SIZE, TILE_SIZE - 1, 1}, {0, -1, -BB_Z_SEPARATOR}}, // SW
-// 			{{1, 0, BB_Z_SEPARATOR}, {TILE_SIZE - 1, TILE_SIZE, 1}, {-1, 0, -BB_Z_SEPARATOR}}, // NW
-// 		};
-
-// 		static constexpr SpriteBounds rear_sep[DIAGDIR_END] = {
-// 			{{}, {TILE_SIZE, 1, TILE_HEIGHT}, {}}, // NE
-// 			{{}, {1, TILE_SIZE, TILE_HEIGHT}, {}}, // SE
-// 			{{}, {TILE_SIZE, 1, TILE_HEIGHT}, {}}, // SW
-// 			{{}, {1, TILE_SIZE, TILE_HEIGHT}, {}}, // NW
-// 		};
-
-// 		static constexpr SpriteBounds front_sep[DIAGDIR_END] = {
-// 			{{0, TILE_SIZE - 1, 0}, {TILE_SIZE, 1, TILE_HEIGHT}, {}}, // NE
-// 			{{TILE_SIZE - 1, 0, 0}, {1, TILE_SIZE, TILE_HEIGHT}, {}}, // SE
-// 			{{0, TILE_SIZE - 1, 0}, {TILE_SIZE, 1, TILE_HEIGHT}, {}}, // SW
-// 			{{TILE_SIZE - 1, 0, 0}, {1, TILE_SIZE, TILE_HEIGHT}, {}}, // NW
-// 		};
-
-// 		bool catenary = false;
-
-// 		SpriteID image;
-// 		SpriteID railtype_overlay = 0;
-
-// 		const RailTypeInfo *rti = GetRailTypeInfo(GetRailType(ti->tile));
-// 		image = rti->base_sprites.tunnel;
-// 		if (rti->UsesOverlay()) {
-// 			/* Check if the railtype has custom tunnel portals. */
-// 			railtype_overlay = GetCustomRailSprite(rti, ti->tile, RTSG_TUNNEL_PORTAL);
-// 			if (railtype_overlay != 0) image = SPR_RAILTYPE_TUNNEL_BASE; // Draw blank grass tunnel base.
-// 		}
-
-// 		if (HasTunnelBridgeSnowOrDesert(ti->tile)) image += railtype_overlay != 0 ? 8 : 32;
-
-// 		image += tunnelbridge_direction * 2;
-// 		DrawGroundSprite(image, PAL_NONE);
-
-// 		if (rti->UsesOverlay()) {
-// 			SpriteID surface = GetCustomRailSprite(rti, ti->tile, RTSG_TUNNEL);
-// 			if (surface != 0) DrawGroundSprite(surface + tunnelbridge_direction, PAL_NONE);
-// 		}
-
-// 		/* PBS debugging, draw reserved tracks darker */
-// 		if (_game_mode != GM_MENU && _settings_client.gui.show_track_reservation && HasTunnelBridgeReservation(ti->tile)) {
-// 			if (rti->UsesOverlay()) {
-// 				SpriteID overlay = GetCustomRailSprite(rti, ti->tile, RTSG_OVERLAY);
-// 				DrawGroundSprite(overlay + RTO_X + DiagDirToAxis(tunnelbridge_direction), PALETTE_CRASH);
-// 			} else {
-// 				DrawGroundSprite(DiagDirToAxis(tunnelbridge_direction) == AXIS_X ? rti->base_sprites.single_x : rti->base_sprites.single_y, PALETTE_CRASH);
-// 			}
-// 		}
-
-// 		if (HasRailCatenaryDrawn(GetRailType(ti->tile))) {
-// 			/* Maybe draw pylons on the entry side */
-// 			DrawRailCatenary(ti);
-
-// 			catenary = true;
-// 			StartSpriteCombine();
-// 			/* Draw wire above the ramp */
-// 			DrawRailCatenaryOnTunnel(ti);
-// 		}
-
-// 		if (railtype_overlay != 0 && !catenary) StartSpriteCombine();
-
-// 		AddSortableSpriteToDraw(image + 1, PAL_NONE, *ti, roof_bounds[tunnelbridge_direction], false);
-// 		/* Draw railtype tunnel portal overlay if defined. */
-// 		if (railtype_overlay != 0) AddSortableSpriteToDraw(railtype_overlay + tunnelbridge_direction, PAL_NONE, *ti, roof_bounds[tunnelbridge_direction], false);
-
-// 		if (catenary || railtype_overlay != 0) EndSpriteCombine();
-
-// 		/* Add helper BB for sprite sorting that separates the tunnel from things beside of it. */
-// 		AddSortableSpriteToDraw(SPR_EMPTY_BOUNDING_BOX, PAL_NONE, *ti, rear_sep[tunnelbridge_direction]);
-// 		AddSortableSpriteToDraw(SPR_EMPTY_BOUNDING_BOX, PAL_NONE, *ti, front_sep[tunnelbridge_direction]);
-
-// 		DrawBridgeMiddle(ti, BridgePillarFlag::EdgeNE + tunnelbridge_direction);
-// 	}
-// }
-
 static void DrawMetroTrackBitsOverlay(TileInfo *ti, TrackBits track, const RailTypeInfo *rti)
 {
-	bool is_entrance = IsTileType(ti->tile, MP_METRO_ENTRANCE);
-	Slope tileh = is_entrance ? SLOPE_FLAT : ti->tileh;
+	bool is_not_entrance = !IsTileType(ti->tile, MP_METRO_ENTRANCE);
+	Slope tileh = is_not_entrance ? ti->tileh : SLOPE_FLAT;
 
 	Foundation f = GetRailFoundation(tileh, track);
 	Corner halftile_corner = CORNER_INVALID;
@@ -2912,14 +2795,19 @@ static void DrawMetroTrackBitsOverlay(TileInfo *ti, TrackBits track, const RailT
 		f = (f == FOUNDATION_STEEP_BOTH ? FOUNDATION_STEEP_LOWER : FOUNDATION_NONE);
 	}
 
-	DrawFoundation(ti, f, true);
 	/* DrawFoundation modifies ti */
+	DrawFoundation(ti, f, is_not_entrance);
+	/* Fixes tiles drawing below foundation */
+	if (f != FOUNDATION_NONE) {
+		is_not_entrance = false;
+		tileh = ti->tileh;
+	}
 
 	/* Draw ground */
 	SpriteID image;
 	image = SPR_FLAT_BARE_LAND;
 	image += SlopeToSpriteOffset(tileh);
-	DrawGroundSprite(image, PAL_NONE, nullptr, 0, 0, true);
+	DrawGroundSprite(image, PAL_NONE, nullptr, 0, 0, is_not_entrance);
 
 	bool no_combine = tileh == SLOPE_FLAT && rti->flags.Test(RailTypeFlag::NoSpriteCombine);
 	SpriteID overlay = GetCustomRailSprite(rti, ti->tile, RTSG_OVERLAY);
@@ -2931,76 +2819,76 @@ static void DrawMetroTrackBitsOverlay(TileInfo *ti, TrackBits track, const RailT
 	} else if (no_combine) {
 		/* Use trackbits as direct index from ground sprite, subtract 1
 		 * because there is no sprite for no bits. */
-		DrawGroundSprite(ground + track - 1, PAL_NONE, nullptr, 0, 0, true);
+		DrawGroundSprite(ground + track - 1, PAL_NONE, nullptr, 0, 0, is_not_entrance);
 
 		/* Draw reserved track bits */
-		if (pbs & TRACK_BIT_X)     DrawGroundSprite(overlay + RTO_X, PALETTE_CRASH, nullptr, 0, 0, true);
-		if (pbs & TRACK_BIT_Y)     DrawGroundSprite(overlay + RTO_Y, PALETTE_CRASH, nullptr, 0, 0, true);
-		if (pbs & TRACK_BIT_UPPER) DrawTrackSprite(overlay + RTO_N, PALETTE_CRASH, ti, SLOPE_N);
-		if (pbs & TRACK_BIT_LOWER) DrawTrackSprite(overlay + RTO_S, PALETTE_CRASH, ti, SLOPE_S);
-		if (pbs & TRACK_BIT_RIGHT) DrawTrackSprite(overlay + RTO_E, PALETTE_CRASH, ti, SLOPE_E);
-		if (pbs & TRACK_BIT_LEFT)  DrawTrackSprite(overlay + RTO_W, PALETTE_CRASH, ti, SLOPE_W);
+		if (pbs & TRACK_BIT_X)     DrawGroundSprite(overlay + RTO_X, PALETTE_CRASH, nullptr, 0, 0, is_not_entrance);
+		if (pbs & TRACK_BIT_Y)     DrawGroundSprite(overlay + RTO_Y, PALETTE_CRASH, nullptr, 0, 0, is_not_entrance);
+		if (pbs & TRACK_BIT_UPPER) DrawTrackSprite(overlay + RTO_N, PALETTE_CRASH, ti, SLOPE_N, is_not_entrance);
+		if (pbs & TRACK_BIT_LOWER) DrawTrackSprite(overlay + RTO_S, PALETTE_CRASH, ti, SLOPE_S, is_not_entrance);
+		if (pbs & TRACK_BIT_RIGHT) DrawTrackSprite(overlay + RTO_E, PALETTE_CRASH, ti, SLOPE_E, is_not_entrance);
+		if (pbs & TRACK_BIT_LEFT)  DrawTrackSprite(overlay + RTO_W, PALETTE_CRASH, ti, SLOPE_W, is_not_entrance);
 	} else if (tileh == SLOPE_NW && track == TRACK_BIT_Y) {
-		DrawGroundSprite(ground + RTO_SLOPE_NW, PAL_NONE, nullptr, 0, 0, true);
-		if (pbs != TRACK_BIT_NONE) DrawGroundSprite(overlay + RTO_SLOPE_NW, PALETTE_CRASH, nullptr, 0, 0, true);
+		DrawGroundSprite(ground + RTO_SLOPE_NW, PAL_NONE, nullptr, 0, 0, is_not_entrance);
+		if (pbs != TRACK_BIT_NONE) DrawGroundSprite(overlay + RTO_SLOPE_NW, PALETTE_CRASH, nullptr, 0, 0, is_not_entrance);
 	} else if (tileh == SLOPE_NE && track == TRACK_BIT_X) {
-		DrawGroundSprite(ground + RTO_SLOPE_NE, PAL_NONE, nullptr, 0, 0, true);
-		if (pbs != TRACK_BIT_NONE) DrawGroundSprite(overlay + RTO_SLOPE_NE, PALETTE_CRASH, nullptr, 0, 0, true);
+		DrawGroundSprite(ground + RTO_SLOPE_NE, PAL_NONE, nullptr, 0, 0, is_not_entrance);
+		if (pbs != TRACK_BIT_NONE) DrawGroundSprite(overlay + RTO_SLOPE_NE, PALETTE_CRASH, nullptr, 0, 0, is_not_entrance);
 	} else if (tileh == SLOPE_SE && track == TRACK_BIT_Y) {
-		DrawGroundSprite(ground + RTO_SLOPE_SE, PAL_NONE, nullptr, 0, 0, true);
-		if (pbs != TRACK_BIT_NONE) DrawGroundSprite(overlay + RTO_SLOPE_SE, PALETTE_CRASH, nullptr, 0, 0, true);
+		DrawGroundSprite(ground + RTO_SLOPE_SE, PAL_NONE, nullptr, 0, 0, is_not_entrance);
+		if (pbs != TRACK_BIT_NONE) DrawGroundSprite(overlay + RTO_SLOPE_SE, PALETTE_CRASH, nullptr, 0, 0, is_not_entrance);
 	} else if (tileh == SLOPE_SW && track == TRACK_BIT_X) {
-		DrawGroundSprite(ground + RTO_SLOPE_SW, PAL_NONE, nullptr, 0, 0, true);
-		if (pbs != TRACK_BIT_NONE) DrawGroundSprite(overlay + RTO_SLOPE_SW, PALETTE_CRASH, nullptr, 0, 0, true);
+		DrawGroundSprite(ground + RTO_SLOPE_SW, PAL_NONE, nullptr, 0, 0, is_not_entrance);
+		if (pbs != TRACK_BIT_NONE) DrawGroundSprite(overlay + RTO_SLOPE_SW, PALETTE_CRASH, nullptr, 0, 0, is_not_entrance);
 	} else {
 		switch (track) {
 			/* Draw single ground sprite when not overlapping. No track overlay
 			 * is necessary for these sprites. */
-			case TRACK_BIT_X:     DrawGroundSprite(ground + RTO_X, PAL_NONE, nullptr, 0, 0, true); break;
-			case TRACK_BIT_Y:     DrawGroundSprite(ground + RTO_Y, PAL_NONE, nullptr, 0, 0, true); break;
-			case TRACK_BIT_UPPER: DrawTrackSprite(ground + RTO_N, PAL_NONE, ti, SLOPE_N); break;
-			case TRACK_BIT_LOWER: DrawTrackSprite(ground + RTO_S, PAL_NONE, ti, SLOPE_S); break;
-			case TRACK_BIT_RIGHT: DrawTrackSprite(ground + RTO_E, PAL_NONE, ti, SLOPE_E); break;
-			case TRACK_BIT_LEFT:  DrawTrackSprite(ground + RTO_W, PAL_NONE, ti, SLOPE_W); break;
-			case TRACK_BIT_CROSS: DrawGroundSprite(ground + RTO_CROSSING_XY, PAL_NONE, nullptr, 0, 0, true); break;
-			case TRACK_BIT_HORZ:  DrawTrackSprite(ground + RTO_N, PAL_NONE, ti, SLOPE_N);
-			                      DrawTrackSprite(ground + RTO_S, PAL_NONE, ti, SLOPE_S); break;
-			case TRACK_BIT_VERT:  DrawTrackSprite(ground + RTO_E, PAL_NONE, ti, SLOPE_E);
-			                      DrawTrackSprite(ground + RTO_W, PAL_NONE, ti, SLOPE_W); break;
+			case TRACK_BIT_X:     DrawGroundSprite(ground + RTO_X, PAL_NONE, nullptr, 0, 0, is_not_entrance); break;
+			case TRACK_BIT_Y:     DrawGroundSprite(ground + RTO_Y, PAL_NONE, nullptr, 0, 0, is_not_entrance); break;
+			case TRACK_BIT_UPPER: DrawTrackSprite(ground + RTO_N, PAL_NONE, ti, SLOPE_N, is_not_entrance); break;
+			case TRACK_BIT_LOWER: DrawTrackSprite(ground + RTO_S, PAL_NONE, ti, SLOPE_S, is_not_entrance); break;
+			case TRACK_BIT_RIGHT: DrawTrackSprite(ground + RTO_E, PAL_NONE, ti, SLOPE_E, is_not_entrance); break;
+			case TRACK_BIT_LEFT:  DrawTrackSprite(ground + RTO_W, PAL_NONE, ti, SLOPE_W, is_not_entrance); break;
+			case TRACK_BIT_CROSS: DrawGroundSprite(ground + RTO_CROSSING_XY, PAL_NONE, nullptr, 0, 0, is_not_entrance); break;
+			case TRACK_BIT_HORZ:  DrawTrackSprite(ground + RTO_N, PAL_NONE, ti, SLOPE_N, is_not_entrance);
+			                      DrawTrackSprite(ground + RTO_S, PAL_NONE, ti, SLOPE_S, is_not_entrance); break;
+			case TRACK_BIT_VERT:  DrawTrackSprite(ground + RTO_E, PAL_NONE, ti, SLOPE_E, is_not_entrance);
+			                      DrawTrackSprite(ground + RTO_W, PAL_NONE, ti, SLOPE_W, is_not_entrance); break;
 
 			default:
 				/* We're drawing a junction tile */
 				if ((track & TRACK_BIT_3WAY_NE) == 0) {
-					DrawGroundSprite(ground + RTO_JUNCTION_SW, PAL_NONE, nullptr, 0, 0, true);
+					DrawGroundSprite(ground + RTO_JUNCTION_SW, PAL_NONE, nullptr, 0, 0, is_not_entrance);
 				} else if ((track & TRACK_BIT_3WAY_SW) == 0) {
-					DrawGroundSprite(ground + RTO_JUNCTION_NE, PAL_NONE, nullptr, 0, 0, true);
+					DrawGroundSprite(ground + RTO_JUNCTION_NE, PAL_NONE, nullptr, 0, 0, is_not_entrance);
 				} else if ((track & TRACK_BIT_3WAY_NW) == 0) {
-					DrawGroundSprite(ground + RTO_JUNCTION_SE, PAL_NONE, nullptr, 0, 0, true);
+					DrawGroundSprite(ground + RTO_JUNCTION_SE, PAL_NONE, nullptr, 0, 0, is_not_entrance);
 				} else if ((track & TRACK_BIT_3WAY_SE) == 0) {
-					DrawGroundSprite(ground + RTO_JUNCTION_NW, PAL_NONE, nullptr, 0, 0, true);
+					DrawGroundSprite(ground + RTO_JUNCTION_NW, PAL_NONE, nullptr, 0, 0, is_not_entrance);
 				} else {
-					DrawGroundSprite(ground + RTO_JUNCTION_NSEW, PAL_NONE, nullptr, 0, 0, true);
+					DrawGroundSprite(ground + RTO_JUNCTION_NSEW, PAL_NONE, nullptr, 0, 0, is_not_entrance);
 				}
 
 				/* Mask out PBS bits as we shall draw them afterwards anyway. */
 				track &= ~pbs;
 
 				/* Draw regular track bits */
-				if (track & TRACK_BIT_X)     DrawGroundSprite(overlay + RTO_X, PAL_NONE, nullptr, 0, 0, true);
-				if (track & TRACK_BIT_Y)     DrawGroundSprite(overlay + RTO_Y, PAL_NONE, nullptr, 0, 0, true);
-				if (track & TRACK_BIT_UPPER) DrawGroundSprite(overlay + RTO_N, PAL_NONE, nullptr, 0, 0, true);
-				if (track & TRACK_BIT_LOWER) DrawGroundSprite(overlay + RTO_S, PAL_NONE, nullptr, 0, 0, true);
-				if (track & TRACK_BIT_RIGHT) DrawGroundSprite(overlay + RTO_E, PAL_NONE, nullptr, 0, 0, true);
-				if (track & TRACK_BIT_LEFT)  DrawGroundSprite(overlay + RTO_W, PAL_NONE, nullptr, 0, 0, true);
+				if (track & TRACK_BIT_X)     DrawGroundSprite(overlay + RTO_X, PAL_NONE, nullptr, 0, 0, is_not_entrance);
+				if (track & TRACK_BIT_Y)     DrawGroundSprite(overlay + RTO_Y, PAL_NONE, nullptr, 0, 0, is_not_entrance);
+				if (track & TRACK_BIT_UPPER) DrawGroundSprite(overlay + RTO_N, PAL_NONE, nullptr, 0, 0, is_not_entrance);
+				if (track & TRACK_BIT_LOWER) DrawGroundSprite(overlay + RTO_S, PAL_NONE, nullptr, 0, 0, is_not_entrance);
+				if (track & TRACK_BIT_RIGHT) DrawGroundSprite(overlay + RTO_E, PAL_NONE, nullptr, 0, 0, is_not_entrance);
+				if (track & TRACK_BIT_LEFT)  DrawGroundSprite(overlay + RTO_W, PAL_NONE, nullptr, 0, 0, is_not_entrance);
 		}
 
 		/* Draw reserved track bits */
-		if (pbs & TRACK_BIT_X)     DrawGroundSprite(overlay + RTO_X, PALETTE_CRASH, nullptr, 0, 0, true);
-		if (pbs & TRACK_BIT_Y)     DrawGroundSprite(overlay + RTO_Y, PALETTE_CRASH, nullptr, 0, 0, true);
-		if (pbs & TRACK_BIT_UPPER) DrawTrackSprite(overlay + RTO_N, PALETTE_CRASH, ti, SLOPE_N);
-		if (pbs & TRACK_BIT_LOWER) DrawTrackSprite(overlay + RTO_S, PALETTE_CRASH, ti, SLOPE_S);
-		if (pbs & TRACK_BIT_RIGHT) DrawTrackSprite(overlay + RTO_E, PALETTE_CRASH, ti, SLOPE_E);
-		if (pbs & TRACK_BIT_LEFT)  DrawTrackSprite(overlay + RTO_W, PALETTE_CRASH, ti, SLOPE_W);
+		if (pbs & TRACK_BIT_X)     DrawGroundSprite(overlay + RTO_X, PALETTE_CRASH, nullptr, 0, 0, is_not_entrance);
+		if (pbs & TRACK_BIT_Y)     DrawGroundSprite(overlay + RTO_Y, PALETTE_CRASH, nullptr, 0, 0, is_not_entrance);
+		if (pbs & TRACK_BIT_UPPER) DrawTrackSprite(overlay + RTO_N, PALETTE_CRASH, ti, SLOPE_N, is_not_entrance);
+		if (pbs & TRACK_BIT_LOWER) DrawTrackSprite(overlay + RTO_S, PALETTE_CRASH, ti, SLOPE_S, is_not_entrance);
+		if (pbs & TRACK_BIT_RIGHT) DrawTrackSprite(overlay + RTO_E, PALETTE_CRASH, ti, SLOPE_E, is_not_entrance);
+		if (pbs & TRACK_BIT_LEFT)  DrawTrackSprite(overlay + RTO_W, PALETTE_CRASH, ti, SLOPE_W, is_not_entrance);
 	}
 
 	if (IsValidCorner(halftile_corner)) {
@@ -3016,7 +2904,7 @@ static void DrawMetroTrackBitsOverlay(TileInfo *ti, TrackBits track, const RailT
 
 		image += SlopeToSpriteOffset(fake_slope);
 
-		DrawGroundSprite(image, PAL_NONE, &(_halftile_sub_sprite[halftile_corner]), 0, 0, true);
+		DrawGroundSprite(image, PAL_NONE, &(_halftile_sub_sprite[halftile_corner]), 0, 0, is_not_entrance);
 
 		track = CornerToTrackBits(halftile_corner);
 
@@ -3029,9 +2917,9 @@ static void DrawMetroTrackBitsOverlay(TileInfo *ti, TrackBits track, const RailT
 			case TRACK_BIT_LEFT:  offset = RTO_W; break;
 		}
 
-		DrawTrackSprite(ground + offset, PAL_NONE, ti, fake_slope);
+		DrawTrackSprite(ground + offset, PAL_NONE, ti, fake_slope, is_not_entrance);
 		if (_settings_client.gui.show_track_reservation && HasMetroReservedTracks(ti->tile, track)) {
-			DrawTrackSprite(overlay + offset, PALETTE_CRASH, ti, fake_slope);
+			DrawTrackSprite(overlay + offset, PALETTE_CRASH, ti, fake_slope, is_not_entrance);
 		}
 	}
 }
@@ -3042,8 +2930,8 @@ void DrawMetroTile(TileInfo *ti)
 		return;
 	}
 
-	bool is_entrance = IsTileType(ti->tile, MP_METRO_ENTRANCE);
-	Slope tileh = is_entrance ? SLOPE_FLAT : ti->tileh;
+	bool is_not_entrance = !IsTileType(ti->tile, MP_METRO_ENTRANCE);
+	Slope tileh = is_not_entrance ? ti->tileh : SLOPE_FLAT;
 
 	SpriteID image = SPR_FLAT_BARE_LAND;
 	const SubSprite *sub = nullptr;
@@ -3054,7 +2942,7 @@ void DrawMetroTile(TileInfo *ti)
 	if(track == 0) return; ///< Do not draw rails if tile is empty
 	const RailTypeInfo *rti = GetRailTypeInfo(GetMetroRailType(ti->tile));
 
-	if(is_entrance)DrawFoundation(ti, FOUNDATION_LEVELED);
+	if(!is_not_entrance)DrawFoundation(ti, FOUNDATION_LEVELED, true);
 
 	if (rti->UsesOverlay()) {
 		DrawMetroTrackBitsOverlay(ti, track, rti);
@@ -3063,7 +2951,24 @@ void DrawMetroTile(TileInfo *ti)
 
 	PaletteID pal = GetCompanyPalette(GetMetroTileOwner(ti->tile));
 	Corner halftile_corner = CORNER_INVALID;
+	Foundation f = GetRailFoundation(ti->tileh, track);
 	bool junction = false;
+
+	if (IsNonContinuousFoundation(f)) {
+		/* Save halftile corner */
+		halftile_corner = (f == FOUNDATION_STEEP_BOTH ? GetHighestSlopeCorner(tileh) : GetHalftileFoundationCorner(f));
+		/* Draw lower part first */
+		track &= ~CornerToTrackBits(halftile_corner);
+		f = (f == FOUNDATION_STEEP_BOTH ? FOUNDATION_STEEP_LOWER : FOUNDATION_NONE);
+	}
+
+	/* DrawFoundation modifies ti */
+	DrawFoundation(ti, f, is_not_entrance);
+	/* Fixes tiles drawing below foundation */
+	if (f != FOUNDATION_NONE) {
+		is_not_entrance = false;
+		tileh = ti->tileh;
+	}
 
 	if (tileh != SLOPE_FLAT) {
 		/* track on non-flat ground */
@@ -3098,15 +3003,15 @@ void DrawMetroTile(TileInfo *ti)
 
 	pal = PALETTE_TO_BARE_LAND;
 
-	if (image != 0) DrawGroundSprite(image, pal, sub, 0, 0, true);
+	if (image != 0) DrawGroundSprite(image, pal, sub, 0, 0, is_not_entrance);
 
 	if (junction) {
-		if (track & TRACK_BIT_X)     DrawGroundSprite(rti->base_sprites.single_x, PAL_NONE, nullptr, 0, 0, true);
-		if (track & TRACK_BIT_Y)     DrawGroundSprite(rti->base_sprites.single_y, PAL_NONE, nullptr, 0, 0, true);
-		if (track & TRACK_BIT_UPPER) DrawGroundSprite(rti->base_sprites.single_n, PAL_NONE, nullptr, 0, 0, true);
-		if (track & TRACK_BIT_LOWER) DrawGroundSprite(rti->base_sprites.single_s, PAL_NONE, nullptr, 0, 0, true);
-		if (track & TRACK_BIT_LEFT)  DrawGroundSprite(rti->base_sprites.single_w, PAL_NONE, nullptr, 0, 0, true);
-		if (track & TRACK_BIT_RIGHT) DrawGroundSprite(rti->base_sprites.single_e, PAL_NONE, nullptr, 0, 0, true);
+		if (track & TRACK_BIT_X)     DrawGroundSprite(rti->base_sprites.single_x, PAL_NONE, nullptr, 0, 0, is_not_entrance);
+		if (track & TRACK_BIT_Y)     DrawGroundSprite(rti->base_sprites.single_y, PAL_NONE, nullptr, 0, 0, is_not_entrance);
+		if (track & TRACK_BIT_UPPER) DrawGroundSprite(rti->base_sprites.single_n, PAL_NONE, nullptr, 0, 0, is_not_entrance);
+		if (track & TRACK_BIT_LOWER) DrawGroundSprite(rti->base_sprites.single_s, PAL_NONE, nullptr, 0, 0, is_not_entrance);
+		if (track & TRACK_BIT_LEFT)  DrawGroundSprite(rti->base_sprites.single_w, PAL_NONE, nullptr, 0, 0, is_not_entrance);
+		if (track & TRACK_BIT_RIGHT) DrawGroundSprite(rti->base_sprites.single_e, PAL_NONE, nullptr, 0, 0, is_not_entrance);
 	}
 
 	/* PBS debugging, draw reserved tracks darker */
@@ -3115,22 +3020,22 @@ void DrawMetroTile(TileInfo *ti)
 		TrackBits pbs = GetMetroRailReservationTrackBits(ti->tile) & track;
 		if (pbs & TRACK_BIT_X) {
 			if (tileh == SLOPE_FLAT || tileh == SLOPE_ELEVATED) {
-				DrawGroundSprite(rti->base_sprites.single_x, PALETTE_CRASH, nullptr, 0, 0, true);
+				DrawGroundSprite(rti->base_sprites.single_x, PALETTE_CRASH, nullptr, 0, 0, is_not_entrance);
 			} else {
-				DrawGroundSprite(_track_sloped_sprites[tileh - 1] + rti->base_sprites.single_sloped - 20, PALETTE_CRASH, nullptr, 0, 0, true);
+				DrawGroundSprite(_track_sloped_sprites[tileh - 1] + rti->base_sprites.single_sloped - 20, PALETTE_CRASH, nullptr, 0, 0, is_not_entrance);
 			}
 		}
 		if (pbs & TRACK_BIT_Y) {
 			if (tileh == SLOPE_FLAT || tileh == SLOPE_ELEVATED) {
-				DrawGroundSprite(rti->base_sprites.single_y, PALETTE_CRASH, nullptr, 0, 0, true);
+				DrawGroundSprite(rti->base_sprites.single_y, PALETTE_CRASH, nullptr, 0, 0, is_not_entrance);
 			} else {
-				DrawGroundSprite(_track_sloped_sprites[tileh - 1] + rti->base_sprites.single_sloped - 20, PALETTE_CRASH, nullptr, 0, 0, true);
+				DrawGroundSprite(_track_sloped_sprites[tileh - 1] + rti->base_sprites.single_sloped - 20, PALETTE_CRASH, nullptr, 0, 0, is_not_entrance);
 			}
 		}
-		if (pbs & TRACK_BIT_UPPER) DrawGroundSprite(rti->base_sprites.single_n, PALETTE_CRASH, nullptr, 0, tileh & SLOPE_N ? -(int)TILE_HEIGHT : 0, true);
-		if (pbs & TRACK_BIT_LOWER) DrawGroundSprite(rti->base_sprites.single_s, PALETTE_CRASH, nullptr, 0, tileh & SLOPE_S ? -(int)TILE_HEIGHT : 0, true);
-		if (pbs & TRACK_BIT_LEFT)  DrawGroundSprite(rti->base_sprites.single_w, PALETTE_CRASH, nullptr, 0, tileh & SLOPE_W ? -(int)TILE_HEIGHT : 0, true);
-		if (pbs & TRACK_BIT_RIGHT) DrawGroundSprite(rti->base_sprites.single_e, PALETTE_CRASH, nullptr, 0, tileh & SLOPE_E ? -(int)TILE_HEIGHT : 0, true);
+		if (pbs & TRACK_BIT_UPPER) DrawGroundSprite(rti->base_sprites.single_n, PALETTE_CRASH, nullptr, 0, tileh & SLOPE_N ? -(int)TILE_HEIGHT : 0, is_not_entrance);
+		if (pbs & TRACK_BIT_LOWER) DrawGroundSprite(rti->base_sprites.single_s, PALETTE_CRASH, nullptr, 0, tileh & SLOPE_S ? -(int)TILE_HEIGHT : 0, is_not_entrance);
+		if (pbs & TRACK_BIT_LEFT)  DrawGroundSprite(rti->base_sprites.single_w, PALETTE_CRASH, nullptr, 0, tileh & SLOPE_W ? -(int)TILE_HEIGHT : 0, is_not_entrance);
+		if (pbs & TRACK_BIT_RIGHT) DrawGroundSprite(rti->base_sprites.single_e, PALETTE_CRASH, nullptr, 0, tileh & SLOPE_E ? -(int)TILE_HEIGHT : 0, is_not_entrance);
 	}
 
 	if (IsValidCorner(halftile_corner)) {
@@ -3140,11 +3045,11 @@ void DrawMetroTile(TileInfo *ti)
 		Slope fake_slope = SlopeWithThreeCornersRaised(OppositeCorner(halftile_corner));
 		image = _track_sloped_sprites[fake_slope - 1] + rti->base_sprites.track_y;
 		pal = PALETTE_TO_BARE_LAND;
-		DrawGroundSprite(image, pal, &(_halftile_sub_sprite[halftile_corner]), 0, 0, true);
+		DrawGroundSprite(image, pal, &(_halftile_sub_sprite[halftile_corner]), 0, 0, is_not_entrance);
 
 		if (_game_mode != GM_MENU && _settings_client.gui.show_track_reservation && HasMetroReservedTracks(ti->tile, CornerToTrackBits(halftile_corner))) {
 			static const uint8_t _corner_to_track_sprite[] = {3, 1, 2, 0};
-			DrawGroundSprite(_corner_to_track_sprite[halftile_corner] + rti->base_sprites.single_n, PALETTE_CRASH, nullptr, 0, -(int)TILE_HEIGHT, true);
+			DrawGroundSprite(_corner_to_track_sprite[halftile_corner] + rti->base_sprites.single_n, PALETTE_CRASH, nullptr, 0, -(int)TILE_HEIGHT, is_not_entrance);
 		}
 	}
 
