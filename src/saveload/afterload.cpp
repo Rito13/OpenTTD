@@ -936,69 +936,81 @@ bool AfterLoadGame()
 		}
 	}
 
-	for (const auto t : Map::Iterate()) {
-		switch (GetTileType(t)) {
-			case MP_STATION: {
-				BaseStation *bst = BaseStation::GetByTile(t);
+	if (IsSavegameVersionBefore(SLV_FREE_UP_M8_FOR_METRO)) {
+		for (const auto t : Map::Iterate()) {
+			switch (GetTileType(t)) {
+				case MP_STATION: {
+					BaseStation *bst = BaseStation::GetByTile(t);
 
-				/* Sanity check */
-				if (!IsBuoy_BeforeMetro(t) && bst->owner != GetTileOwner(t)) SlErrorCorrupt("Wrong owner for station tile");
+					/* Sanity check */
+					if (!IsBuoy_BeforeMetro(t) && bst->owner != GetTileOwner(t)) SlErrorCorrupt("Wrong owner for station tile");
 
-				/* Set up station spread */
-				bst->rect.BeforeAddTile(t, StationRect::ADD_FORCE);
+					/* Set up station spread */
+					bst->rect.BeforeAddTile(t, StationRect::ADD_FORCE);
 
-				/* Waypoints don't have road stops/oil rigs in the old format */
-				if (!Station::IsExpected(bst)) break;
-				Station *st = Station::From(bst);
+					/* Waypoints don't have road stops/oil rigs in the old format */
+					if (!Station::IsExpected(bst)) break;
+					Station *st = Station::From(bst);
 
-				switch (GetStationType_BeforeMetro(t)) {
-					case StationType::Truck:
-					case StationType::Bus:
-						if (IsSavegameVersionBefore(SLV_6)) {
-							/* Before version 5 you could not have more than 250 stations.
-							 * Version 6 adds large maps, so you could only place 253*253
-							 * road stops on a map (no freeform edges) = 64009. So, yes
-							 * someone could in theory create such a full map to trigger
-							 * this assertion, it's safe to assume that's only something
-							 * theoretical and does not happen in normal games. */
-							assert(RoadStop::CanAllocateItem());
+					switch (GetStationType_BeforeMetro(t)) {
+						case StationType::Truck:
+						case StationType::Bus:
+							if (IsSavegameVersionBefore(SLV_6)) {
+								/* Before version 5 you could not have more than 250 stations.
+								* Version 6 adds large maps, so you could only place 253*253
+								* road stops on a map (no freeform edges) = 64009. So, yes
+								* someone could in theory create such a full map to trigger
+								* this assertion, it's safe to assume that's only something
+								* theoretical and does not happen in normal games. */
+								assert(RoadStop::CanAllocateItem());
 
-							/* From this version on there can be multiple road stops of the
-							 * same type per station. Convert the existing stops to the new
-							 * internal data structure. */
-							RoadStop *rs = new RoadStop(t);
+								/* From this version on there can be multiple road stops of the
+								* same type per station. Convert the existing stops to the new
+								* internal data structure. */
+								RoadStop *rs = new RoadStop(t);
 
-							RoadStop **head =
-								IsTruckStop_BeforeMetro(t) ? &st->truck_stops : &st->bus_stops;
-							*head = rs;
+								RoadStop **head =
+									IsTruckStop_BeforeMetro(t) ? &st->truck_stops : &st->bus_stops;
+								*head = rs;
+							}
+							break;
+
+						case StationType::Oilrig: {
+							/* The internal encoding of oil rigs was changed twice.
+							* It was 3 (till 2.2) and later 5 (till 5.1).
+							* DeleteOilRig asserts on the correct type, and
+							* setting it unconditionally does not hurt.
+							*/
+							Station::GetByTile(t)->airport.type = AT_OILRIG;
+
+							/* Very old savegames sometimes have phantom oil rigs, i.e.
+							* an oil rig which got shut down, but not completely removed from
+							* the map
+							*/
+							TileIndex t1 = TileAddXY(t, 0, 1);
+							if (!IsTileType(t1, MP_INDUSTRY) || GetIndustryGfx(t1) != GFX_OILRIG_1) {
+								DeleteOilRig(t);
+							}
+							break;
 						}
-						break;
 
-					case StationType::Oilrig: {
-						/* The internal encoding of oil rigs was changed twice.
-						 * It was 3 (till 2.2) and later 5 (till 5.1).
-						 * DeleteOilRig asserts on the correct type, and
-						 * setting it unconditionally does not hurt.
-						 */
-						Station::GetByTile(t)->airport.type = AT_OILRIG;
-
-						/* Very old savegames sometimes have phantom oil rigs, i.e.
-						 * an oil rig which got shut down, but not completely removed from
-						 * the map
-						 */
-						TileIndex t1 = TileAddXY(t, 0, 1);
-						if (!IsTileType(t1, MP_INDUSTRY) || GetIndustryGfx(t1) != GFX_OILRIG_1) {
-							DeleteOilRig(t);
-						}
-						break;
+						default: break;
 					}
-
-					default: break;
+					break;
 				}
-				break;
-			}
 
-			default: break;
+				default: break;
+			}
+		}
+	} else {
+		for (const auto t : Map::Iterate()) {
+			if (!IsTileType(t, MP_STATION)) continue;
+
+			BaseStation *bst = BaseStation::GetByTile(t);
+			/* Sanity check */
+			if (!IsBuoy(t) && bst->owner != GetTileOwner(t)) SlErrorCorrupt("Wrong owner for station tile");
+			/* Set up station spread */
+			bst->rect.BeforeAddTile(t, StationRect::ADD_FORCE);
 		}
 	}
 

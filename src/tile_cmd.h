@@ -22,6 +22,7 @@ enum class VehicleEnterTileState : uint8_t {
 	EnteredStation, ///< The vehicle entered a station
 	EnteredWormhole, ///< The vehicle either entered a bridge, tunnel or depot tile (this includes the last tile of the bridge/tunnel)
 	CannotEnter, ///< The vehicle cannot enter the tile
+	EnteredMetro, ///< The vehicle is underground(in a metro tunnel)
 };
 
 using VehicleEnterTileStates = EnumBitSet<VehicleEnterTileState, uint8_t>;

@@ -2105,6 +2105,11 @@ static VehicleEnterTileStates VehicleEnter_TunnelBridge(Vehicle *v, TileIndex ti
 	return {};
 }
 
+static VehicleEnterTileStates VehicleEnter_MetroEntrance(Vehicle *, TileIndex, int, int)
+{
+	return VehicleEnterTileState::EnteredMetro;
+}
+
 static CommandCost TerraformTile_TunnelBridge(TileIndex tile, DoCommandFlags flags, int z_new, Slope tileh_new)
 {
 	if (_settings_game.construction.build_on_slopes && AutoslopeEnabled() && IsBridge(tile) && GetTunnelBridgeTransportType(tile) != TRANSPORT_WATER) {
@@ -2170,7 +2175,7 @@ extern const TileTypeProcs _tile_type_metro_entrance_procs = {
 	TileLoop_TunnelBridge,           // tile_loop_proc
 	ChangeTileOwner_MetroEntance,    // change_tile_owner_proc
 	nullptr,                            // add_produced_cargo_proc
-	VehicleEnter_TunnelBridge,       // vehicle_enter_tile_proc
+	VehicleEnter_MetroEntrance,      // vehicle_enter_tile_proc
 	GetFoundation_TunnelBridge,      // get_foundation_proc
 	TerraformTile_TunnelBridge,      // terraform_tile_proc
 	CheckBuildAbove_TunnelBridge, // check_build_above_proc

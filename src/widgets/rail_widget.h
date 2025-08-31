@@ -24,6 +24,7 @@ enum RailToolbarWidgets : WidgetID {
 	WID_RAT_BUILD_METRO_EW, ///< Build metro rail along the game view X axis.
 	WID_RAT_BUILD_METRO_Y,  ///< Build metro rail along the game grid Y axis.
 	WID_RAT_METRO_AUTORAIL, ///< Metro autorail tool.
+	WID_RAT_PANEL,          ///< Panel between build track and other buttons.
 	WID_RAT_DEMOLISH,       ///< Destroy something with dynamite!
 	WID_RAT_BUILD_DEPOT,    ///< Build a depot.
 	WID_RAT_BUILD_WAYPOINT, ///< Build a waypoint.
@@ -86,6 +87,11 @@ enum BuildSignalWidgets : WidgetID {
 	WID_BS_ELECTRIC_PBS,       ///< Build an electric path signal.
 	WID_BS_ELECTRIC_PBS_OWAY,  ///< Build an electric one way path signal.
 	WID_BS_CONVERT,            ///< Convert the signal.
+	WID_BS_METRO_SEMAPHORE_PBS,      ///< Build a semaphore path signal.
+	WID_BS_METRO_SEMAPHORE_PBS_OWAY, ///< Build a semaphore one way path signal.
+	WID_BS_METRO_ELECTRIC_PBS,       ///< Build an electric path signal.
+	WID_BS_METRO_ELECTRIC_PBS_OWAY,  ///< Build an electric one way path signal.
+	WID_BS_METRO_CONVERT,            ///< Convert the signal.
 	WID_BS_DRAG_SIGNALS_DENSITY_LABEL,    ///< The current signal density.
 	WID_BS_DRAG_SIGNALS_DENSITY_DECREASE, ///< Decrease the signal density.
 	WID_BS_DRAG_SIGNALS_DENSITY_INCREASE, ///< Increase the signal density.
