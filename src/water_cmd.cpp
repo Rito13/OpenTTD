@@ -1252,6 +1252,9 @@ bool TileLoop_Water(TileIndex index, Tile &tile)
 			DoDryUp(index);
 			break;
 		}
+
+		default:
+			break;
 	}
 
 	return false;
