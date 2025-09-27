@@ -214,7 +214,7 @@ static inline RailType UpdateRailType(RailType rt, RailType min)
 }
 
 /* Decompose the tile into ground and additional sub-tiles. */
-static void DecomposeTile(TileIndex index)
+void DecomposeTile(TileIndex index)
 {
 	switch (GetTileType(index)) {
 		case MP_TREES: {
@@ -303,6 +303,9 @@ static void DecomposeTile(TileIndex index)
 			}
 			break;
 		}
+
+		default:
+			break;
 	}
 }
 
@@ -1175,7 +1178,7 @@ bool AfterLoadGame()
 			switch (GetTileType(t)) {
 				case MP_ROAD:
 					SB(t.m5(), 6, 2, GB(t.m5(), 4, 2));
-					switch (GetRoadTileType(t)) {
+					switch (static_cast<uint32_t>(GetRoadTileType(t))) {
 						default: SlErrorCorrupt("Invalid road tile type");
 						case ROAD_TILE_NORMAL:
 							SB(t.m4(), 0, 4, GB(t.m5(), 0, 4));
@@ -1217,7 +1220,7 @@ bool AfterLoadGame()
 				case MP_ROAD:
 					if (fix_roadtypes) SB(t.m7(), 6, 2, GB(t.m7(), 5, 3));
 					SB(t.m7(), 5, 1, GB(t.m3(), 7, 1)); // snow/desert
-					switch (GetRoadTileType(t)) {
+					switch (static_cast<uint32_t>(GetRoadTileType(t))) {
 						default: SlErrorCorrupt("Invalid road tile type");
 						case ROAD_TILE_NORMAL:
 							SB(t.m7(), 0, 4, GB(t.m3(), 0, 4));  // road works
