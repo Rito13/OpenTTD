@@ -22,12 +22,13 @@
 /**
  * Variable 0x45 of road-/tram-/rail-types to query track types on a tile.
  *
- * Format: __RRttrr
+ * Format: 22RRttrr
  * - rr: Translated roadtype.
  * - tt: Translated tramtype.
  * - RR: Translated railtype.
+ * - 22: Same as RR but for the opposite tile corner, available only for diagonal tracks.
  *
- * Special values for rr, tt, RR:
+ * Special values for rr, tt, RR, 22:
  * - 0xFF: Track not present on tile.
  * - 0xFE: Track present, but no matching entry in translation table.
  */
@@ -45,12 +46,25 @@ uint32_t GetTrackTypes(TileIndex tile, const GRFFile *grffile)
 			if (tram == 0xFF) tram = 0xFE;
 		}
 	}
-	uint8_t rail = 0xFF;
-	if (auto tt = GetTileRailType(tile, TRACK_BEGIN); tt != INVALID_RAILTYPE) {
-		rail = GetReverseRailTypeTranslation(tt, grffile);
-		if (rail == 0xFF) rail = 0xFE;
+	uint8_t rail1 = 0xFF;
+	uint8_t rail2 = 0xFF;
+	Track track = TRACK_BEGIN;
+	while(track < TRACK_END) {
+		if (auto tt = GetTileRailType(tile, track); tt != INVALID_RAILTYPE) {
+			rail2 = GetReverseRailTypeTranslation(tt, grffile);
+			if (rail2 == 0xFF) rail2 = 0xFE;
+			if (rail1 == 0xFF) {
+				track = TrackToOppositeTrack(track);
+				rail1 = rail2;
+				rail2 = 0xFF;
+				if (track == TRACK_LOWER) continue;
+				if (track == TRACK_RIGHT) continue;
+				break;
+			}
+		}
+		++track;
 	}
-	return road | tram << 8 | rail << 16;
+	return road | tram << 8 | rail1 << 16 | rail2 << 24;
 }
 
 /* virtual */ uint32_t RoadTypeScopeResolver::GetRandomBits() const
