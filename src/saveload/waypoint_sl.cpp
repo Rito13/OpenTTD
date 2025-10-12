@@ -76,7 +76,7 @@ void MoveWaypointsToBaseStations()
 			if (wp.delete_ctr != 0) continue; // The waypoint was deleted
 
 			/* Waypoint indices were not added to the map prior to this. */
-			Tile tile = wp.xy;
+			Tile tile = Tile(wp.xy);
 			tile.m2() = wp.index;
 
 			if (HasBit(tile.m3(), 4)) {
@@ -101,7 +101,7 @@ void MoveWaypointsToBaseStations()
 		/* Sometimes waypoint (sign) locations became disconnected from their actual location in
 		 * the map array. If this is the case, try to locate the actual location in the map array.
 		 * Note: In the affected savegame versions, MP_RAILWAY tiles are not split yet. */
-		if (!IsTileType(t, MP_RAILWAY) || GetRailTileType(t) != 2 /* RAIL_TILE_WAYPOINT */ || Tile(t).m2() != wp.index) {
+		if (!IsTileType(Tile(t), MP_RAILWAY) || GetRailTileType(Tile(t)) != 2 /* RAIL_TILE_WAYPOINT */ || Tile(t).m2() != wp.index) {
 			Debug(sl, 0, "Found waypoint tile {} with invalid position", t);
 			t = INVALID_TILE;
 			for (auto index : Map::IterateIndex()) {

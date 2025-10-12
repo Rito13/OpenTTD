@@ -303,7 +303,7 @@ static bool ConResetTile([[maybe_unused]] uint8_t argc, [[maybe_unused]] char *a
 
 	if (argc == 2) {
 		auto result = ParseInteger(argv[1], 0);
-		if (result.has_value() && IsValidTile(*result)) {
+		if (result.has_value() && IsValidTile(Tile(*result))) {
 			DoClearSquare(TileIndex{*result});
 			return true;
 		}

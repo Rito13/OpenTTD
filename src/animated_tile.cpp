@@ -27,11 +27,11 @@ std::vector<TileIndex> _animated_tiles;
 void DeleteAnimatedTile(TileIndex tile, bool immediate)
 {
 	if (immediate) {
-		if (GetAnimatedTileState(tile) == AnimatedTileState::None) return;
+		if (GetAnimatedTileState(Tile(tile)) == AnimatedTileState::None) return;
 
 		/* The tile may be switched to a non-animatable tile soon, so we should remove it from the
 		 * animated tile list early. */
-		SetAnimatedTileState(tile, AnimatedTileState::None);
+		SetAnimatedTileState(Tile(tile), AnimatedTileState::None);
 
 		/* To avoid having to move everything after this tile in the animated tile list, look for this tile
 		 * in the animated tile list and replace with last entry if not last. */
@@ -45,7 +45,7 @@ void DeleteAnimatedTile(TileIndex tile, bool immediate)
 	}
 
 	/* If the tile was animated, mark it for deletion from the tile list on the next animation loop. */
-	if (GetAnimatedTileState(tile) == AnimatedTileState::Animated) SetAnimatedTileState(tile, AnimatedTileState::Deleted);
+	if (GetAnimatedTileState(Tile(tile)) == AnimatedTileState::Animated) SetAnimatedTileState(Tile(tile), AnimatedTileState::Deleted);
 }
 
 /**
@@ -57,7 +57,7 @@ void AddAnimatedTile(TileIndex tile, bool mark_dirty)
 {
 	if (mark_dirty) MarkTileDirtyByTile(tile);
 
-	const AnimatedTileState state = GetAnimatedTileState(tile);
+	const AnimatedTileState state = GetAnimatedTileState(Tile(tile));
 
 	/* Tile is already animated so nothing needs to happen. */
 	if (state == AnimatedTileState::Animated) return;
@@ -71,7 +71,7 @@ void AddAnimatedTile(TileIndex tile, bool mark_dirty)
 		_animated_tiles.push_back(tile);
 	}
 
-	SetAnimatedTileState(tile, AnimatedTileState::Animated);
+	SetAnimatedTileState(Tile(tile), AnimatedTileState::Animated);
 }
 
 /**
@@ -84,9 +84,9 @@ void AnimateAnimatedTiles()
 	for (auto it = std::begin(_animated_tiles); it != std::end(_animated_tiles); /* nothing */) {
 		TileIndex &tile = *it;
 
-		if (GetAnimatedTileState(tile) != AnimatedTileState::Animated) {
+		if (GetAnimatedTileState(Tile(tile)) != AnimatedTileState::Animated) {
 			/* Tile should not be animated any more, mark it as not animated and erase it from the list. */
-			SetAnimatedTileState(tile, AnimatedTileState::None);
+			SetAnimatedTileState(Tile(tile), AnimatedTileState::None);
 
 			/* Removing the last entry, no need to swap and continue. */
 			if (std::next(it) == std::end(_animated_tiles)) {

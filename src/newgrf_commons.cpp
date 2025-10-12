@@ -339,7 +339,7 @@ uint32_t GetTerrainType(TileIndex tile, TileContext context)
 		case LandscapeType::Tropic: return GetTropicZone(tile);
 		case LandscapeType::Arctic: {
 			bool has_snow;
-			switch (GetTileType(tile)) {
+			switch (GetMainTileType(tile)) {
 				case MP_CLEAR:
 					/* During map generation the snowstate may not be valid yet, as the tileloop may not have run yet. */
 					if (_generating_world) goto genworld;
@@ -417,7 +417,7 @@ TileIndex GetNearbyTile(uint8_t parameter, TileIndex tile, bool signed_offsets, 
  */
 uint32_t GetNearbyTileInformation(TileIndex tile, bool grf_version8)
 {
-	TileType tile_type = GetTileType(tile);
+	TileType tile_type = GetMainTileType(tile);
 	if (Tile::HasType(tile, MP_RAILWAY)) tile_type = MP_RAILWAY;
 
 	/* Only consider trees not on shore as a tree tile. */

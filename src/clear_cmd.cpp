@@ -202,13 +202,13 @@ static Foundation GetFoundation_Clear(TileIndex, Tile, Slope)
 
 static void UpdateFences(TileIndex tile)
 {
-	assert(IsTileType(tile, MP_CLEAR) && IsClearGround(tile, CLEAR_FIELDS));
+	assert(IsMainTileType(tile, MP_CLEAR) && IsClearGround(tile, CLEAR_FIELDS));
 	bool dirty = false;
 
 	for (DiagDirection dir = DIAGDIR_BEGIN; dir < DIAGDIR_END; dir++) {
 		if (GetFence(tile, dir) != 0) continue;
 		TileIndex neighbour = tile + TileOffsByDiagDir(dir);
-		if (IsTileType(neighbour, MP_CLEAR) && IsClearGround(neighbour, CLEAR_FIELDS)) continue;
+		if (IsMainTileType(neighbour, MP_CLEAR) && IsClearGround(neighbour, CLEAR_FIELDS)) continue;
 		SetFence(tile, dir, 3);
 		dirty = true;
 	}
@@ -227,7 +227,7 @@ static void TileLoopClearAlps(TileIndex tile)
 		/* At or above the snow line, make snow tile if needed. */
 		if (k >= 0) {
 			/* Snow density is started at 0 so that it can gradually reach the required density. */
-			MakeSnow(tile, 0);
+			MakeSnow(Tile(tile), 0);
 			MarkTileDirtyByTile(tile);
 		}
 		return;
@@ -360,7 +360,7 @@ void GenerateClearTile()
 	do {
 		IncreaseGeneratingWorldProgress(GWP_ROUGH_ROCKY);
 		tile = RandomTile();
-		if (IsTileType(tile, MP_CLEAR) && !IsClearGround(tile, CLEAR_DESERT)) SetClearGroundDensity(tile, CLEAR_ROUGH, 3);
+		if (IsMainTileType(tile, MP_CLEAR) && !IsClearGround(tile, CLEAR_DESERT)) SetClearGroundDensity(tile, CLEAR_ROUGH, 3);
 	} while (--i);
 
 	/* add rocky tiles */
@@ -370,7 +370,7 @@ void GenerateClearTile()
 		tile = RandomTileSeed(r);
 
 		IncreaseGeneratingWorldProgress(GWP_ROUGH_ROCKY);
-		if (IsTileType(tile, MP_CLEAR) && !IsClearGround(tile, CLEAR_DESERT)) {
+		if (IsMainTileType(tile, MP_CLEAR) && !IsClearGround(tile, CLEAR_DESERT)) {
 			uint j = GB(r, 16, 4) + 5;
 			for (;;) {
 				TileIndex tile_new;
@@ -380,7 +380,7 @@ void GenerateClearTile()
 				do {
 					if (--j == 0) goto get_out;
 					tile_new = tile + TileOffsByDiagDir((DiagDirection)GB(Random(), 0, 2));
-				} while (!IsTileType(tile_new, MP_CLEAR) || IsClearGround(tile_new, CLEAR_DESERT));
+				} while (!IsMainTileType(tile_new, MP_CLEAR) || IsClearGround(tile_new, CLEAR_DESERT));
 				tile = tile_new;
 			}
 get_out:;

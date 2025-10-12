@@ -104,6 +104,7 @@ struct ObjectSpec : NewGRFSpecBase<ObjectClassID> {
 	static size_t Count();
 	static const ObjectSpec *Get(ObjectType index);
 	static const ObjectSpec *GetByTile(Tile tile);
+	static const ObjectSpec *GetByTile(TileIndex index);
 
 	static void BindToClasses();
 };

@@ -28,12 +28,33 @@ inline bool IsTunnel(Tile t)
 
 /**
  * Is this a tunnel (entrance)?
+ * @param i the tile that might be a tunnel
+ * @pre IsTileType(t, MP_TUNNELBRIDGE)
+ * @return true if and only if this tile is a tunnel (entrance)
+ */
+inline bool IsTunnel(TileIndex i)
+{
+	return IsTunnel(Tile::GetByType(i, MP_TUNNELBRIDGE));
+}
+
+/**
+ * Is this a tunnel (entrance)?
  * @param t the tile that might be a tunnel
  * @return true if and only if this tile is a tunnel (entrance)
  */
 inline bool IsTunnelTile(Tile t)
 {
 	return IsTileType(t, MP_TUNNELBRIDGE) && IsTunnel(t);
+}
+
+/**
+ * Is this a tunnel (entrance)?
+ * @param i the tile that might be a tunnel
+ * @return true if and only if this tile is a tunnel (entrance)
+ */
+inline bool IsTunnelTile(TileIndex i)
+{
+	return IsTunnelTile(Tile::GetByType(i, MP_TUNNELBRIDGE));
 }
 
 TileIndex GetOtherTunnelEnd(TileIndex);

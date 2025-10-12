@@ -190,7 +190,7 @@ public:
 			TileArea tile_area;
 			station->GetTileArea(&tile_area, StationType::Dock);
 			for (const auto &tile : tile_area) {
-				if (IsDockingTile(tile) && IsShipDestinationTile(tile, station_id)) {
+				if (IsDockingTile(Tile(tile)) && IsShipDestinationTile(tile, station_id)) {
 					pf.AddOrigin(GetWaterRegionPatchInfo(tile));
 				}
 			}

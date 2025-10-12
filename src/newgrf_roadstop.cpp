@@ -561,6 +561,15 @@ const RoadStopSpec *GetRoadStopSpec(Tile t)
 	return specindex < st->roadstop_speclist.size() ? st->roadstop_speclist[specindex].spec : nullptr;
 }
 
+const RoadStopSpec *GetRoadStopSpec(TileIndex i)
+{
+	if (!IsCustomRoadStopSpecIndex(i)) return nullptr;
+
+	const BaseStation *st = BaseStation::GetByTile(i);
+	uint specindex = GetCustomRoadStopSpecIndex(i);
+	return specindex < st->roadstop_speclist.size() ? st->roadstop_speclist[specindex].spec : nullptr;
+}
+
 int AllocateSpecToRoadStop(const RoadStopSpec *statspec, BaseStation *st, bool exec)
 {
 	uint i;

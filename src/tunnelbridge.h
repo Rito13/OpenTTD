@@ -40,8 +40,8 @@ inline uint GetTunnelBridgeLength(TileIndex begin, TileIndex end)
  */
 inline void SetTunnelBridgeOwner(TileIndex begin, TileIndex end, Owner owner)
 {
-	SetTileOwner(begin, owner);
-	SetTileOwner(end, owner);
+	SetTileOwner(Tile::GetByType(begin, MP_TUNNELBRIDGE), owner);
+	SetTileOwner(Tile::GetByType(end, MP_TUNNELBRIDGE), owner);
 }
 
 extern TileIndex _build_tunnel_endtile;

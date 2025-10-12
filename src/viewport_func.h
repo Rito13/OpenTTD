@@ -89,7 +89,7 @@ void MarkTileDirtyByTile(TileIndex tile, int bridge_level_offset, int tile_heigh
  */
 inline void MarkTileDirtyByTile(TileIndex tile, int bridge_level_offset = 0)
 {
-	MarkTileDirtyByTile(tile, bridge_level_offset, TileHeight(tile));
+	MarkTileDirtyByTile(tile, bridge_level_offset, TileHeight(Tile(tile)));
 }
 
 Point GetViewportStationMiddle(const Viewport &vp, const Station *st);

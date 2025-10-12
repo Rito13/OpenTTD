@@ -318,7 +318,7 @@ uint GetPartialPixelZ(int x, int y, Slope corners)
 int GetSlopePixelZ(int x, int y, bool ground_vehicle)
 {
 	TileIndex tile = TileVirtXY(x, y);
-	if (IsTileType(tile, MP_TUNNELBRIDGE)) {
+	if (IsMainTileType(tile, MP_TUNNELBRIDGE)) {
 		/* Special case for bridge/tunnel tiles as vehicles don't follow the landscape there. */
 		return GetTunnelBridgeSlopePixelZ(tile, x, y, ground_vehicle);
 	}
@@ -406,7 +406,7 @@ std::tuple<Slope, int> GetFoundationSlope(TileIndex tile)
 
 	/* Get the foundations of the tile. */
 	Foundation f = FOUNDATION_NONE;
-	for (Tile t = tile; t.IsValid(); ++t) {
+	for (Tile t = Tile(tile); t.IsValid(); ++t) {
 		f = CombineFoundations(f, _tile_type_procs[t.tile_type()]->get_foundation_proc(tile, t, tileh));
 	}
 	assert(f != FOUNDATION_INVALID);
@@ -589,7 +589,7 @@ void DrawTile(TileInfo *ti)
 
 	/* Draw upper halftile part if present. */
 	if (IsValidCorner(halftile_corner)) {
-		ti->tile = ti->index; // Restart at the first associated tile.
+		ti->tile = Tile(ti->index); // Restart at the first associated tile.
 
 		DrawFoundation(ti, HalftileFoundation(halftile_corner));
 		do {
@@ -599,7 +599,7 @@ void DrawTile(TileInfo *ti)
 	}
 
 	if (ti->index != INVALID_TILE) {
-		ti->tile = ti->index;
+		ti->tile = Tile(ti->index);
 		DrawBridgeMiddle(ti);
 	}
 }
@@ -615,7 +615,7 @@ void MakeClearGrass(Tile tile)
 
 void DoClearSquare(TileIndex index)
 {
-	Tile tile = index;
+	Tile tile = Tile(index);
 	bool is_docking = IsDockingTile(tile);
 	bool can_animate = MayAnimateTile(tile);
 
@@ -630,7 +630,7 @@ void DoClearSquare(TileIndex index)
 	/* If the tile can have animation and we clear it, delete it from the animated tile list. */
 	if (can_animate) DeleteAnimatedTile(index, true);
 
-	tile = index; // Map might have re-allocated.
+	tile = Tile(index); // Map might have re-allocated.
 	MakeClear(tile, CLEAR_GRASS, _generating_world ? 3 : 0);
 	tile.SetAssociated(false);
 	MarkTileDirtyByTile(index);
@@ -653,7 +653,7 @@ void DoClearSquare(TileIndex index)
 TrackStatus GetTileTrackStatus(TileIndex tile, TransportType mode, uint sub_mode, DiagDirection side)
 {
 	TrackStatus result = 0;
-	for (Tile t = tile; t.IsValid(); ++t) {
+	for (Tile t = Tile(tile); t.IsValid(); ++t) {
 		result |= _tile_type_procs[t.tile_type()]->get_tile_track_status_proc(tile, t, mode, sub_mode, side);
 	}
 	return result;
@@ -779,7 +779,7 @@ CommandCost CmdLandscapeClear(DoCommandFlags flags, TileIndex tile)
 		}
 	} else {
 		/* Get costs from all associated tiles. */
-		Tile cur = tile;
+		Tile cur = Tile(tile);
 		while (cur) {
 			auto [tile_cost, deleted] = _tile_type_procs[GetTileType(cur)]->clear_tile_proc(tile, cur, flags); // Modifies cur if tile was deleted.
 			cost.AddCost(tile_cost.GetCost());
@@ -929,7 +929,7 @@ void InitializeLandscape()
 {
 	for (uint y = _settings_game.construction.freeform_edges ? 1 : 0; y < Map::MaxY(); y++) {
 		for (uint x = _settings_game.construction.freeform_edges ? 1 : 0; x < Map::MaxX(); x++) {
-			MakeClear(TileXY(x, y), CLEAR_GRASS, 3);
+			MakeClear(Tile(TileXY(x, y)), CLEAR_GRASS, 3);
 			SetTileHeight(TileXY(x, y), 0);
 			SetTropicZone(TileXY(x, y), TROPICZONE_NORMAL);
 			ClearBridgeMiddle(TileXY(x, y));
@@ -1076,7 +1076,7 @@ static void CreateDesertOrRainForest(uint desert_tropic_line)
 
 		auto allows_desert = [tile, desert_tropic_line](auto &offset) {
 			TileIndex t = AddTileIndexDiffCWrap(tile, offset);
-			return t == INVALID_TILE || (TileHeight(t) < desert_tropic_line && !IsTileType(t, MP_WATER));
+			return t == INVALID_TILE || (TileHeight(t) < desert_tropic_line && !IsMainTileType(t, MP_WATER));
 		};
 		if (std::all_of(std::begin(_make_desert_or_rainforest_data), std::end(_make_desert_or_rainforest_data), allows_desert)) {
 			SetTropicZone(tile, TROPICZONE_DESERT);
@@ -1096,7 +1096,7 @@ static void CreateDesertOrRainForest(uint desert_tropic_line)
 
 		auto allows_rainforest = [tile](auto &offset) {
 			TileIndex t = AddTileIndexDiffCWrap(tile, offset);
-			return t == INVALID_TILE || !IsTileType(t, MP_CLEAR) || !IsClearGround(t, CLEAR_DESERT);
+			return t == INVALID_TILE || !IsMainTileType(t, MP_CLEAR) || !IsClearGround(t, CLEAR_DESERT);
 		};
 		if (std::all_of(std::begin(_make_desert_or_rainforest_data), std::end(_make_desert_or_rainforest_data), allows_rainforest)) {
 			SetTropicZone(tile, TROPICZONE_RAINFOREST);

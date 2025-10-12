@@ -106,8 +106,8 @@ void AfterLoadCompanyStats()
 	}
 
 	Company *c;
-	for (const auto tile : Map::IterateIndex()) {
-		for (Tile rail_tile : RailTileIterator::Iterate(tile)) {
+	for (const auto index : Map::IterateIndex()) {
+		for (Tile rail_tile : RailTileIterator::Iterate(index)) {
 			c = Company::GetIfValid(GetTileOwner(rail_tile));
 			if (c != nullptr) {
 				uint pieces = 1;
@@ -123,6 +123,7 @@ void AfterLoadCompanyStats()
 			}
 		}
 
+		Tile tile = Tile(index);
 		switch (GetTileType(tile)) {
 			case MP_ROAD: {
 				/* Iterate all present road types as each can have a different owner. */
@@ -194,11 +195,11 @@ void AfterLoadCompanyStats()
 
 			case MP_TUNNELBRIDGE: {
 				/* Only count the tunnel/bridge if we're on the northern end tile. */
-				TileIndex other_end = GetOtherTunnelBridgeEnd(tile);
-				if (tile < other_end) {
+				TileIndex other_end = GetOtherTunnelBridgeEnd(index);
+				if (index < other_end) {
 					/* Count each tunnel/bridge TUNNELBRIDGE_TRACKBIT_FACTOR times to simulate
 					 * the higher structural maintenance needs, and don't forget the end tiles. */
-					uint len = (GetTunnelBridgeLength(tile, other_end) + 2) * TUNNELBRIDGE_TRACKBIT_FACTOR;
+					uint len = (GetTunnelBridgeLength(index, other_end) + 2) * TUNNELBRIDGE_TRACKBIT_FACTOR;
 
 					switch (GetTunnelBridgeTransportType(tile)) {
 						case TRANSPORT_RAIL:

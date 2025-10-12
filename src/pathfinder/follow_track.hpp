@@ -103,8 +103,9 @@ struct CFollowTrackT
 	{
 		assert(this->IsTram()); // this function shouldn't be called in other cases
 
-		if (IsNormalRoadTile(tile)) {
-			RoadBits rb = GetRoadBits(tile, RTT_TRAM);
+		Tile t = Tile::GetByType(tile, MP_ROAD);
+		if (IsNormalRoadTile(t)) {
+			RoadBits rb = GetRoadBits(t, RTT_TRAM);
 			switch (rb) {
 				case ROAD_NW: return DIAGDIR_NW;
 				case ROAD_SW: return DIAGDIR_SW;
@@ -178,7 +179,7 @@ struct CFollowTrackT
 			/* Check skipped station tiles as well. */
 			TileIndexDiff diff = TileOffsByDiagDir(this->exitdir);
 			for (TileIndex tile = this->new_tile - diff * this->tiles_skipped; tile != this->new_tile; tile += diff) {
-				if (HasStationReservation(tile)) {
+				if (HasStationReservation(Tile::GetByType(tile, MP_STATION))) {
 					this->new_td_bits = TRACKDIR_BIT_NONE;
 					this->err = EC_RESERVED;
 					return false;
@@ -210,18 +211,18 @@ protected:
 		this->tiles_skipped = 0;
 
 		/* extra handling for tunnels and bridges in our direction */
-		if (IsTileType(this->old_tile, MP_TUNNELBRIDGE)) {
-			DiagDirection enterdir = GetTunnelBridgeDirection(this->old_tile);
+		if (Tile ot = Tile::GetByType(this->old_tile, MP_TUNNELBRIDGE); ot.IsValid()) {
+			DiagDirection enterdir = GetTunnelBridgeDirection(ot);
 			if (enterdir == this->exitdir) {
 				/* we are entering the tunnel / bridge */
-				if (IsTunnel(this->old_tile)) {
+				if (IsTunnel(ot)) {
 					this->is_tunnel = true;
 					this->new_tile = GetOtherTunnelEnd(this->old_tile);
 				} else { // IsBridge(old_tile)
 					this->is_bridge = true;
 					this->new_tile = GetOtherBridgeEnd(this->old_tile);
 				}
-				this->new_sub_tile = this->new_tile;
+				this->new_sub_tile = Tile::GetByType(this->new_tile, MP_TUNNELBRIDGE);
 				this->tiles_skipped = GetTunnelBridgeLength(this->new_tile, this->old_tile);
 				return;
 			}
@@ -230,15 +231,15 @@ protected:
 
 		/* normal or station tile, do one step */
 		this->new_tile = TileAddByDiagDir(this->old_tile, this->exitdir);
-		this->new_sub_tile = this->new_tile;
+		this->new_sub_tile = Tile(this->new_tile);
 		if (IsRailTT() && Tile::HasType(this->new_tile, MP_RAILWAY)) {
 			this->new_sub_tile = GetRailTileFromDiagDir(this->new_tile, this->exitdir);
 		}
 
 		/* special handling for stations */
-		if (IsRailTT() && HasStationTileRail(this->new_tile)) {
+		if (IsRailTT() && HasStationTileRail(Tile::GetByType(this->new_tile, MP_STATION))) {
 			this->is_station = true;
-		} else if (IsRoadTT() && IsStationRoadStopTile(this->new_tile)) {
+		} else if (IsRoadTT() && IsStationRoadStopTile(Tile::GetByType(this->new_tile, MP_STATION))) {
 			this->is_station = true;
 		}
 	}
@@ -259,12 +260,23 @@ protected:
 	/** return true if we can leave old_tile in exitdir */
 	inline bool CanExitOldTile()
 	{
-		/* road stop can be left at one direction only unless it's a drive-through stop */
-		if (IsRoadTT() && IsBayRoadStopTile(this->old_tile)) {
-			DiagDirection exitdir = GetBayRoadStopDir(this->old_tile);
-			if (exitdir != this->exitdir) {
-				this->err = EC_NO_WAY;
-				return false;
+		if (IsRoadTT()) {
+			/* road stop can be left at one direction only unless it's a drive-through stop */
+			if (Tile ot = Tile::GetByType(this->old_tile, MP_STATION); IsBayRoadStopTile(ot)) {
+				DiagDirection exitdir = GetBayRoadStopDir(ot);
+				if (exitdir != this->exitdir) {
+					this->err = EC_NO_WAY;
+					return false;
+				}
+			}
+
+			/* road depots can be also left in one direction only */
+			if (IsDepotTypeTile(this->old_tile, TT())) {
+				DiagDirection exitdir = GetRoadDepotDirection(Tile::GetByType(this->old_tile, MP_ROAD));
+				if (exitdir != this->exitdir) {
+					this->err = EC_NO_WAY;
+					return false;
+				}
 			}
 		}
 
@@ -276,26 +288,42 @@ protected:
 				return false;
 			}
 		}
-
-		/* road depots can be also left in one direction only */
-		if (IsRoadTT() && IsDepotTypeTile(this->old_tile, TT())) {
-			DiagDirection exitdir = GetRoadDepotDirection(this->old_tile);
-			if (exitdir != this->exitdir) {
-				this->err = EC_NO_WAY;
-				return false;
-			}
-		}
 		return true;
 	}
 
 	/** return true if we can enter new_tile from exitdir */
 	inline bool CanEnterNewTile()
 	{
-		if (IsRoadTT() && IsBayRoadStopTile(this->new_tile)) {
+		if (IsRoadTT()) {
 			/* road stop can be entered from one direction only unless it's a drive-through stop */
-			DiagDirection exitdir = GetBayRoadStopDir(this->new_tile);
-			if (ReverseDiagDir(exitdir) != this->exitdir) {
-				this->err = EC_NO_WAY;
+			if (Tile nt = Tile::GetByType(this->new_tile, MP_STATION); IsBayRoadStopTile(nt)) {
+				DiagDirection exitdir = GetBayRoadStopDir(nt);
+				if (ReverseDiagDir(exitdir) != this->exitdir) {
+					this->err = EC_NO_WAY;
+					return false;
+				}
+			}
+
+			/* road depots can also be entered from one direction only */
+			if (IsDepotTypeTile(this->new_tile, TT())) {
+				DiagDirection exitdir = GetRoadDepotDirection(Tile::GetByType(this->new_tile, MP_ROAD));
+				if (ReverseDiagDir(exitdir) != this->exitdir) {
+					this->err = EC_NO_WAY;
+					return false;
+				}
+				/* don't try to enter other company's depots */
+				if (GetDepotOwner(this->new_tile) != this->veh_owner) {
+					this->err = EC_OWNER;
+					return false;
+				}
+			}
+
+			/* road transport is possible only on compatible road types */
+			const RoadVehicle *v = RoadVehicle::From(this->veh);
+			RoadType roadtype = GetRoadType(Tile(this->new_tile), GetRoadTramType(v->roadtype));
+			if (!v->compatible_roadtypes.Test(roadtype)) {
+				/* incompatible road type */
+				this->err = EC_RAIL_ROAD_TYPE;
 				return false;
 			}
 		}
@@ -309,19 +337,7 @@ protected:
 			}
 		}
 
-		/* road and rail depots can also be entered from one direction only */
-		if (IsRoadTT() && IsDepotTypeTile(this->new_tile, TT())) {
-			DiagDirection exitdir = GetRoadDepotDirection(this->new_tile);
-			if (ReverseDiagDir(exitdir) != this->exitdir) {
-				this->err = EC_NO_WAY;
-				return false;
-			}
-			/* don't try to enter other company's depots */
-			if (GetTileOwner(this->new_tile) != this->veh_owner) {
-				this->err = EC_OWNER;
-				return false;
-			}
-		}
+		/* rail depots can also be entered from one direction only */
 		if (IsRailTT()) {
 			/* rail transport has to have a valid sub-tile. */
 			assert(this->new_sub_tile.IsValid());
@@ -351,22 +367,11 @@ protected:
 			}
 		}
 
-		/* road transport is possible only on compatible road types */
-		if (IsRoadTT()) {
-			const RoadVehicle *v = RoadVehicle::From(this->veh);
-			RoadType roadtype = GetRoadType(this->new_tile, GetRoadTramType(v->roadtype));
-			if (!v->compatible_roadtypes.Test(roadtype)) {
-				/* incompatible road type */
-				this->err = EC_RAIL_ROAD_TYPE;
-				return false;
-			}
-		}
-
 		/* tunnel holes and bridge ramps can be entered only from proper direction */
-		if (IsTileType(this->new_tile, MP_TUNNELBRIDGE)) {
-			if (IsTunnel(this->new_tile)) {
+		if (Tile nt = Tile::GetByType(this->new_tile, MP_TUNNELBRIDGE); nt.IsValid()) {
+			if (IsTunnel(nt)) {
 				if (!this->is_tunnel) {
-					DiagDirection tunnel_enterdir = GetTunnelBridgeDirection(this->new_tile);
+					DiagDirection tunnel_enterdir = GetTunnelBridgeDirection(nt);
 					if (tunnel_enterdir != this->exitdir) {
 						this->err = EC_NO_WAY;
 						return false;
@@ -374,7 +379,7 @@ protected:
 				}
 			} else { // IsBridge(new_tile)
 				if (!this->is_bridge) {
-					DiagDirection ramp_enderdir = GetTunnelBridgeDirection(this->new_tile);
+					DiagDirection ramp_enderdir = GetTunnelBridgeDirection(nt);
 					if (ramp_enderdir != this->exitdir) {
 						this->err = EC_NO_WAY;
 						return false;
@@ -387,7 +392,7 @@ protected:
 		if (IsRailTT() && this->is_station) {
 			/* entered railway station
 			 * get platform length */
-			uint length = BaseStation::GetByTile(this->new_tile)->GetPlatformLength(this->new_tile, TrackdirToExitdir(this->old_td));
+			uint length = BaseStation::GetByTile(Tile::GetByType(this->new_tile, MP_STATION))->GetPlatformLength(this->new_tile, TrackdirToExitdir(this->old_td));
 			/* how big step we must do to get to the last platform tile? */
 			this->tiles_skipped = length - 1;
 			/* move to the platform end */
@@ -405,7 +410,7 @@ protected:
 	{
 		/* rail and road depots cause reversing */
 		if (!IsWaterTT() && IsDepotTypeTile(this->old_tile, TT())) {
-			DiagDirection exitdir = IsRailTT() ? GetRailDepotDirection(GetRailDepotTile(this->old_tile)) : GetRoadDepotDirection(this->old_tile);
+			DiagDirection exitdir = IsRailTT() ? GetRailDepotDirection(GetRailDepotTile(this->old_tile)) : GetRoadDepotDirection(Tile::GetByType(this->old_tile, MP_ROAD));
 			if (exitdir != this->exitdir) {
 				/* reverse */
 				this->new_tile = this->old_tile;
@@ -420,12 +425,15 @@ protected:
 			}
 		}
 
+		if (!IsRoadTT()) return false;
+
 		/* Single tram bits and standard road stops cause reversing. */
-		if (IsRoadTT() && ((this->IsTram() && GetSingleTramBit(this->old_tile) == ReverseDiagDir(this->exitdir)) ||
-				(IsBayRoadStopTile(this->old_tile) && GetBayRoadStopDir(this->old_tile) == ReverseDiagDir(this->exitdir)))) {
+		if (Tile ot = Tile::GetByType(this->old_tile, MP_STATION);
+				(this->IsTram() && GetSingleTramBit(this->old_tile) == ReverseDiagDir(this->exitdir)) ||
+				(IsBayRoadStopTile(ot) && GetBayRoadStopDir(ot) == ReverseDiagDir(this->exitdir))) {
 			/* reverse */
 			this->new_tile = this->old_tile;
-			this->new_sub_tile = this->new_tile;
+			this->new_sub_tile = ot;
 			this->new_td_bits = TrackdirToTrackdirBits(ReverseTrackdir(this->old_td));
 			this->exitdir = ReverseDiagDir(this->exitdir);
 			this->tiles_skipped = 0;
@@ -466,8 +474,8 @@ public:
 		int max_speed = INT_MAX; // no limit
 
 		/* Check for on-bridge speed limit */
-		if (!IsWaterTT() && IsBridgeTile(this->old_tile)) {
-			int spd = GetBridgeSpec(GetBridgeType(this->old_tile))->speed;
+		if (!IsWaterTT() && IsBridgeTile(Tile::GetByType(this->old_tile, MP_TUNNELBRIDGE))) {
+			int spd = GetBridgeSpec(GetBridgeType(Tile::GetByType(this->old_tile, MP_TUNNELBRIDGE)))->speed;
 			if (IsRoadTT()) spd *= 2;
 			max_speed = std::min(max_speed, spd);
 		}
@@ -478,7 +486,7 @@ public:
 		}
 		if (IsRoadTT()) {
 			/* max_speed is already in roadvehicle units, no need to further modify (divide by 2) */
-			uint16_t road_speed = GetRoadTypeInfo(GetRoadType(this->old_tile, GetRoadTramType(RoadVehicle::From(this->veh)->roadtype)))->max_speed;
+			uint16_t road_speed = GetRoadTypeInfo(GetRoadType(Tile(this->old_tile), GetRoadTramType(RoadVehicle::From(this->veh)->roadtype)))->max_speed;
 			if (road_speed > 0) max_speed = std::min<int>(max_speed, road_speed);
 		}
 

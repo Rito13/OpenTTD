@@ -72,6 +72,16 @@ size_t ObjectSpec::Count()
 }
 
 /**
+ * Get the specification associated with a tile.
+ * @param index The tile to fetch the data for.
+ * @return The specification.
+ */
+/* static */ const ObjectSpec *ObjectSpec::GetByTile(TileIndex index)
+{
+	return ObjectSpec::Get(GetObjectType(index));
+}
+
+/**
  * Check whether the object might be available at some point in this game with the current game mode.
  * @return true if it might be available.
  */

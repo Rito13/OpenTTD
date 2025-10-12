@@ -55,6 +55,16 @@ AirportTileOverrideManager _airporttile_mngr(NEW_AIRPORTTILE_OFFSET, NUM_AIRPORT
 }
 
 /**
+ * Retrieve airport tile spec for the given airport tile.
+ * @param index The airport tile.
+ * @return A pointer to the corresponding AirportTileSpec.
+ */
+/* static */ const AirportTileSpec *AirportTileSpec::GetByTile(TileIndex index)
+{
+	return AirportTileSpec::Get(GetAirportGfx(index));
+}
+
+/**
  * This function initializes the tile array of AirportTileSpec
  */
 void AirportTileSpec::ResetAirportTiles()
@@ -112,7 +122,7 @@ StationGfx GetTranslatedAirportTileID(StationGfx gfx)
 static uint32_t GetNearbyAirportTileInformation(uint8_t parameter, TileIndex tile, StationID index, bool grf_version8)
 {
 	if (parameter != 0) tile = GetNearbyTile(parameter, tile); // only perform if it is required
-	bool is_same_airport = (IsTileType(tile, MP_STATION) && IsAirport(tile) && GetStationIndex(tile) == index);
+	bool is_same_airport = (IsMainTileType(tile, MP_STATION) && IsAirport(tile) && GetStationIndex(tile) == index);
 
 	return GetNearbyTileInformation(tile, grf_version8) | (is_same_airport ? 1 : 0) << 8;
 }

@@ -129,9 +129,10 @@ struct Industry : IndustryPool::PoolItem<&_industry_pool> {
 	 * @param tile The tile to check.
 	 * @return True if the tile is part of this industry.
 	 */
-	inline bool TileBelongsToIndustry(TileIndex tile) const
+	inline bool TileBelongsToIndustry(TileIndex index) const
 	{
-		return IsTileType(tile, MP_INDUSTRY) && GetIndustryIndex(tile) == this->index;
+		Tile tile = Tile::GetByType(index, MP_INDUSTRY);
+		return tile.IsValid() && GetIndustryIndex(tile) == this->index;
 	}
 
 	/**
@@ -235,6 +236,17 @@ struct Industry : IndustryPool::PoolItem<&_industry_pool> {
 	static inline Industry *GetByTile(Tile tile)
 	{
 		return Industry::Get(GetIndustryIndex(tile));
+	}
+
+	/**
+	 * Get the industry of the given tile
+	 * @param index the tile to get the industry from
+	 * @pre IsTileType(t, MP_INDUSTRY)
+	 * @return the industry
+	 */
+	static inline Industry *GetByTile(TileIndex index)
+	{
+		return Industry::Get(GetIndustryIndex(index));
 	}
 
 	static Industry *GetRandom();

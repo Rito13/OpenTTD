@@ -215,7 +215,7 @@ void ConvertRailTypes()
 			SetRailType(rail, railtype_conversion_map[GetRailType(rail)]);
 		}
 
-		switch (GetTileType(t)) {
+		switch (GetMainTileType(t)) {
 			case MP_STATION:
 				if (HasStationRail(t)) {
 					SetRailType(t, railtype_conversion_map[GetRailType(t)]);

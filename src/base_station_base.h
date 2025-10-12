@@ -164,6 +164,16 @@ struct BaseStation : StationPool::PoolItem<&_station_pool> {
 	}
 
 	/**
+	 * Get the base station belonging to a specific tile.
+	 * @param index The tile to get the base station from.
+	 * @return the station associated with that tile.
+	 */
+	static inline BaseStation *GetByTile(TileIndex index)
+	{
+		return BaseStation::Get(GetStationIndex(index));
+	}
+
+	/**
 	 * Check whether the base station currently is in use; in use means
 	 * that it is not scheduled for deletion and that it still has some
 	 * facilities left.
@@ -268,6 +278,16 @@ struct SpecializedStation : public BaseStation {
 	static inline T *GetByTile(Tile tile)
 	{
 		return GetIfValid(GetStationIndex(tile));
+	}
+
+	/**
+	 * Get the station belonging to a specific tile.
+	 * @param index The tile to get the station from.
+	 * @return the station associated with that tile.
+	 */
+	static inline T *GetByTile(TileIndex index)
+	{
+		return GetIfValid(GetStationIndex(index));
 	}
 
 	/**

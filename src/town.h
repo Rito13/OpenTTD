@@ -142,6 +142,11 @@ struct Town : TownPool::PoolItem<&_town_pool> {
 		return Town::Get(GetTownIndex(tile));
 	}
 
+	static inline Town *GetByTile(TileIndex index)
+	{
+		return Town::Get(GetTownIndex(Tile(index)));
+	}
+
 	static Town *GetRandom();
 	static void PostDestructor(size_t index);
 

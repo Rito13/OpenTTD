@@ -241,7 +241,7 @@ uint16_t GetAiPurchaseCallbackResult(uint8_t feature, CargoType cargo_type, uint
  */
 void AmbientSoundEffectCallback(TileIndex tile)
 {
-	assert(IsTileType(tile, MP_CLEAR) || IsTileType(tile, MP_WATER));
+	assert(IsMainTileType(tile, MP_CLEAR) || IsMainTileType(tile, MP_WATER));
 
 	/* Only run every 1/200-th time. */
 	uint32_t r; // Save for later
@@ -251,7 +251,7 @@ void AmbientSoundEffectCallback(TileIndex tile)
 	GenericResolverObject object(false, CBID_SOUNDS_AMBIENT_EFFECT);
 	object.generic_scope.feature = GSF_SOUNDFX;
 
-	TileType tt = GetTileType(tile);
+	TileType tt = GetMainTileType(tile);
 	if (Tile::HasType(tile, MP_TREES)) tt = MP_TREES;
 
 	uint32_t param1_v7 = tt << 28 | Clamp(TileHeight(tile), 0, 15) << 24 | GB(r, 16, 8) << 16 | GetTerrainType(tile);

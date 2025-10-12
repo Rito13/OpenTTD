@@ -56,7 +56,7 @@ struct CanalResolverObject : public ResolverObject {
 /* virtual */ uint32_t CanalScopeResolver::GetRandomBits() const
 {
 	/* Return random bits only for water tiles, not station tiles */
-	return IsTileType(this->tile, MP_WATER) ? GetWaterTileRandomBits(this->tile) : 0;
+	return IsMainTileType(this->tile, MP_WATER) ? GetWaterTileRandomBits(this->tile) : 0;
 }
 
 /* virtual */ uint32_t CanalScopeResolver::GetVariable(uint8_t variable, [[maybe_unused]] uint32_t parameter, bool &available) const
@@ -66,7 +66,7 @@ struct CanalResolverObject : public ResolverObject {
 		case 0x80: {
 			int z = GetTileZ(this->tile);
 			/* Return consistent height within locks */
-			if (IsTileType(this->tile, MP_WATER) && IsLock(this->tile) && GetLockPart(this->tile) == LOCK_PART_UPPER) z--;
+			if (IsMainTileType(this->tile, MP_WATER) && IsLock(this->tile) && GetLockPart(this->tile) == LOCK_PART_UPPER) z--;
 			return z;
 		}
 
@@ -97,7 +97,7 @@ struct CanalResolverObject : public ResolverObject {
 		}
 
 		/* Random data for river or canal tiles, otherwise zero */
-		case 0x83: return IsTileType(this->tile, MP_WATER) ? GetWaterTileRandomBits(this->tile) : 0;
+		case 0x83: return IsMainTileType(this->tile, MP_WATER) ? GetWaterTileRandomBits(this->tile) : 0;
 	}
 
 	Debug(grf, 1, "Unhandled canal variable 0x{:02X}", variable);

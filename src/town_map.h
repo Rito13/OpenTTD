@@ -27,6 +27,19 @@ inline TownID GetTownIndex(Tile t)
 }
 
 /**
+ * Get the index of which town this house/street is attached to.
+ * @param i the tile
+ * @pre IsTileType(t, MP_HOUSE) or IsTileType(t, MP_ROAD) but not a road depot
+ * @return TownID
+ */
+inline TownID GetTownIndex(TileIndex i)
+{
+	Tile t = Tile::GetByType(i, MP_HOUSE);
+	if (!t.IsValid()) t = Tile::GetByType(i, MP_ROAD);
+	return GetTownIndex(t);
+}
+
+/**
  * Set the town index for a road or house tile.
  * @param t the tile
  * @param index the index of the town
@@ -36,6 +49,19 @@ inline void SetTownIndex(Tile t, TownID index)
 {
 	assert(IsTileType(t, MP_HOUSE) || (IsTileType(t, MP_ROAD) && !IsRoadDepot(t)));
 	t.m2() = index.base();
+}
+
+/**
+ * Set the town index for a road or house tile.
+ * @param i the tile
+ * @param index the index of the town
+ * @pre IsTileType(t, MP_HOUSE) or IsTileType(t, MP_ROAD) but not a road depot
+ */
+inline void SetTownIndex(TileIndex i, TownID index)
+{
+	Tile t = Tile::GetByType(i, MP_HOUSE);
+	if (!t.IsValid()) t = Tile::GetByType(i, MP_ROAD);
+	SetTownIndex(t, index);
 }
 
 /**
@@ -53,6 +79,18 @@ inline HouseID GetCleanHouseType(Tile t)
 
 /**
  * Get the type of this house, which is an index into the house spec array
+ * without doing any NewGRF related translations.
+ * @param i the tile
+ * @pre IsTileType(t, MP_HOUSE)
+ * @return house type
+ */
+inline HouseID GetCleanHouseType(TileIndex i)
+{
+	return GetCleanHouseType(Tile::GetByType(i, MP_HOUSE));
+}
+
+/**
+ * Get the type of this house, which is an index into the house spec array
  * @param t the tile
  * @pre IsTileType(t, MP_HOUSE)
  * @return house type
@@ -60,6 +98,17 @@ inline HouseID GetCleanHouseType(Tile t)
 inline HouseID GetHouseType(Tile t)
 {
 	return GetTranslatedHouseID(GetCleanHouseType(t));
+}
+
+/**
+ * Get the type of this house, which is an index into the house spec array
+ * @param i the tile
+ * @pre IsTileType(t, MP_HOUSE)
+ * @return house type
+ */
+inline HouseID GetHouseType(TileIndex i)
+{
+	return GetHouseType(Tile::GetByType(i, MP_HOUSE));
 }
 
 /**
@@ -75,6 +124,17 @@ inline void SetHouseType(Tile t, HouseID house_id)
 }
 
 /**
+ * Set the house type.
+ * @param i the tile
+ * @param house_id the new house type
+ * @pre IsTileType(t, MP_HOUSE)
+ */
+inline void SetHouseType(TileIndex i, HouseID house_id)
+{
+	SetHouseType(Tile::GetByType(i, MP_HOUSE), house_id);
+}
+
+/**
  * Check if the house is protected from removal by towns.
  * @param t The tile.
  * @return If the house is protected from the town upgrading it.
@@ -86,6 +146,16 @@ inline bool IsHouseProtected(Tile t)
 }
 
 /**
+ * Check if the house is protected from removal by towns.
+ * @param i The tile.
+ * @return If the house is protected from the town upgrading it.
+ */
+inline bool IsHouseProtected(TileIndex i)
+{
+	return IsHouseProtected(Tile::GetByType(i, MP_HOUSE));
+}
+
+/**
  * Set a house as protected from removal by towns.
  * @param t The tile.
  * @param house_protected Whether the house is protected from the town upgrading it.
@@ -94,6 +164,16 @@ inline void SetHouseProtected(Tile t, bool house_protected)
 {
 	assert(IsTileType(t, MP_HOUSE));
 	SB(t.m3(), 5, 1, house_protected ? 1 : 0);
+}
+
+/**
+ * Set a house as protected from removal by towns.
+ * @param i The tile.
+ * @param house_protected Whether the house is protected from the town upgrading it.
+ */
+inline void SetHouseProtected(TileIndex i, bool house_protected)
+{
+	SetHouseProtected(Tile::GetByType(i, MP_HOUSE), house_protected);
 }
 
 /**
@@ -171,6 +251,16 @@ inline bool IsHouseCompleted(Tile t)
 }
 
 /**
+ * Get the completion of this house
+ * @param i the tile
+ * @return true if it is, false if it is not
+ */
+inline bool IsHouseCompleted(TileIndex i)
+{
+	return IsHouseCompleted(Tile::GetByType(i, MP_HOUSE));
+}
+
+/**
  * Mark this house as been completed
  * @param t the tile
  * @param status
@@ -179,6 +269,16 @@ inline void SetHouseCompleted(Tile t, bool status)
 {
 	assert(IsTileType(t, MP_HOUSE));
 	SB(t.m3(), 7, 1, !!status);
+}
+
+/**
+ * Mark this house as been completed
+ * @param i the tile
+ * @param status
+ */
+inline void SetHouseCompleted(TileIndex i, bool status)
+{
+	SetHouseCompleted(Tile::GetByType(i, MP_HOUSE), status);
 }
 
 /**

@@ -78,6 +78,7 @@ struct AirportTileSpec {
 
 	static const AirportTileSpec *Get(StationGfx gfx);
 	static const AirportTileSpec *GetByTile(Tile tile);
+	static const AirportTileSpec *GetByTile(TileIndex index);
 
 	static void ResetAirportTiles();
 

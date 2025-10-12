@@ -152,14 +152,14 @@ Industry::~Industry()
 	const bool has_neutral_station = this->neutral_station != nullptr;
 
 	for (TileIndex tile_cur : this->location) {
-		if (IsTileType(tile_cur, MP_INDUSTRY)) {
+		if (IsMainTileType(tile_cur, MP_INDUSTRY)) {
 			if (GetIndustryIndex(tile_cur) == this->index) {
 				DeleteNewGRFInspectWindow(GSF_INDUSTRYTILES, tile_cur.base());
 
 				/* MakeWaterKeepingClass() can also handle 'land' */
 				MakeWaterKeepingClass(tile_cur, OWNER_NONE);
 			}
-		} else if (IsTileType(tile_cur, MP_STATION) && IsOilRig(tile_cur)) {
+		} else if (IsMainTileType(tile_cur, MP_STATION) && IsOilRig(tile_cur)) {
 			DeleteOilRig(tile_cur);
 		}
 	}
@@ -176,7 +176,7 @@ Industry::~Industry()
 
 		/* Remove the farmland and convert it to regular tiles over time. */
 		for (TileIndex tile_cur : ta) {
-			if (IsTileType(tile_cur, MP_CLEAR) && IsClearGround(tile_cur, CLEAR_FIELDS) &&
+			if (IsMainTileType(tile_cur, MP_CLEAR) && IsClearGround(tile_cur, CLEAR_FIELDS) &&
 					GetIndustryIndexOfField(tile_cur) == this->index) {
 				SetIndustryIndexOfField(tile_cur, IndustryID::Invalid());
 			}
@@ -780,7 +780,7 @@ static void MakeIndustryTileBigger(TileIndex tile)
 		 * station. */
 		TileIndex other = tile + TileDiffXY(0, 1);
 
-		if (IsTileType(other, MP_INDUSTRY) &&
+		if (IsMainTileType(other, MP_INDUSTRY) &&
 				GetIndustryGfx(other) == GFX_OILRIG_1 &&
 				GetIndustryIndex(tile) == GetIndustryIndex(other)) {
 			BuildOilRig(tile);
@@ -791,7 +791,7 @@ static void MakeIndustryTileBigger(TileIndex tile)
 	case GFX_TOY_FACTORY:
 	case GFX_BUBBLE_CATCHER:
 	case GFX_TOFFEE_QUARY:
-		SetAnimationFrame(tile, 0);
+		SetAnimationFrame(Tile::GetByType(tile, MP_INDUSTRY), 0);
 		SetIndustryAnimationLoop(tile, 0);
 		break;
 
@@ -978,7 +978,7 @@ static bool ChangeTileOwner_Industry(TileIndex, Tile &tile, Owner old_owner, Own
 bool IsTileForestIndustry(TileIndex tile)
 {
 	/* Check for industry tile */
-	if (!IsTileType(tile, MP_INDUSTRY)) return false;
+	if (!IsMainTileType(tile, MP_INDUSTRY)) return false;
 
 	const Industry *ind = Industry::GetByTile(tile);
 
@@ -1001,7 +1001,7 @@ static const uint8_t _plantfarmfield_type[] = {1, 1, 1, 1, 1, 3, 3, 4, 4, 4, 5, 
 static bool IsSuitableForFarmField(TileIndex tile, bool allow_fields)
 {
 	if (Tile::HasType(tile, MP_RAILWAY)) return false;
-	if (IsTileType(tile, MP_CLEAR)) {
+	if (IsMainTileType(tile, MP_CLEAR)) {
 		return !IsSnowTile(tile) && !IsClearGround(tile, CLEAR_DESERT) && (allow_fields || !IsClearGround(tile, CLEAR_FIELDS));
 	}
 	return false;
@@ -1022,9 +1022,9 @@ static void SetupFarmFieldFence(TileIndex tile, int size, uint8_t type, DiagDire
 	do {
 		tile = Map::WrapToMap(tile);
 
-		if (IsTileType(tile, MP_CLEAR) && IsClearGround(tile, CLEAR_FIELDS)) {
+		if (IsMainTileType(tile, MP_CLEAR) && IsClearGround(tile, CLEAR_FIELDS)) {
 			TileIndex neighbour = tile + neighbour_diff;
-			if (!IsTileType(neighbour, MP_CLEAR) || !IsClearGround(neighbour, CLEAR_FIELDS) || GetFence(neighbour, ReverseDiagDir(side)) == 0) {
+			if (!IsMainTileType(neighbour, MP_CLEAR) || !IsClearGround(neighbour, CLEAR_FIELDS) || GetFence(neighbour, ReverseDiagDir(side)) == 0) {
 				/* Add fence as long as neighbouring tile does not already have a fence in the same position. */
 				uint8_t or_ = type;
 
@@ -1072,7 +1072,7 @@ static void PlantFarmField(TileIndex tile, IndustryID industry)
 	for (TileIndex cur_tile : ta) {
 		assert(cur_tile < Map::Size());
 		if (IsSuitableForFarmField(cur_tile, true)) {
-			MakeField(cur_tile, field_type, industry);
+			MakeField(Tile(cur_tile), field_type, industry);
 			SetClearCounter(cur_tile, counter);
 			MarkTileDirtyByTile(cur_tile);
 		}
@@ -1487,8 +1487,8 @@ static CommandCost CheckIfIndustryTilesAreFree(TileIndex tile, const IndustryTil
 			if (!HasBit(its->slopes_refused, 5) && ((HasTileWaterClass(cur_tile) && IsTileOnWater(cur_tile)) != ind_behav.Test(IndustryBehaviour::BuiltOnWater))) return CommandCost(STR_ERROR_SITE_UNSUITABLE);
 
 			if (ind_behav.Any({IndustryBehaviour::OnlyInTown, IndustryBehaviour::Town1200More}) || // Tile must be a house
-					(ind_behav.Test(IndustryBehaviour::OnlyNearTown) && IsTileType(cur_tile, MP_HOUSE))) { // Tile is allowed to be a house (and it is a house)
-				if (!IsTileType(cur_tile, MP_HOUSE)) {
+					(ind_behav.Test(IndustryBehaviour::OnlyNearTown) && IsMainTileType(cur_tile, MP_HOUSE))) { // Tile is allowed to be a house (and it is a house)
+				if (!IsMainTileType(cur_tile, MP_HOUSE)) {
 					return CommandCost(STR_ERROR_CAN_ONLY_BE_BUILT_IN_TOWNS);
 				}
 
@@ -1579,13 +1579,13 @@ static CommandCost CheckIfIndustryIsAllowed(TileIndex tile, IndustryType type, c
 static bool CheckCanTerraformSurroundingTiles(TileIndex tile, uint height, int internal)
 {
 	/* Check if we don't leave the map */
-	if (TileX(tile) == 0 || TileY(tile) == 0 || GetTileType(tile) == MP_VOID) return false;
+	if (TileX(tile) == 0 || TileY(tile) == 0 || GetMainTileType(tile) == MP_VOID) return false;
 
 	TileArea ta(tile - TileDiffXY(1, 1), 2, 2);
 	for (TileIndex tile_walk : ta) {
 		uint curh = TileHeight(tile_walk);
 		/* Is the tile clear? */
-		if (GetTileType(tile_walk) != MP_CLEAR || Tile::HasType(tile_walk, MP_RAILWAY)) return false;
+		if (GetMainTileType(tile_walk) != MP_CLEAR || Tile::HasType(tile_walk, MP_RAILWAY)) return false;
 
 		/* Don't allow too big of a change if this is the sub-tile check */
 		if (internal != 0 && Delta(curh, height) > 1) return false;
@@ -1731,7 +1731,7 @@ static void PopulateStationsNearby(Industry *ind)
 	}
 
 	ForAllStationsAroundTiles(ind->location, [ind](Station *st, TileIndex tile) {
-		if (!IsTileType(tile, MP_INDUSTRY) || GetIndustryIndex(tile) != ind->index) return false;
+		if (!IsMainTileType(tile, MP_INDUSTRY) || GetIndustryIndex(tile) != ind->index) return false;
 		ind->stations_near.insert(st);
 		st->AddIndustryToDeliver(ind, tile);
 		return false;
@@ -1929,7 +1929,7 @@ static void DoCreateNewIndustry(Industry *i, TileIndex tile, IndustryType type, 
 
 			Command<CMD_LANDSCAPE_CLEAR>::Do({DoCommandFlag::Execute, DoCommandFlag::NoTestTownRating, DoCommandFlag::NoModifyTownRating}, cur_tile);
 
-			MakeIndustry(cur_tile, i->index, it.gfx, Random(), wc);
+			MakeIndustry(Tile(cur_tile), i->index, it.gfx, Random(), wc);
 
 			if (_generating_world) {
 				SetIndustryConstructionCounter(cur_tile, 3);

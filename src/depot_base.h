@@ -47,7 +47,7 @@ struct Depot : DepotPool::PoolItem<&_depot_pool> {
 	 */
 	inline bool IsOfType(const Depot *d) const
 	{
-		return GetTileType(d->xy) == GetTileType(this->xy);
+		return GetTileType(GetDepotTile(d->xy)) == GetTileType(GetDepotTile(this->xy));
 	}
 };
 

@@ -441,7 +441,7 @@ void AfterLoadVehiclesPhase2(bool part_of_load)
 					for (RoadVehicle *u = rv; u != nullptr; u = u->Next()) {
 						u->roadtype = rv->roadtype;
 						u->compatible_roadtypes = rv->compatible_roadtypes;
-						if (GetRoadType(u->tile, rtt) == INVALID_ROADTYPE) SlErrorCorrupt("Road vehicle on invalid road type");
+						if (GetRoadType(Tile(u->tile), rtt) == INVALID_ROADTYPE) SlErrorCorrupt("Road vehicle on invalid road type");
 					}
 
 					RoadVehUpdateCache(rv);
