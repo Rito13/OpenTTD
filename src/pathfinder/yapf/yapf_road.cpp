@@ -55,36 +55,30 @@ protected:
 	}
 
 	/** return one tile cost */
-	inline int OneTileCost(TileIndex tile, Trackdir trackdir)
+	inline int OneTileCost(TileIndex index, Trackdir trackdir)
 	{
 		int cost = 0;
 		/* set base cost */
 		if (IsDiagonalTrackdir(trackdir)) {
 			cost += YAPF_TILE_LENGTH;
-			switch (GetTileType(tile)) {
-				case MP_STATION: {
-					if (IsRoadWaypoint(tile)) break;
 
-					const RoadStop *rs = RoadStop::GetByTile(tile, GetRoadStopType(tile));
-					if (IsDriveThroughStopTile(tile)) {
-						/* Increase the cost for drive-through road stops */
-						cost += Yapf().PfGetSettings().road_stop_penalty;
-						DiagDirection dir = TrackdirToExitdir(trackdir);
-						if (!RoadStop::IsDriveThroughRoadStopContinuation(tile, tile - TileOffsByDiagDir(dir))) {
-							/* When we're the first road stop in a 'queue' of them we increase
-							 * cost based on the fill percentage of the whole queue. */
-							const RoadStop::Entry &entry = rs->GetEntry(dir);
-							cost += entry.GetOccupied() * Yapf().PfGetSettings().road_stop_occupied_penalty / entry.GetLength();
-						}
-					} else {
-						/* Increase cost for filled road stops */
-						cost += Yapf().PfGetSettings().road_stop_bay_occupied_penalty * (!rs->IsFreeBay(0) + !rs->IsFreeBay(1)) / 2;
+			Tile tile = Tile::GetByType(index, MP_STATION);
+			if (tile.IsValid() && !IsRoadWaypoint(tile)) {
+				const RoadStop *rs = RoadStop::GetByTile(index, GetRoadStopType(tile));
+				if (IsDriveThroughStopTile(tile)) {
+					/* Increase the cost for drive-through road stops */
+					cost += Yapf().PfGetSettings().road_stop_penalty;
+					DiagDirection dir = TrackdirToExitdir(trackdir);
+					if (!RoadStop::IsDriveThroughRoadStopContinuation(index, index - TileOffsByDiagDir(dir))) {
+						/* When we're the first road stop in a 'queue' of them we increase
+							* cost based on the fill percentage of the whole queue. */
+						const RoadStop::Entry &entry = rs->GetEntry(dir);
+						cost += entry.GetOccupied() * Yapf().PfGetSettings().road_stop_occupied_penalty / entry.GetLength();
 					}
-					break;
+				} else {
+					/* Increase cost for filled road stops */
+					cost += Yapf().PfGetSettings().road_stop_bay_occupied_penalty * (!rs->IsFreeBay(0) + !rs->IsFreeBay(1)) / 2;
 				}
-
-				default:
-					break;
 			}
 		} else {
 			/* non-diagonal trackdir */
@@ -92,7 +86,7 @@ protected:
 		}
 
 		/* Increase the cost for level crossings */
-		if (IsLevelCrossingTile(tile)) {
+		if (IsLevelCrossingTile(index)) {
 			cost += Yapf().PfGetSettings().road_crossing_penalty;
 		}
 
@@ -134,7 +128,8 @@ public:
 			}
 
 			/* stop if we have just entered the depot */
-			if (IsRoadDepotTile(tile) && trackdir == DiagDirToDiagTrackdir(ReverseDiagDir(GetRoadDepotDirection(tile)))) {
+			if (Tile t = Tile::GetByType(tile, MP_ROAD); IsRoadDepotTile(t) &&
+					trackdir == DiagDirToDiagTrackdir(ReverseDiagDir(GetRoadDepotDirection(t)))) {
 				/* next time we will reverse and leave the depot */
 				break;
 			}
@@ -200,12 +195,12 @@ public:
 	/** Called by YAPF to detect if node ends in the desired destination */
 	inline bool PfDetectDestination(Node &n)
 	{
-		return IsRoadDepotTile(n.segment_last_tile);
+		return IsRoadDepotTile(Tile::GetByType(n.segment_last_tile, MP_ROAD));
 	}
 
 	inline bool PfDetectDestinationTile(TileIndex tile, Trackdir)
 	{
-		return IsRoadDepotTile(tile);
+		return IsRoadDepotTile(Tile::GetByType(tile, MP_ROAD));
 	}
 
 	/**
@@ -277,16 +272,17 @@ public:
 		return this->PfDetectDestinationTile(n.segment_last_tile, n.segment_last_td);
 	}
 
-	inline bool PfDetectDestinationTile(TileIndex tile, Trackdir trackdir)
+	inline bool PfDetectDestinationTile(TileIndex index, Trackdir trackdir)
 	{
 		if (this->dest_station != StationID::Invalid()) {
-			return IsTileType(tile, MP_STATION) &&
+			Tile tile = Tile::GetByType(index, MP_STATION);
+			return tile.IsValid() &&
 				GetStationIndex(tile) == this->dest_station &&
 				(this->station_type == GetStationType(tile)) &&
 				(this->non_artic || IsDriveThroughStopTile(tile));
 		}
 
-		return tile == this->dest_tile && HasTrackdir(this->dest_trackdirs, trackdir);
+		return index == this->dest_tile && HasTrackdir(this->dest_trackdirs, trackdir);
 	}
 
 	/**
@@ -414,7 +410,7 @@ public:
 			const Station *st = Yapf().GetDestinationStation();
 			if (st) {
 				const RoadStop *stop = st->GetPrimaryRoadStop(v);
-				if (stop != nullptr && (IsDriveThroughStopTile(stop->xy) || stop->GetNextRoadStop(v) != nullptr)) {
+				if (stop != nullptr && (IsDriveThroughStopTile(Tile::GetByType(stop->xy, MP_STATION)) || stop->GetNextRoadStop(v) != nullptr)) {
 					/* Destination station has at least 2 usable road stops, or first is a drive-through stop,
 					 * trim end of path cache within a number of tiles of road stop tile area */
 					TileArea non_cached_area = v->IsBus() ? st->bus_station : st->truck_station;

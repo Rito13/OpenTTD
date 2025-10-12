@@ -84,7 +84,7 @@ public:
 			return GetWaterRegionPatchInfo(tile) == this->intermediate_dest_region_patch;
 		}
 
-		if (this->dest_station != StationID::Invalid()) return IsDockingTile(tile) && IsShipDestinationTile(tile, this->dest_station);
+		if (this->dest_station != StationID::Invalid()) return IsDockingTile(Tile(tile)) && IsShipDestinationTile(tile, this->dest_station);
 
 		return tile == this->dest_tile && ((this->dest_trackdirs & TrackdirToTrackdirBits(trackdir)) != TRACKDIR_BIT_NONE);
 	}
@@ -367,7 +367,7 @@ public:
 		/* Additional penalty for curves. */
 		c += this->CurveCost(n.parent->GetTrackdir(), n.GetTrackdir());
 
-		if (IsDockingTile(n.GetTile())) {
+		if (IsDockingTile(Tile(n.GetTile()))) {
 			/* Check docking tile for occupancy. */
 			uint count = std::ranges::count_if(VehiclesOnTile(n.GetTile()), [](const Vehicle *v) {
 				/* Ignore other vehicles (aircraft) and ships inside depot. */

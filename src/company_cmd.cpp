@@ -391,7 +391,7 @@ CommandCost CheckOwnership(Owner owner, TileIndex tile)
  */
 CommandCost CheckTileOwnership(TileIndex index, Tile tile)
 {
-	if (!tile) tile = index;
+	if (!tile) tile = Tile(index);
 
 	Owner owner = GetTileOwner(tile);
 	return CheckOwnership(owner, index);

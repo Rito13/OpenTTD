@@ -172,6 +172,7 @@ struct StationSpec : NewGRFSpecBase<StationClassID> {
 using StationClass = NewGRFClass<StationSpec, StationClassID, STAT_CLASS_MAX>;
 
 const StationSpec *GetStationSpec(Tile t);
+const StationSpec *GetStationSpec(TileIndex i);
 
 /**
  * Get the station layout key for a given station layout size.

@@ -87,7 +87,7 @@
 {
 	[[maybe_unused]] auto check_tile = [](TileIndex i, Tile check) -> bool {
 		/* Check if the tile belongs to the tile index. */
-		for (Tile t = i; t.IsValid(); ++t) {
+		for (Tile t = Tile(i); t.IsValid(); ++t) {
 			if (t == check) return true;
 		}
 		return false;
@@ -96,7 +96,7 @@
 
 	/* Insert at the end if nothing is specified. */
 	if (!insert_after.IsValid()) {
-		insert_after = index;
+		insert_after = Tile(index);
 		while (insert_after.HasAssociated()) ++insert_after;
 	}
 
@@ -133,7 +133,7 @@
 {
 	assert(Tile(index).HasAssociated()); // Can't remove the last tile from a tile index.
 
-	for (Tile cur_tile = index; cur_tile.HasAssociated(); ++cur_tile) {
+	for (Tile cur_tile = Tile(index); cur_tile.HasAssociated(); ++cur_tile) {
 		if (cur_tile.tile + 1 == to_remove.tile) {
 			/* Copy associated tile flag from tile to be removed. */
 			bool has_next = to_remove.HasAssociated();

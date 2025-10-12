@@ -634,7 +634,7 @@ void ForAllStationsAroundTiles(const TileArea &ta, Func func)
 	uint max_c = _settings_game.station.modified_catchment ? MAX_CATCHMENT : CA_UNMODIFIED;
 	TileArea ta_ext = TileArea(ta).Expand(max_c);
 	for (TileIndex tile : ta_ext) {
-		if (IsTileType(tile, MP_STATION)) seen_stations.insert(GetStationIndex(tile));
+		if (IsMainTileType(tile, MP_STATION)) seen_stations.insert(GetStationIndex(tile));
 	}
 
 	for (StationID stationid : seen_stations) {

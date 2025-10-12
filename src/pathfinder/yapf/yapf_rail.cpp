@@ -68,20 +68,23 @@ private:
 	}
 
 	/** Reserve a railway platform. Tile contains the failed tile on abort. */
-	bool ReserveRailStationPlatform(TileIndex &tile, DiagDirection dir)
+	bool ReserveRailStationPlatform(TileIndex &index, DiagDirection dir)
 	{
-		TileIndex     start = tile;
+		TileIndex start_index = index;
+		Tile start = Tile::GetByType(index, MP_STATION);
+		Tile tile = Tile::GetByType(index, MP_STATION);
 		TileIndexDiff diff = TileOffsByDiagDir(dir);
 
 		do {
 			if (HasStationReservation(tile)) return false;
 			SetRailStationReservation(tile, true);
-			MarkTileDirtyByTile(tile);
-			tile = TileAdd(tile, diff);
-		} while (IsCompatibleTrainStationTile(tile, start) && tile != this->origin_tile);
+			MarkTileDirtyByTile(index);
+			index = TileAdd(index, diff);
+			tile = Tile::GetByType(index, MP_STATION);
+		} while (IsCompatibleTrainStationTile(tile, start) && index != this->origin_tile);
 
 		auto *st = Station::GetByTile(start);
-		TriggerStationRandomisation(st, start, StationRandomTrigger::PathReservation);
+		TriggerStationRandomisation(st, start_index, StationRandomTrigger::PathReservation);
 
 		return true;
 	}
@@ -90,7 +93,8 @@ private:
 	bool ReserveSingleTrack(TileIndex tile, Trackdir td)
 	{
 		Trackdir rev_td = ReverseTrackdir(td);
-		if (IsRailStationTile(tile)) {
+		Tile station_tile = Tile::GetByType(tile, MP_STATION);
+		if (IsRailStationTile(station_tile)) {
 			if (!ReserveRailStationPlatform(tile, TrackdirToExitdir(rev_td))) {
 				/* Platform could not be reserved, undo. */
 				this->res_fail_tile = tile;
@@ -111,8 +115,8 @@ private:
 				MarkTileDirtyByTile(tile);
 			}
 
-			if (IsRailWaypointTile(tile)) {
-				auto *st = BaseStation::GetByTile(tile);
+			if (IsRailWaypointTile(station_tile)) {
+				auto *st = BaseStation::GetByTile(station_tile);
 				TriggerStationRandomisation(st, tile, StationRandomTrigger::PathReservation);
 			}
 		}
@@ -123,11 +127,11 @@ private:
 	/** Unreserve a single track/platform. Stops when the previous failure is reached. */
 	bool UnreserveSingleTrack(TileIndex tile, Trackdir td)
 	{
-		if (IsRailStationTile(tile)) {
-			TileIndex     start = tile;
+		if (Tile rst = Tile::GetByType(tile, MP_STATION); IsRailStationTile(rst)) {
+			Tile start = rst;
 			TileIndexDiff diff = TileOffsByDiagDir(TrackdirToExitdir(ReverseTrackdir(td)));
-			while ((tile != this->res_fail_tile || td != this->res_fail_td) && IsCompatibleTrainStationTile(tile, start)) {
-				SetRailStationReservation(tile, false);
+			while ((tile != this->res_fail_tile || td != this->res_fail_td) && IsCompatibleTrainStationTile(rst, start)) {
+				SetRailStationReservation(rst, false);
 				tile = TileAdd(tile, diff);
 			}
 		} else if (tile != this->res_fail_tile || td != this->res_fail_td) {
@@ -582,7 +586,7 @@ bool YapfTrainCheckReverse(const Train *v)
 
 	if (v->track == TRACK_BIT_WORMHOLE) {
 		/* front in tunnel / on bridge */
-		DiagDirection dir_into_wormhole = GetTunnelBridgeDirection(tile);
+		DiagDirection dir_into_wormhole = GetTunnelBridgeDirection(Tile::GetByType(tile, MP_TUNNELBRIDGE));
 
 		if (TrackdirToExitdir(td) == dir_into_wormhole) tile = GetOtherTunnelBridgeEnd(tile);
 		/* Now 'tile' is the tunnel entry/bridge ramp the train will reach when driving forward */
@@ -597,7 +601,7 @@ bool YapfTrainCheckReverse(const Train *v)
 
 	if (last_veh->track == TRACK_BIT_WORMHOLE) {
 		/* back in tunnel / on bridge */
-		DiagDirection dir_into_wormhole = GetTunnelBridgeDirection(tile_rev);
+		DiagDirection dir_into_wormhole = GetTunnelBridgeDirection(Tile::GetByType(tile_rev, MP_TUNNELBRIDGE));
 
 		if (TrackdirToExitdir(td_rev) == dir_into_wormhole) tile_rev = GetOtherTunnelBridgeEnd(tile_rev);
 		/* Now 'tile_rev' is the tunnel entry/bridge ramp the train will reach when reversing */

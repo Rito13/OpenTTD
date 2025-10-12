@@ -70,7 +70,7 @@ private:
 
 		explicit Iterator(TileIndex index) : index(index) {}
 		bool operator==(const Iterator &other) const { return this->index == other.index; }
-		value_type operator*() const { return this->index; }
+		value_type operator*() const { return value_type(this->index); }
 		Iterator & operator++() { this->index++; return *this; }
 	private:
 		TileIndex index;
@@ -248,13 +248,18 @@ public:
 	 * Create the tile wrapper for the given tile.
 	 * @param tile The tile to access the map for.
 	 */
-	debug_inline Tile(TileIndex tile) : Tile(tile.base()) {}
+	debug_inline explicit Tile(TileIndex tile) : Tile(tile.base()) {}
+
+	/**
+	 * Allow implicit conversion from INVALID_TILE.
+	 */
+	debug_inline Tile(InvalidTile tile) : Tile(TileIndex(tile)) {}
 
 	/**
 	 * Create the tile wrapper for the given tile.
 	 * @param tile_index The tile to access the map for.
 	 */
-	Tile(TileIndex::BaseType tile_index)
+	explicit Tile(TileIndex::BaseType tile_index)
 	{
 		if (tile_index < Map::Size()) {
 			this->tile = &Map::base_tiles[TileY(TileIndex{tile_index})][Map::offsets[tile_index]];
@@ -424,7 +429,7 @@ public:
 	 */
 	debug_inline static Tile GetByType(TileIndex tile, TileType type)
 	{
-		Tile t = tile;
+		Tile t = Tile(tile);
 		while (t.IsValid() && t.tile_type() != type) ++t;
 		return t;
 	}

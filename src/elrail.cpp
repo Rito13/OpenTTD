@@ -80,10 +80,10 @@ static inline TLG GetTLG(TileIndex t)
 /** Common part of #GetRailTrackBitsUniversal and #GetSingleRailTrackBitsUniversal */
 static TrackBits GetRailTrackBitsUniversalHelper(TileIndex t, uint8_t *override)
 {
-	switch (GetTileType(t)) {
+	switch (GetMainTileType(t)) {
 		case MP_TUNNELBRIDGE:
 			if (GetTunnelBridgeTransportType(t) != TRANSPORT_RAIL) return TRACK_BIT_NONE;
-			if (!HasRailCatenary(GetRailType(t))) return TRACK_BIT_NONE;
+			if (!HasRailCatenary(GetRailType(Tile::GetByType(t, MP_TUNNELBRIDGE)))) return TRACK_BIT_NONE;
 			if (override != nullptr && (IsTunnel(t) || GetTunnelBridgeLength(t, GetOtherBridgeEnd(t)) > 0)) {
 				*override = 1 << GetTunnelBridgeDirection(t);
 			}
@@ -91,7 +91,7 @@ static TrackBits GetRailTrackBitsUniversalHelper(TileIndex t, uint8_t *override)
 
 		case MP_STATION:
 			if (!HasStationRail(t)) return TRACK_BIT_NONE;
-			if (!HasRailCatenary(GetRailType(t))) return TRACK_BIT_NONE;
+			if (!HasRailCatenary(GetRailType(Tile::GetByType(t, MP_STATION)))) return TRACK_BIT_NONE;
 			return TrackToTrackBits(GetRailStationTrack(t));
 
 		default:
@@ -215,7 +215,7 @@ static inline SpriteID GetPylonBase(TileIndex index, Tile tile, TileContext cont
  */
 static void AdjustTileh(TileIndex tile, Slope *tileh)
 {
-	if (IsTileType(tile, MP_TUNNELBRIDGE)) {
+	if (IsMainTileType(tile, MP_TUNNELBRIDGE)) {
 		if (IsTunnel(tile)) {
 			*tileh = SLOPE_STEEP; // XXX - Hack to make tunnel entrances to always have a pylon
 		} else if (*tileh != SLOPE_FLAT) {
@@ -385,7 +385,7 @@ static void DrawRailCatenaryRailway(const TileInfo *ti, bool draw_halftile, Corn
 		}
 
 		/* Station and road crossings are always "flat", so adjust the tileh accordingly */
-		if (IsTileType(neighbour, MP_STATION) || IsTileType(neighbour, MP_ROAD)) tileh[TS_NEIGHBOUR] = SLOPE_FLAT;
+		if (IsMainTileType(neighbour, MP_STATION) || IsMainTileType(neighbour, MP_ROAD)) tileh[TS_NEIGHBOUR] = SLOPE_FLAT;
 
 		/* Half tile slopes coincide only with horizontal/vertical track.
 		 * Faking a flat slope results in the correct sprites on positions. */
@@ -515,14 +515,14 @@ void DrawRailCatenaryOnBridge(const TileInfo *ti)
 
 	height = GetBridgePixelHeight(end);
 
-	SpriteID wire_base = GetWireBase(end, end, TCX_ON_BRIDGE);
+	SpriteID wire_base = GetWireBase(end, Tile::GetByType(end, MP_TUNNELBRIDGE), TCX_ON_BRIDGE);
 
 	AddSortableSpriteToDraw(wire_base + sss->image_offset, PAL_NONE, ti->x + sss->x_offset, ti->y + sss->y_offset,
 		sss->x_size, sss->y_size, sss->z_size, height + sss->z_offset,
 		IsTransparencySet(TO_CATENARY)
 	);
 
-	SpriteID pylon_base = GetPylonBase(end, end, TCX_ON_BRIDGE);
+	SpriteID pylon_base = GetPylonBase(end, Tile::GetByType(end, MP_TUNNELBRIDGE), TCX_ON_BRIDGE);
 
 	/* Finished with wires, draw pylons
 	 * every other tile needs a pylon on the northern end */

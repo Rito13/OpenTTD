@@ -27,16 +27,17 @@ struct CYapfCostBase {
 	inline static bool stSlopeCost(TileIndex tile, Trackdir td)
 	{
 		if (IsDiagonalTrackdir(td)) {
-			if (IsBridgeTile(tile)) {
+			Tile tunnel_bridge_tile = Tile::GetByType(tile, MP_TUNNELBRIDGE);
+			if (IsBridgeTile(tunnel_bridge_tile)) {
 				/* it is bridge ramp, check if we are entering the bridge */
-				if (GetTunnelBridgeDirection(tile) != TrackdirToExitdir(td)) return false; // no, we are leaving it, no penalty
+				if (GetTunnelBridgeDirection(tunnel_bridge_tile) != TrackdirToExitdir(td)) return false; // no, we are leaving it, no penalty
 				/* we are entering the bridge */
 				Slope tile_slope = GetTileSlope(tile);
-				Axis axis = DiagDirToAxis(GetTunnelBridgeDirection(tile));
+				Axis axis = DiagDirToAxis(GetTunnelBridgeDirection(tunnel_bridge_tile));
 				return !HasBridgeFlatRamp(tile_slope, axis);
 			} else {
 				/* not bridge ramp */
-				if (IsTunnelTile(tile)) return false; // tunnel entry/exit doesn't slope
+				if (IsTunnelTile(tunnel_bridge_tile)) return false; // tunnel entry/exit doesn't slope
 				Slope tile_slope = GetTileSlope(tile);
 				return IsUphillTrackdir(tile_slope, td); // slopes uphill => apply penalty
 			}

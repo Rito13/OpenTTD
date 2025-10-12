@@ -33,6 +33,17 @@ debug_inline static uint TileHeight(Tile tile)
 }
 
 /**
+ * Returns the height of the northern corner of a tile
+ * @param index The tile to get the height from
+ * @return the height of the tile
+ * @pre tile < Map::Size()
+ */
+debug_inline static uint TileHeight(TileIndex index)
+{
+	return TileHeight(Tile(index));
+}
+
+/**
  * Returns the height of a tile, also for tiles outside the map (virtual "black" tiles).
  *
  * @param x X coordinate of the tile, may be outside the map.
@@ -41,7 +52,7 @@ debug_inline static uint TileHeight(Tile tile)
  */
 inline uint TileHeightOutsideMap(int x, int y)
 {
-	return TileHeight(TileXY(Clamp(x, 0, Map::MaxX()), Clamp(y, 0, Map::MaxY())));
+	return TileHeight(Tile(TileXY(Clamp(x, 0, Map::MaxX()), Clamp(y, 0, Map::MaxY()))));
 }
 
 /**
@@ -59,6 +70,18 @@ inline void SetTileHeight(Tile tile, uint height)
 	assert(tile.IsValid());
 	assert(height <= MAX_TILE_HEIGHT);
 	tile.height() = height;
+}
+
+/**
+ * Sets the height of the northern corner of a tile.
+ * @param index The tile to change the height
+ * @param height The new height value of the tile
+ * @pre tile < Map::Size()
+ * @pre height <= MAX_TILE_HEIGHT
+ */
+inline void SetTileHeight(TileIndex index, uint height)
+{
+	SetTileHeight(Tile(index), height);
 }
 
 /**
@@ -97,6 +120,18 @@ debug_inline static TileType GetTileType(Tile tile)
 {
 	assert(tile.IsValid());
 	return tile.tile_type();
+}
+
+/**
+ * Get the tiletype of a main tile by a given tile index.
+ *
+ * @param index The index of main tile to get the TileType
+ * @return The tiletype of the main tile
+ * @pre main_tile.IsValid()
+ */
+debug_inline static TileType GetMainTileType(TileIndex index)
+{
+	return GetTileType(Tile(index));
 }
 
 /**
@@ -148,6 +183,18 @@ debug_inline static bool IsTileType(Tile tile, TileType type)
 }
 
 /**
+ * Checks if a main tile of given tile index is a given tiletype.
+ *
+ * @param index The index of the main tile to check
+ * @param type The type to check against
+ * @return true If the type matches against the type of the main tile
+ */
+debug_inline static bool IsMainTileType(TileIndex index, TileType type)
+{
+	return GetMainTileType(index) == type;
+}
+
+/**
  * Checks if a tile is valid
  *
  * @param tile The tile to check
@@ -155,7 +202,7 @@ debug_inline static bool IsTileType(Tile tile, TileType type)
  */
 inline bool IsValidTile(TileIndex tile)
 {
-	return tile < Map::Size() && !IsTileType(tile, MP_VOID);
+	return tile < Map::Size() && !IsTileType(Tile(tile), MP_VOID);
 }
 
 /**
@@ -191,6 +238,19 @@ inline Owner GetTileOwner(Tile tile)
 }
 
 /**
+ * Returns the main owner of a tile
+ *
+ * @param index The tile to check
+ * @return The owner of the tile
+ * @pre IsValidTile(tile)
+ * @pre The type of the tile must not be MP_HOUSE and MP_INDUSTRY
+ */
+inline Owner GetTileOwner(TileIndex index)
+{
+	return GetTileOwner(Tile(index));
+}
+
+/**
  * Sets the owner of a tile
  *
  * This function sets the owner status of a tile. Note that you cannot
@@ -223,6 +283,18 @@ inline bool IsTileOwner(Tile tile, Owner owner)
 }
 
 /**
+ * Checks if a tile belongs to the given owner
+ *
+ * @param index The tile to check
+ * @param owner The owner to check against
+ * @return True if a tile belongs the the given owner
+ */
+inline bool IsTileOwner(TileIndex index, Owner owner)
+{
+	return IsTileOwner(Tile(index), owner);
+}
+
+/**
  * Set the tropic zone
  * @param tile the tile to set the zone of
  * @param type the new type
@@ -233,6 +305,17 @@ inline void SetTropicZone(Tile tile, TropicZone type)
 	assert(tile.IsValid());
 	assert(!IsTileType(tile, MP_VOID) || type == TROPICZONE_NORMAL);
 	SB(tile.type(), 0, 2, type);
+}
+
+/**
+ * Set the tropic zone
+ * @param index the tile to set the zone of
+ * @param type the new type
+ * @pre tile < Map::Size()
+ */
+inline void SetTropicZone(TileIndex index, TropicZone type)
+{
+	SetTropicZone(Tile(index), type);
 }
 
 /**
@@ -248,6 +331,17 @@ inline TropicZone GetTropicZone(Tile tile)
 }
 
 /**
+ * Get the tropic zone
+ * @param index the tile to get the zone of
+ * @pre index < Map::Size()
+ * @return the zone type
+ */
+inline TropicZone GetTropicZone(TileIndex index)
+{
+	return GetTropicZone(Tile(index));
+}
+
+/**
  * Get the current animation frame
  * @param t the tile
  * @pre IsTileType(t, MP_HOUSE) || IsTileType(t, MP_OBJECT) || IsTileType(t, MP_INDUSTRY) || IsTileType(t, MP_STATION)
@@ -257,6 +351,17 @@ inline uint8_t GetAnimationFrame(Tile t)
 {
 	assert(IsTileType(t, MP_HOUSE) || IsTileType(t, MP_OBJECT) || IsTileType(t, MP_INDUSTRY) || IsTileType(t, MP_STATION));
 	return t.m7();
+}
+
+/**
+ * Get the current animation frame
+ * @param i the tile
+ * @pre IsTileType(t, MP_HOUSE) || IsTileType(t, MP_OBJECT) || IsTileType(t, MP_INDUSTRY) || IsTileType(t, MP_STATION)
+ * @return frame number
+ */
+inline uint8_t GetAnimationFrame(TileIndex i)
+{
+	return GetAnimationFrame(Tile(i));
 }
 
 /**

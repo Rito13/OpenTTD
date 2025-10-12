@@ -27,6 +27,16 @@ enum RoadTileType : uint8_t {
 bool MayHaveRoad(Tile t);
 
 /**
+ * Check if tile can store road type.
+ * @param i Tile to check.
+ * @return true if tile can store road type false otherwise.
+ */
+debug_inline bool MayHaveRoad(TileIndex i)
+{
+	return MayHaveRoad(Tile(i));
+}
+
+/**
  * Get the type of the road tile.
  * @param t Tile to query.
  * @pre IsTileType(t, MP_ROAD)
@@ -36,6 +46,17 @@ debug_inline static RoadTileType GetRoadTileType(Tile t)
 {
 	assert(IsTileType(t, MP_ROAD));
 	return (RoadTileType)GB(t.m5(), 6, 2);
+}
+
+/**
+ * Get the type of the road tile.
+ * @param i Tile to query.
+ * @pre IsTileType(t, MP_ROAD)
+ * @return The road tile type.
+ */
+debug_inline static RoadTileType GetRoadTileType(TileIndex i)
+{
+	return GetRoadTileType(Tile::GetByType(i, MP_ROAD));
 }
 
 /**
@@ -50,6 +71,17 @@ debug_inline static bool IsNormalRoad(Tile t)
 }
 
 /**
+ * Return whether a tile is a normal road.
+ * @param i Tile to query.
+ * @pre IsTileType(t, MP_ROAD)
+ * @return True if normal road.
+ */
+debug_inline static bool IsNormalRoad(TileIndex i)
+{
+	return IsNormalRoad(Tile::GetByType(i, MP_ROAD));
+}
+
+/**
  * Return whether a tile is a normal road tile.
  * @param t Tile to query.
  * @return True if normal road tile.
@@ -57,6 +89,16 @@ debug_inline static bool IsNormalRoad(Tile t)
 debug_inline static bool IsNormalRoadTile(Tile t)
 {
 	return IsTileType(t, MP_ROAD) && IsNormalRoad(t);
+}
+
+/**
+ * Return whether a tile is a normal road tile.
+ * @param i Tile to query.
+ * @return True if normal road tile.
+ */
+debug_inline static bool IsNormalRoadTile(TileIndex i)
+{
+	return IsNormalRoadTile(Tile::GetByType(i, MP_ROAD));
 }
 
 /**
@@ -71,6 +113,17 @@ debug_inline static bool IsRoadDepot(Tile t)
 }
 
 /**
+ * Return whether a tile is a road depot.
+ * @param i Tile to query.
+ * @pre IsTileType(t, MP_ROAD)
+ * @return True if road depot.
+ */
+debug_inline static bool IsRoadDepot(TileIndex i)
+{
+	return IsRoadDepot(Tile::GetByType(i, MP_ROAD));
+}
+
+/**
  * Return whether a tile is a road depot tile.
  * @param t Tile to query.
  * @return True if road depot tile.
@@ -78,6 +131,16 @@ debug_inline static bool IsRoadDepot(Tile t)
 debug_inline static bool IsRoadDepotTile(Tile t)
 {
 	return IsTileType(t, MP_ROAD) && IsRoadDepot(t);
+}
+
+/**
+ * Return whether a tile is a road depot tile.
+ * @param i Tile to query.
+ * @return True if road depot tile.
+ */
+debug_inline static bool IsRoadDepotTile(TileIndex i)
+{
+	return IsRoadDepotTile(Tile::GetByType(i, MP_ROAD));
 }
 
 /**
@@ -95,6 +158,18 @@ inline RoadBits GetRoadBits(Tile t, RoadTramType rtt)
 }
 
 /**
+ * Get the present road bits for a specific road type.
+ * @param i  The tile to query.
+ * @param rt Road type.
+ * @pre IsNormalRoad(t)
+ * @return The present road bits for the road type.
+ */
+inline RoadBits GetRoadBits(TileIndex i, RoadTramType rtt)
+{
+	return GetRoadBits(Tile::GetByType(i, MP_ROAD), rtt);
+}
+
+/**
  * Get all set RoadBits on the given tile
  *
  * @param tile The tile from which we want to get the RoadBits
@@ -103,6 +178,17 @@ inline RoadBits GetRoadBits(Tile t, RoadTramType rtt)
 inline RoadBits GetAllRoadBits(Tile tile)
 {
 	return GetRoadBits(tile, RTT_ROAD) | GetRoadBits(tile, RTT_TRAM);
+}
+
+/**
+ * Get all set RoadBits on the given tile
+ *
+ * @param i The tile from which we want to get the RoadBits
+ * @return all set RoadBits of the tile
+ */
+inline RoadBits GetAllRoadBits(TileIndex i)
+{
+	return GetAllRoadBits(Tile::GetByType(i, MP_ROAD));
 }
 
 /**
@@ -122,10 +208,27 @@ inline void SetRoadBits(Tile t, RoadBits r, RoadTramType rtt)
 	}
 }
 
+/**
+ * Set the present road bits for a specific road type.
+ * @param i  The tile to change.
+ * @param r  The new road bits.
+ * @param rt Road type.
+ * @pre IsNormalRoad(t)
+ */
+inline void SetRoadBits(TileIndex i, RoadBits r, RoadTramType rtt)
+{
+	SetRoadBits(Tile::GetByType(i, MP_ROAD), r, rtt);
+}
+
 inline RoadType GetRoadTypeRoad(Tile t)
 {
 	assert(MayHaveRoad(t));
 	return (RoadType)GB(t.m4(), 0, 6);
+}
+
+inline RoadType GetRoadTypeRoad(TileIndex i)
+{
+	return GetRoadTypeRoad(Tile(i));
 }
 
 inline RoadType GetRoadTypeTram(Tile t)
@@ -134,9 +237,19 @@ inline RoadType GetRoadTypeTram(Tile t)
 	return (RoadType)GB(t.m8(), 6, 6);
 }
 
+inline RoadType GetRoadTypeTram(TileIndex i)
+{
+	return GetRoadTypeTram(Tile(i));
+}
+
 inline RoadType GetRoadType(Tile t, RoadTramType rtt)
 {
 	return (rtt == RTT_TRAM) ? GetRoadTypeTram(t) : GetRoadTypeRoad(t);
+}
+
+inline RoadType GetRoadType(TileIndex i, RoadTramType rtt)
+{
+	return GetRoadType(Tile(i), rtt);
 }
 
 /**
@@ -154,14 +267,34 @@ inline RoadTypes GetPresentRoadTypes(Tile t)
 	return result;
 }
 
+/**
+ * Get the present road types of a tile.
+ * @param i The tile to query.
+ * @return Present road types.
+ */
+inline RoadTypes GetPresentRoadTypes(TileIndex i)
+{
+	return GetPresentRoadTypes(Tile(i));
+}
+
 inline bool HasRoadTypeRoad(Tile t)
 {
 	return GetRoadTypeRoad(t) != INVALID_ROADTYPE;
 }
 
+inline bool HasRoadTypeRoad(TileIndex i)
+{
+	return HasRoadTypeRoad(Tile(i));
+}
+
 inline bool HasRoadTypeTram(Tile t)
 {
 	return GetRoadTypeTram(t) != INVALID_ROADTYPE;
+}
+
+inline bool HasRoadTypeTram(TileIndex i)
+{
+	return HasRoadTypeTram(Tile(i));
 }
 
 /**
@@ -176,6 +309,17 @@ inline bool HasTileRoadType(Tile t, RoadTramType rtt)
 }
 
 /**
+ * Check if a tile has a road or a tram road type.
+ * @param i  The tile to check.
+ * @param tram True to check tram, false to check road.
+ * @return True if the tile has the specified road type.
+ */
+inline bool HasTileRoadType(TileIndex i, RoadTramType rtt)
+{
+	return HasTileRoadType(Tile(i), rtt);
+}
+
+/**
  * Check if a tile has one of the specified road types.
  * @param t  The tile to check.
  * @param rts Allowed road types.
@@ -185,6 +329,17 @@ inline bool HasTileAnyRoadType(Tile t, RoadTypes rts)
 {
 	if (!MayHaveRoad(t)) return false;
 	return GetPresentRoadTypes(t).Any(rts);
+}
+
+/**
+ * Check if a tile has one of the specified road types.
+ * @param i  The tile to check.
+ * @param rts Allowed road types.
+ * @return True if the tile has one of the specified road types.
+ */
+inline bool HasTileAnyRoadType(TileIndex i, RoadTypes rts)
+{
+	return HasTileAnyRoadType(Tile(i), rts);
 }
 
 /**
@@ -205,6 +360,17 @@ inline Owner GetRoadOwner(Tile t, RoadTramType rtt)
 }
 
 /**
+ * Get the owner of a specific road type.
+ * @param i  The tile to query.
+ * @param rtt RoadTramType.
+ * @return Owner of the given road type.
+ */
+inline Owner GetRoadOwner(TileIndex i, RoadTramType rtt)
+{
+	return GetRoadOwner(Tile(i), rtt);
+}
+
+/**
  * Set the owner of a specific road type.
  * @param t  The tile to change.
  * @param rtt RoadTramType.
@@ -217,6 +383,17 @@ inline void SetRoadOwner(Tile t, RoadTramType rtt, Owner o)
 	} else {
 		SB(t.m3(), 4, 4, (o == OWNER_NONE ? OWNER_TOWN : o).base());
 	}
+}
+
+/**
+ * Set the owner of a specific road type.
+ * @param i  The tile to change.
+ * @param rtt RoadTramType.
+ * @param o  New owner of the given road type.
+ */
+inline void SetRoadOwner(TileIndex i, RoadTramType rtt, Owner o)
+{
+	SetRoadOwner(Tile(i), rtt, o);
 }
 
 /**
@@ -234,6 +411,19 @@ inline bool IsRoadOwner(Tile t, RoadTramType rtt, Owner o)
 }
 
 /**
+ * Check if a specific road type is owned by an owner.
+ * @param i  The tile to query.
+ * @param tram True to check tram, false to check road.
+ * @param o  Owner to compare with.
+ * @pre HasTileRoadType(t, rt)
+ * @return True if the road type is owned by the given owner.
+ */
+inline bool IsRoadOwner(TileIndex i, RoadTramType rtt, Owner o)
+{
+	return IsRoadOwner(Tile(i), rtt, o);
+}
+
+/**
  * Checks if given tile has town owned road
  * @param t tile to check
  * @pre IsTileType(t, MP_ROAD)
@@ -242,6 +432,17 @@ inline bool IsRoadOwner(Tile t, RoadTramType rtt, Owner o)
 inline bool HasTownOwnedRoad(Tile t)
 {
 	return HasTileRoadType(t, RTT_ROAD) && IsRoadOwner(t, RTT_ROAD, OWNER_TOWN);
+}
+
+/**
+ * Checks if given tile has town owned road
+ * @param i tile to check
+ * @pre IsTileType(t, MP_ROAD)
+ * @return true iff tile has road and the road is owned by a town
+ */
+inline bool HasTownOwnedRoad(TileIndex i)
+{
+	return HasTownOwnedRoad(Tile(i));
 }
 
 /**
@@ -267,6 +468,16 @@ inline DisallowedRoadDirections GetDisallowedRoadDirections(Tile t)
 }
 
 /**
+ * Gets the disallowed directions
+ * @param i the tile to get the directions from
+ * @return the disallowed directions
+ */
+inline DisallowedRoadDirections GetDisallowedRoadDirections(TileIndex i)
+{
+	return GetDisallowedRoadDirections(Tile::GetByType(i, MP_ROAD));
+}
+
+/**
  * Sets the disallowed directions
  * @param t   the tile to set the directions for
  * @param drd the disallowed directions
@@ -279,13 +490,34 @@ inline void SetDisallowedRoadDirections(Tile t, DisallowedRoadDirections drd)
 }
 
 /**
+ * Sets the disallowed directions
+ * @param i   the tile to set the directions for
+ * @param drd the disallowed directions
+ */
+inline void SetDisallowedRoadDirections(TileIndex i, DisallowedRoadDirections drd)
+{
+	SetDisallowedRoadDirections(Tile::GetByType(i, MP_ROAD), drd);
+}
+
+/**
  * Check if a road tile has snow/desert.
  * @param t The tile to query.
  * @return True if the tile has snow/desert.
  */
 inline bool IsOnSnowOrDesert(Tile t)
 {
+	assert(IsTileType(t, MP_ROAD));
 	return HasBit(t.m7(), 5);
+}
+
+/**
+ * Check if a road tile has snow/desert.
+ * @param i The tile to query.
+ * @return True if the tile has snow/desert.
+ */
+inline bool IsOnSnowOrDesert(TileIndex i)
+{
+	return IsOnSnowOrDesert(Tile::GetByType(i, MP_ROAD));
 }
 
 /**
@@ -294,7 +526,17 @@ inline bool IsOnSnowOrDesert(Tile t)
  */
 inline void ToggleSnowOrDesert(Tile t)
 {
+	assert(IsTileType(t, MP_ROAD));
 	ToggleBit(t.m7(), 5);
+}
+
+/**
+ * Toggle the snow/desert state of a road tile.
+ * @param i The tile to change.
+ */
+inline void ToggleSnowOrDesert(TileIndex i)
+{
+	ToggleSnowOrDesert(Tile::GetByType(i, MP_ROAD));
 }
 
 
@@ -393,8 +635,30 @@ inline DiagDirection GetRoadDepotDirection(Tile t)
 	return (DiagDirection)GB(t.m5(), 0, 2);
 }
 
+/**
+ * Get the direction of the exit of a road depot.
+ * @param i The tile to query.
+ * @return Diagonal direction of the depot exit.
+ */
+inline DiagDirection GetRoadDepotDirection(TileIndex i)
+{
+	return GetRoadDepotDirection(Tile::GetByType(i, MP_ROAD));
+}
 
 RoadBits GetAnyRoadBits(Tile tile, RoadTramType rtt, bool straight_tunnel_bridge_entrance = false);
+
+/**
+ * Returns the RoadBits on an arbitrary tile
+ * @see GetAnyRoadBits(Tile tile, RoadTramType rtt, bool straight_tunnel_bridge_entrance)
+ * @param index the tile to get the road bits for
+ * @param rt the road type to get the road bits form
+ * @param straight_tunnel_bridge_entrance whether to return straight road bits for tunnels/bridges.
+ * @return the road bits of the given tile
+ */
+RoadBits GetAnyRoadBits(TileIndex index, RoadTramType rtt, bool straight_tunnel_bridge_entrance = false)
+{
+	return GetAnyRoadBits(Tile(index), rtt, straight_tunnel_bridge_entrance);
+}
 
 /**
  * Set the road road type of a tile.

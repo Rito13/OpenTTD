@@ -85,7 +85,7 @@ void MoveBuoysToWaypoints()
 		wp->name       = std::move(name);
 		wp->delete_ctr = 0; // Just reset delete counter for once.
 		wp->build_date = build_date;
-		wp->owner      = train ? GetTileOwner(xy) : OWNER_NONE;
+		wp->owner      = train ? GetTileOwner(Tile(xy)) : OWNER_NONE;
 
 		if (IsInsideBS(string_id, STR_SV_STNAME_BUOY, 9)) wp->town_cn = string_id - STR_SV_STNAME_BUOY;
 
@@ -101,7 +101,7 @@ void MoveBuoysToWaypoints()
 
 			wp->train_station = train_st;
 			wp->facilities.Set(StationFacility::Train);
-		} else if (IsBuoyTile(xy) && GetStationIndex(xy) == index) {
+		} else if (IsBuoyTile(Tile(xy)) && GetStationIndex(Tile(xy)) == index) {
 			wp->rect.BeforeAddTile(xy, StationRect::ADD_FORCE);
 			wp->facilities.Set(StationFacility::Dock);
 		}
@@ -145,7 +145,7 @@ void AfterLoadRoadStops()
 {
 	/* First construct the drive through entries */
 	for (RoadStop *rs : RoadStop::Iterate()) {
-		if (IsDriveThroughStopTile(rs->xy)) rs->MakeDriveThrough();
+		if (IsDriveThroughStopTile(Tile::GetByType(rs->xy, MP_ROAD))) rs->MakeDriveThrough();
 	}
 	/* And then rebuild the data in those entries */
 	for (RoadStop *rs : RoadStop::Iterate()) {

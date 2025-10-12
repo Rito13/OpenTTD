@@ -16,6 +16,17 @@
 ObjectType GetObjectType(Tile t);
 
 /**
+ * Gets the ObjectType of the given object tile
+ * @param i the tile to get the type from.
+ * @pre IsTileType(t, MP_OBJECT)
+ * @return the type.
+ */
+ObjectType GetObjectType(TileIndex i)
+{
+	return GetObjectType(Tile::GetByType(i, MP_OBJECT));
+}
+
+/**
  * Check whether the object on a tile is of a specific type.
  * @param t Tile to test.
  * @param type Type to test.

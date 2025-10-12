@@ -1240,9 +1240,9 @@ struct BuildVehicleWindow : Window {
 				if (this->listview_mode) {
 					this->filter.roadtype = INVALID_ROADTYPE;
 				} else {
-					this->filter.roadtype = GetRoadTypeRoad(this->window_number);
+					this->filter.roadtype = GetRoadTypeRoad(TileIndex(this->window_number));
 					if (this->filter.roadtype == INVALID_ROADTYPE) {
-						this->filter.roadtype = GetRoadTypeTram(this->window_number);
+						this->filter.roadtype = GetRoadTypeTram(TileIndex(this->window_number));
 					}
 				}
 				break;
@@ -1469,7 +1469,7 @@ struct BuildVehicleWindow : Window {
 
 		this->eng_list.clear();
 
-		const Station *st = this->listview_mode ? nullptr : Station::GetByTile(TileIndex(this->window_number));
+		const Station *st = this->listview_mode ? nullptr : Station::GetByTile(Tile::GetByType(TileIndex(this->window_number), MP_STATION));
 
 		BadgeTextFilter btf(this->string_filter, GSF_AIRCRAFT);
 

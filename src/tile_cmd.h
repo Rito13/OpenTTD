@@ -181,7 +181,7 @@ void GetTileDesc(TileIndex index, Tile tile, TileDesc &td);
 inline void AddAcceptedCargo(TileIndex tile, CargoArray &acceptance, CargoTypes *always_accepted)
 {
 	CargoTypes dummy = 0; // use dummy bitmask so there don't need to be several 'always_accepted != nullptr' checks
-	for (Tile t = tile; t.IsValid(); ++t) {
+	for (Tile t = Tile(tile); t.IsValid(); ++t) {
 		if (auto proc = _tile_type_procs[t.tile_type()]->add_accepted_cargo_proc; proc != nullptr) {
 			proc(tile, t, acceptance, always_accepted == nullptr ? dummy : *always_accepted);
 		}
@@ -190,7 +190,7 @@ inline void AddAcceptedCargo(TileIndex tile, CargoArray &acceptance, CargoTypes 
 
 inline void AddProducedCargo(TileIndex tile, CargoArray &produced)
 {
-	for (Tile t = tile; t.IsValid(); ++t) {
+	for (Tile t = Tile(tile); t.IsValid(); ++t) {
 		if (auto proc = _tile_type_procs[t.tile_type()]->add_produced_cargo_proc; proc != nullptr) {
 			proc(tile, t, produced);
 		}
@@ -209,7 +209,7 @@ inline bool MayAnimateTile(Tile tile)
 
 inline void AnimateTile(TileIndex tile)
 {
-	for (Tile t = tile; t.IsValid(); ++t) {
+	for (Tile t = Tile(tile); t.IsValid(); ++t) {
 		AnimateTileProc *proc = _tile_type_procs[t.tile_type()]->animate_tile_proc;
 		if (proc != nullptr) proc(tile, t);
 	}
@@ -217,7 +217,7 @@ inline void AnimateTile(TileIndex tile)
 
 inline bool ClickTile(TileIndex tile)
 {
-	for (Tile t = tile; t.IsValid(); ++t) {
+	for (Tile t = Tile(tile); t.IsValid(); ++t) {
 		ClickTileProc *proc = _tile_type_procs[t.tile_type()]->click_tile_proc;
 		if (proc != nullptr && proc(tile, t)) return true;
 	}

@@ -879,6 +879,15 @@ const StationSpec *GetStationSpec(Tile t)
 	return specindex < st->speclist.size() ? st->speclist[specindex].spec : nullptr;
 }
 
+const StationSpec *GetStationSpec(TileIndex i)
+{
+	if (!IsCustomStationSpecIndex(i)) return nullptr;
+
+	const BaseStation *st = BaseStation::GetByTile(i);
+	uint specindex = GetCustomStationSpecIndex(i);
+	return specindex < st->speclist.size() ? st->speclist[specindex].spec : nullptr;
+}
+
 /** Wrapper for animation control, see GetStationCallback. */
 uint16_t GetAnimStationCallback(CallbackID callback, uint32_t param1, uint32_t param2, const StationSpec *statspec, BaseStation *st, TileIndex tile, int)
 {

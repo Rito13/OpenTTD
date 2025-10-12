@@ -84,14 +84,32 @@ enum TropicZone : uint8_t {
  *
  * It is compatible with int32 / int64 for easy math throughout the code.
  */
-using TileIndex = StrongType::Typedef<uint32_t, struct TileIndexTag, StrongType::Compare, StrongType::Integer, StrongType::Compatible<int32_t>, StrongType::Compatible<int64_t>>;
+using TileIndex = StrongType::Typedef<uint32_t, struct TileIndexTag, StrongType::Compare, StrongType::Integer, StrongType::Compatible<uint32_t>, StrongType::Compatible<int32_t>, StrongType::Compatible<int64_t>>;
 
 /* Make sure the size is as expected. */
 static_assert(sizeof(TileIndex) == 4);
 
 /**
- * The very nice invalid tile marker
+ * Class for INVALID_TILE constant so it can be implicitly converted to Tile.
+ * TileIndex cannot be implicitly to Tile.
  */
-inline constexpr TileIndex INVALID_TILE = TileIndex{ (uint32_t)-1 };
+struct InvalidTile {
+	TileIndex value = TileIndex{ (uint32_t)-1 };
+
+	/**
+	 * Implicit conversion to the TileIndex.
+	 */
+	debug_inline constexpr operator TileIndex() const { return this->value; }
+
+	/**
+	 * Implicitly run TileIndex base.
+	 */
+	debug_inline constexpr uint32_t base() const { return this->value.base(); } 
+};
+
+/**
+ * The very nice invalid tile marker.
+ */
+inline constexpr InvalidTile INVALID_TILE{};
 
 #endif /* TILE_TYPE_H */

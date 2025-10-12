@@ -30,6 +30,20 @@ inline DiagDirection GetTunnelBridgeDirection(Tile t)
 }
 
 /**
+ * Get the direction pointing to the other end.
+ *
+ * Tunnel: Get the direction facing into the tunnel
+ * Bridge: Get the direction pointing onto the bridge
+ * @param i The tile to analyze
+ * @pre IsTileType(t, MP_TUNNELBRIDGE)
+ * @return the above mentioned direction
+ */
+inline DiagDirection GetTunnelBridgeDirection(TileIndex i)
+{
+	return GetTunnelBridgeDirection(Tile::GetByType(i, MP_TUNNELBRIDGE));
+}
+
+/**
  * Tunnel: Get the transport type of the tunnel (road or rail)
  * Bridge: Get the transport type of the bridge's ramp
  * @param t The tile to analyze
@@ -43,6 +57,18 @@ inline TransportType GetTunnelBridgeTransportType(Tile t)
 }
 
 /**
+ * Tunnel: Get the transport type of the tunnel (road or rail)
+ * Bridge: Get the transport type of the bridge's ramp
+ * @param i The tile to analyze
+ * @pre IsTileType(t, MP_TUNNELBRIDGE)
+ * @return the transport type in the tunnel/bridge
+ */
+inline TransportType GetTunnelBridgeTransportType(TileIndex i)
+{
+	return GetTunnelBridgeTransportType(Tile::GetByType(i, MP_TUNNELBRIDGE));
+}
+
+/**
  * Tunnel: Is this tunnel entrance in a snowy or desert area?
  * Bridge: Does the bridge ramp lie in a snow or desert area?
  * @param t The tile to analyze
@@ -53,6 +79,18 @@ inline bool HasTunnelBridgeSnowOrDesert(Tile t)
 {
 	assert(IsTileType(t, MP_TUNNELBRIDGE));
 	return HasBit(t.m7(), 5);
+}
+
+/**
+ * Tunnel: Is this tunnel entrance in a snowy or desert area?
+ * Bridge: Does the bridge ramp lie in a snow or desert area?
+ * @param i The tile to analyze
+ * @pre IsTileType(t, MP_TUNNELBRIDGE)
+ * @return true if and only if the tile is in a snowy/desert area
+ */
+inline bool HasTunnelBridgeSnowOrDesert(TileIndex i)
+{
+	return HasTunnelBridgeSnowOrDesert(Tile::GetByType(i, MP_TUNNELBRIDGE));
 }
 
 /**
@@ -70,6 +108,19 @@ inline void SetTunnelBridgeSnowOrDesert(Tile t, bool snow_or_desert)
 }
 
 /**
+ * Tunnel: Places this tunnel entrance in a snowy or desert area, or takes it out of there.
+ * Bridge: Sets whether the bridge ramp lies in a snow or desert area.
+ * @param i the tunnel entrance / bridge ramp tile
+ * @param snow_or_desert is the entrance/ramp in snow or desert (true), when
+ *                       not in snow and not in desert false
+ * @pre IsTileType(t, MP_TUNNELBRIDGE)
+ */
+inline void SetTunnelBridgeSnowOrDesert(TileIndex i, bool snow_or_desert)
+{
+	SetTunnelBridgeSnowOrDesert(Tile::GetByType(i, MP_TUNNELBRIDGE), snow_or_desert);
+}
+
+/**
  * Determines type of the wormhole and returns its other end
  * @param t one end
  * @pre IsTileType(t, MP_TUNNELBRIDGE)
@@ -77,8 +128,9 @@ inline void SetTunnelBridgeSnowOrDesert(Tile t, bool snow_or_desert)
  */
 inline TileIndex GetOtherTunnelBridgeEnd(TileIndex t)
 {
-	assert(IsTileType(t, MP_TUNNELBRIDGE));
-	return IsTunnel(t) ? GetOtherTunnelEnd(t) : GetOtherBridgeEnd(t);
+	Tile tile = Tile::GetByType(t, MP_TUNNELBRIDGE);
+	assert(tile.IsValid());
+	return IsTunnel(tile) ? GetOtherTunnelEnd(t) : GetOtherBridgeEnd(t);
 }
 
 
@@ -96,6 +148,17 @@ inline bool HasTunnelBridgeReservation(Tile t)
 }
 
 /**
+ * Get the reservation state of the rail tunnel/bridge
+ * @pre IsTileType(t, MP_TUNNELBRIDGE) && GetTunnelBridgeTransportType(t) == TRANSPORT_RAIL
+ * @param i the tile
+ * @return reservation state
+ */
+inline bool HasTunnelBridgeReservation(TileIndex i)
+{
+	return HasTunnelBridgeReservation(Tile::GetByType(i, MP_TUNNELBRIDGE));
+}
+
+/**
  * Set the reservation state of the rail tunnel/bridge
  * @pre IsTileType(t, MP_TUNNELBRIDGE) && GetTunnelBridgeTransportType(t) == TRANSPORT_RAIL
  * @param t the tile
@@ -109,6 +172,17 @@ inline void SetTunnelBridgeReservation(Tile t, bool b)
 }
 
 /**
+ * Set the reservation state of the rail tunnel/bridge
+ * @pre IsTileType(t, MP_TUNNELBRIDGE) && GetTunnelBridgeTransportType(t) == TRANSPORT_RAIL
+ * @param i the tile
+ * @param b the reservation state
+ */
+inline void SetTunnelBridgeReservation(TileIndex i, bool b)
+{
+	SetTunnelBridgeReservation(Tile::GetByType(i, MP_TUNNELBRIDGE), b);
+}
+
+/**
  * Get the reserved track bits for a rail tunnel/bridge
  * @pre IsTileType(t, MP_TUNNELBRIDGE) && GetTunnelBridgeTransportType(t) == TRANSPORT_RAIL
  * @param t the tile
@@ -117,6 +191,17 @@ inline void SetTunnelBridgeReservation(Tile t, bool b)
 inline TrackBits GetTunnelBridgeReservationTrackBits(Tile t)
 {
 	return HasTunnelBridgeReservation(t) ? DiagDirToDiagTrackBits(GetTunnelBridgeDirection(t)) : TRACK_BIT_NONE;
+}
+
+/**
+ * Get the reserved track bits for a rail tunnel/bridge
+ * @pre IsTileType(t, MP_TUNNELBRIDGE) && GetTunnelBridgeTransportType(t) == TRANSPORT_RAIL
+ * @param i the tile
+ * @return reserved track bits
+ */
+inline TrackBits GetTunnelBridgeReservationTrackBits(TileIndex i)
+{
+	return GetTunnelBridgeReservationTrackBits(Tile::GetByType(i, MP_TUNNELBRIDGE));
 }
 
 #endif /* TUNNELBRIDGE_MAP_H */
