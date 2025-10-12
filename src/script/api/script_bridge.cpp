@@ -30,13 +30,13 @@
 /* static */ bool ScriptBridge::IsBridgeTile(TileIndex tile)
 {
 	if (!::IsValidTile(tile)) return false;
-	return ::IsBridgeTile(tile);
+	return ::IsBridgeTile(::Tile(tile));
 }
 
 /* static */ BridgeType ScriptBridge::GetBridgeType(TileIndex tile)
 {
 	if (!IsBridgeTile(tile)) return (BridgeType)-1;
-	return (BridgeType)::GetBridgeType(tile);
+	return (BridgeType)::GetBridgeType(::Tile(tile));
 }
 
 /**

@@ -39,14 +39,14 @@
 {
 	if (!::IsValidTile(tile)) return false;
 
-	return ::IsTileType(tile, MP_STATION) && ::IsHangar(tile);
+	return ::IsTileType(::Tile(tile), MP_STATION) && ::IsHangar(::Tile(tile));
 }
 
 /* static */ bool ScriptAirport::IsAirportTile(TileIndex tile)
 {
 	if (!::IsValidTile(tile)) return false;
 
-	return ::IsTileType(tile, MP_STATION) && ::IsAirport(tile);
+	return ::IsTileType(::Tile(tile), MP_STATION) && ::IsAirport(::Tile(tile));
 }
 
 /* static */ SQInteger ScriptAirport::GetAirportWidth(AirportType type)
@@ -93,9 +93,9 @@
 {
 	EnforceDeityOrCompanyModeValid(-1);
 	if (!::IsValidTile(tile)) return -1;
-	if (!::IsTileType(tile, MP_STATION)) return -1;
+	if (!::IsTileType(::Tile(tile), MP_STATION)) return -1;
 
-	const Station *st = ::Station::GetByTile(tile);
+	const Station *st = ::Station::GetByTile(::Tile(tile));
 	if (st->owner != ScriptObject::GetCompany() && ScriptCompanyMode::IsValid()) return -1;
 	if (!st->facilities.Test(StationFacility::Airport)) return -1;
 
@@ -106,10 +106,10 @@
 {
 	EnforceDeityOrCompanyModeValid(INVALID_TILE);
 	if (!::IsValidTile(tile)) return INVALID_TILE;
-	if (!::IsTileType(tile, MP_STATION)) return INVALID_TILE;
+	if (!::IsTileType(::Tile(tile), MP_STATION)) return INVALID_TILE;
 	if (GetNumHangars(tile) < 1) return INVALID_TILE;
 
-	const Station *st = ::Station::GetByTile(tile);
+	const Station *st = ::Station::GetByTile(::Tile(tile));
 	if (st->owner != ScriptObject::GetCompany() && ScriptCompanyMode::IsValid()) return INVALID_TILE;
 	if (!st->facilities.Test(StationFacility::Airport)) return INVALID_TILE;
 
@@ -120,7 +120,7 @@
 {
 	if (!ScriptTile::IsStationTile(tile)) return AT_INVALID;
 
-	StationID station_id = ::GetStationIndex(tile);
+	StationID station_id = ::GetStationIndex(::Tile(tile));
 
 	if (!ScriptStation::HasStationType(station_id, ScriptStation::STATION_AIRPORT)) return AT_INVALID;
 

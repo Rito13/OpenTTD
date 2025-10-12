@@ -72,7 +72,7 @@ void CheckCaches()
 
 	/* Strict checking of the road stop cache entries */
 	for (const RoadStop *rs : RoadStop::Iterate()) {
-		if (IsBayRoadStopTile(rs->xy)) continue;
+		if (IsBayRoadStopTile(Tile::GetByType(rs->xy, MP_STATION))) continue;
 
 		rs->GetEntry(DIAGDIR_NE).CheckIntegrity(rs);
 		rs->GetEntry(DIAGDIR_NW).CheckIntegrity(rs);
@@ -184,14 +184,14 @@ void CheckCaches()
 		std::map<TileIndex, bool> docking_tiles;
 		for (TileIndex tile : st->docking_station) {
 			ta.Add(tile);
-			docking_tiles[tile] = IsDockingTile(tile);
+			docking_tiles[tile] = IsDockingTile(Tile(tile));
 		}
 		UpdateStationDockingTiles(st);
 		if (ta.tile != st->docking_station.tile || ta.w != st->docking_station.w || ta.h != st->docking_station.h) {
 			Debug(desync, 2, "warning: station docking mismatch: station {}, company {}", st->index, st->owner);
 		}
 		for (TileIndex tile : ta) {
-			if (docking_tiles[tile] != IsDockingTile(tile)) {
+			if (docking_tiles[tile] != IsDockingTile(Tile(tile))) {
 				Debug(desync, 2, "warning: docking tile mismatch: tile {}", tile);
 			}
 		}

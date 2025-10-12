@@ -37,7 +37,7 @@
 	if (!::IsValidTile(tile)) return false;
 
 	return (::Tile::HasType(tile, MP_RAILWAY) && !::IsRailDepotTile(tile)) ||
-			(::HasStationTileRail(tile) && !::IsStationTileBlocked(tile)) || ::IsLevelCrossingTile(tile);
+			(::HasStationTileRail(::Tile(tile)) && !::IsStationTileBlocked(::Tile(tile))) || ::IsLevelCrossingTile(tile);
 }
 
 /* static */ bool ScriptRail::IsLevelCrossingTile(TileIndex tile)
@@ -58,14 +58,14 @@
 {
 	if (!::IsValidTile(tile)) return false;
 
-	return ::IsRailStationTile(tile);
+	return ::IsRailStationTile(::Tile(tile));
 }
 
 /* static */ bool ScriptRail::IsRailWaypointTile(TileIndex tile)
 {
 	if (!::IsValidTile(tile)) return false;
 
-	return ::IsRailWaypointTile(tile);
+	return ::IsRailWaypointTile(::Tile(tile));
 }
 
 /* static */ bool ScriptRail::IsRailTypeAvailable(RailType rail_type)
@@ -135,7 +135,7 @@
 {
 	if (!IsRailStationTile(tile)) return RAILTRACK_INVALID;
 
-	return (RailTrack)::GetRailStationTrackBits(tile);
+	return (RailTrack)::GetRailStationTrackBits(::Tile(tile));
 }
 
 /* static */ bool ScriptRail::BuildRailDepot(TileIndex tile, TileIndex front)
@@ -242,7 +242,7 @@
 {
 	if (!IsRailTile(tile)) return RAILTRACK_INVALID;
 
-	if (IsRailStationTile(tile) || IsRailWaypointTile(tile)) return ::TrackToTrackBits(::GetRailStationTrack(tile));
+	if (IsRailStationTile(tile) || IsRailWaypointTile(tile)) return ::TrackToTrackBits(::GetRailStationTrack(::Tile(tile)));
 	if (IsRailDepotTile(tile)) return ::TRACK_BIT_NONE;
 	return ::GetAllTrackBits(tile);
 }

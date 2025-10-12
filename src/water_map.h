@@ -271,27 +271,28 @@ inline DiagDirection GetShipDepotDirection(Tile t)
 
 /**
  * Get the other tile of the ship depot.
- * @param t Tile to query, containing one section of a ship depot.
+ * @param index Tile to query, containing one section of a ship depot.
  * @return Tile containing the other section of the depot.
  * @pre IsShipDepotTile(t)
  */
-inline TileIndex GetOtherShipDepotTile(TileIndex t)
+inline TileIndex GetOtherShipDepotTile(TileIndex index)
 {
-	return t + (GetShipDepotPart(t) != DEPOT_PART_NORTH ? -1 : 1) * TileOffsByAxis(GetShipDepotAxis(t));
+	Tile tile = Tile::GetByType(index, MP_WATER);
+	return index + (GetShipDepotPart(tile) != DEPOT_PART_NORTH ? -1 : 1) * TileOffsByAxis(GetShipDepotAxis(tile));
 }
 
 /**
  * Get the most northern tile of a ship depot.
- * @param t One of the tiles of the ship depot.
+ * @param index One of the tiles of the ship depot.
  * @return The northern tile of the depot.
  * @pre IsShipDepotTile(t)
  */
-inline TileIndex GetShipDepotNorthTile(TileIndex t)
+inline TileIndex GetShipDepotNorthTile(TileIndex index)
 {
-	assert(IsShipDepot(t));
-	TileIndex tile2 = GetOtherShipDepotTile(t);
+	assert(IsShipDepot(Tile::GetByType(index, MP_WATER)));
+	TileIndex index2 = GetOtherShipDepotTile(index);
 
-	return t < tile2 ? TileIndex(t) : tile2;
+	return index < index2 ? index : index2;
 }
 
 /**
@@ -514,12 +515,12 @@ inline void MakeLockTile(Tile t, Owner o, LockPart part, DiagDirection dir, Wate
 inline void MakeLock(TileIndex t, Owner o, DiagDirection d, WaterClass wc_lower, WaterClass wc_upper, WaterClass wc_middle)
 {
 	TileIndexDiff delta = TileOffsByDiagDir(d);
-	Tile lower_tile = t - delta;
-	Tile upper_tile = t + delta;
+	Tile lower_tile = Tile(t - delta);
+	Tile upper_tile = Tile(t + delta);
 
 	/* Keep the current waterclass and owner for the tiles.
 	 * It allows to restore them after the lock is deleted */
-	MakeLockTile(t, o, LOCK_PART_MIDDLE, d, wc_middle);
+	MakeLockTile(Tile(t), o, LOCK_PART_MIDDLE, d, wc_middle);
 	MakeLockTile(lower_tile, IsWaterTile(lower_tile) ? GetTileOwner(lower_tile) : o, LOCK_PART_LOWER, d, wc_lower);
 	MakeLockTile(upper_tile, IsWaterTile(upper_tile) ? GetTileOwner(upper_tile) : o, LOCK_PART_UPPER, d, wc_upper);
 }

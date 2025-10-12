@@ -46,7 +46,7 @@ void FixOldMapArray()
 {
 	/* TTO/TTD/TTDP savegames could have buoys at tile 0
 	 * (without assigned station struct) */
-	MakeSea(TileIndex(0));
+	MakeSea(Tile(TileIndex(0)));
 }
 
 static void FixTTDMapArray()

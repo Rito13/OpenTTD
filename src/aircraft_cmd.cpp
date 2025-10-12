@@ -271,7 +271,7 @@ void GetAircraftSpriteSize(EngineID engine, uint &width, uint &height, int &xoff
 CommandCost CmdBuildAircraft(DoCommandFlags flags, TileIndex tile, const Engine *e, Vehicle **ret)
 {
 	const AircraftVehicleInfo *avi = &e->u.air;
-	const Station *st = Station::GetByTile(tile);
+	const Station *st = Station::GetByTile(Tile::GetByType(tile, MP_STATION));
 
 	/* Prevent building aircraft types at places which can't handle them */
 	if (!CanVehicleUseStation(e->index, st)) return CMD_ERROR;
@@ -339,7 +339,7 @@ CommandCost CmdBuildAircraft(DoCommandFlags flags, TileIndex tile, const Engine 
 
 		v->state = HANGAR;
 		v->previous_pos = v->pos;
-		v->targetairport = GetStationIndex(tile);
+		v->targetairport = GetStationIndex(Tile::GetByType(tile, MP_STATION));
 		v->SetNext(u);
 
 		v->SetServiceInterval(Company::Get(_current_company)->settings.vehicle.servint_aircraft);
@@ -712,7 +712,7 @@ int GetTileHeightBelowAircraft(const Vehicle *v)
 {
 	int safe_x = Clamp(v->x_pos, 0, Map::MaxX() * TILE_SIZE);
 	int safe_y = Clamp(v->y_pos, 0, Map::MaxY() * TILE_SIZE);
-	return TileHeight(TileVirtXY(safe_x, safe_y)) * TILE_HEIGHT;
+	return TileHeight(Tile(TileVirtXY(safe_x, safe_y))) * TILE_HEIGHT;
 }
 
 /**
@@ -1553,7 +1553,7 @@ static void AircraftEventHandler_InHangar(Aircraft *v, const AirportFTAClass *ap
 		/* airplane goto state takeoff, helicopter to helitakeoff */
 		v->state = (v->subtype == AIR_HELICOPTER) ? HELITAKEOFF : TAKEOFF;
 	}
-	const Station *st = Station::GetByTile(v->tile);
+	const Station *st = Station::GetByTile(Tile::GetByType(v->tile, MP_STATION));
 	AircraftLeaveHangar(v, st->airport.GetHangarExitDirection(v->tile));
 	AirportMove(v, apc);
 }

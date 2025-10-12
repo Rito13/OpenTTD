@@ -41,7 +41,7 @@ debug_inline static uint TileHeight(Tile tile)
  */
 inline uint TileHeightOutsideMap(int x, int y)
 {
-	return TileHeight(TileXY(Clamp(x, 0, Map::MaxX()), Clamp(y, 0, Map::MaxY())));
+	return TileHeight(Tile(TileXY(Clamp(x, 0, Map::MaxX()), Clamp(y, 0, Map::MaxY()))));
 }
 
 /**
@@ -155,7 +155,7 @@ debug_inline static bool IsTileType(Tile tile, TileType type)
  */
 inline bool IsValidTile(TileIndex tile)
 {
-	return tile < Map::Size() && !IsTileType(tile, MP_VOID);
+	return tile < Map::Size() && !IsTileType(Tile(tile), MP_VOID);
 }
 
 /**

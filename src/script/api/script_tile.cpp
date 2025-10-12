@@ -30,18 +30,18 @@
 
 	if (::Tile::HasType(tile, MP_RAILWAY)) return false;
 
-	switch (::GetTileType(tile)) {
+	switch (::GetTileType(::Tile(tile))) {
 		default: return false;
 		case MP_CLEAR: return true;
-		case MP_WATER: return IsCoast(tile);
+		case MP_WATER: return IsCoast(::Tile(tile));
 		case MP_ROAD:
 			/* Tram bits aren't considered buildable */
-			if (::GetRoadTypeTram(tile) != INVALID_ROADTYPE) return false;
+			if (::GetRoadTypeTram(::Tile(tile)) != INVALID_ROADTYPE) return false;
 			/* Depots and crossings aren't considered buildable */
-			if (::GetRoadTileType(tile) != ROAD_TILE_NORMAL) return false;
-			if (!HasExactlyOneBit(::GetRoadBits(tile, RTT_ROAD))) return false;
-			if (::IsRoadOwner(tile, RTT_ROAD, OWNER_TOWN)) return true;
-			if (::IsRoadOwner(tile, RTT_ROAD, ScriptObject::GetCompany())) return true;
+			if (::GetRoadTileType(::Tile(tile)) != ROAD_TILE_NORMAL) return false;
+			if (!HasExactlyOneBit(::GetRoadBits(::Tile(tile), RTT_ROAD))) return false;
+			if (::IsRoadOwner(::Tile(tile), RTT_ROAD, OWNER_TOWN)) return true;
+			if (::IsRoadOwner(::Tile(tile), RTT_ROAD, ScriptObject::GetCompany())) return true;
 			return false;
 	}
 }
@@ -67,35 +67,35 @@
 {
 	if (!::IsValidTile(tile)) return false;
 
-	return ::IsTileType(tile, MP_WATER) && ::IsSea(tile);
+	return ::IsTileType(::Tile(tile), MP_WATER) && ::IsSea(::Tile(tile));
 }
 
 /* static */ bool ScriptTile::IsRiverTile(TileIndex tile)
 {
 	if (!::IsValidTile(tile)) return false;
 
-	return ::IsTileType(tile, MP_WATER) && ::IsRiver(tile);
+	return ::IsTileType(::Tile(tile), MP_WATER) && ::IsRiver(::Tile(tile));
 }
 
 /* static */ bool ScriptTile::IsWaterTile(TileIndex tile)
 {
 	if (!::IsValidTile(tile)) return false;
 
-	return ::IsTileType(tile, MP_WATER) && !::IsCoast(tile);
+	return ::IsTileType(::Tile(tile), MP_WATER) && !::IsCoast(::Tile(tile));
 }
 
 /* static */ bool ScriptTile::IsCoastTile(TileIndex tile)
 {
 	if (!::IsValidTile(tile)) return false;
 
-	return ::IsCoastTile(tile);
+	return ::IsCoastTile(::Tile(tile));
 }
 
 /* static */ bool ScriptTile::IsStationTile(TileIndex tile)
 {
 	if (!::IsValidTile(tile)) return false;
 
-	return ::IsTileType(tile, MP_STATION);
+	return ::IsTileType(::Tile(tile), MP_STATION);
 }
 
 /* static */ bool ScriptTile::IsSteepSlope(Slope slope)
@@ -123,35 +123,35 @@
 {
 	if (!::IsValidTile(tile)) return false;
 
-	return (::IsTileType(tile, MP_CLEAR) && ::IsClearGround(tile, CLEAR_FIELDS));
+	return (::IsTileType(::Tile(tile), MP_CLEAR) && ::IsClearGround(::Tile(tile), CLEAR_FIELDS));
 }
 
 /* static */ bool ScriptTile::IsRockTile(TileIndex tile)
 {
 	if (!::IsValidTile(tile)) return false;
 
-	return (::IsTileType(tile, MP_CLEAR) && ::GetClearGround(tile) == ::CLEAR_ROCKS);
+	return (::IsTileType(::Tile(tile), MP_CLEAR) && ::GetClearGround(::Tile(tile)) == ::CLEAR_ROCKS);
 }
 
 /* static */ bool ScriptTile::IsRoughTile(TileIndex tile)
 {
 	if (!::IsValidTile(tile)) return false;
 
-	return (::IsTileType(tile, MP_CLEAR) && ::GetClearGround(tile) == ::CLEAR_ROUGH);
+	return (::IsTileType(::Tile(tile), MP_CLEAR) && ::GetClearGround(::Tile(tile)) == ::CLEAR_ROUGH);
 }
 
 /* static */ bool ScriptTile::IsSnowTile(TileIndex tile)
 {
 	if (!::IsValidTile(tile)) return false;
 
-	return (::IsTileType(tile, MP_CLEAR) && ::IsSnowTile(tile));
+	return (::IsTileType(::Tile(tile), MP_CLEAR) && ::IsSnowTile(::Tile(tile)));
 }
 
 /* static */ bool ScriptTile::IsDesertTile(TileIndex tile)
 {
 	if (!::IsValidTile(tile)) return false;
 
-	return (::IsTileType(tile, MP_CLEAR) && ::IsClearGround(tile, CLEAR_DESERT));
+	return (::IsTileType(::Tile(tile), MP_CLEAR) && ::IsClearGround(::Tile(tile), CLEAR_DESERT));
 }
 
 /* static */ ScriptTile::TerrainType ScriptTile::GetTerrainType(TileIndex tile)
@@ -206,10 +206,10 @@
 /* static */ ScriptCompany::CompanyID ScriptTile::GetOwner(TileIndex tile)
 {
 	if (!::IsValidTile(tile)) return ScriptCompany::COMPANY_INVALID;
-	if (::IsTileType(tile, MP_HOUSE)) return ScriptCompany::COMPANY_INVALID;
-	if (::IsTileType(tile, MP_INDUSTRY)) return ScriptCompany::COMPANY_INVALID;
+	if (::IsTileType(::Tile(tile), MP_HOUSE)) return ScriptCompany::COMPANY_INVALID;
+	if (::IsTileType(::Tile(tile), MP_INDUSTRY)) return ScriptCompany::COMPANY_INVALID;
 
-	return ScriptCompany::ResolveCompanyID(ScriptCompany::ToScriptCompanyID(::GetTileOwner(tile)));
+	return ScriptCompany::ResolveCompanyID(ScriptCompany::ToScriptCompanyID(::GetTileOwner(::Tile(tile))));
 }
 
 /* static */ bool ScriptTile::HasTransportType(TileIndex tile, TransportType transport_type)

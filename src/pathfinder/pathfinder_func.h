@@ -62,8 +62,9 @@ inline TrackdirBits GetTrackdirBitsForRoad(TileIndex tile, RoadTramType rtt)
 	TrackdirBits bits = TrackStatusToTrackdirBits(GetTileTrackStatus(tile, TRANSPORT_ROAD, rtt));
 
 	if (rtt == RTT_TRAM && bits == TRACKDIR_BIT_NONE) {
-		if (IsNormalRoadTile(tile)) {
-			RoadBits rb = GetRoadBits(tile, RTT_TRAM);
+		Tile t = Tile::GetByType(tile, MP_ROAD);
+		if (IsNormalRoadTile(t)) {
+			RoadBits rb = GetRoadBits(t, RTT_TRAM);
 			switch (rb) {
 				case ROAD_NE:
 				case ROAD_SW:

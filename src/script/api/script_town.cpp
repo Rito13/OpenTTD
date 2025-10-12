@@ -145,11 +145,11 @@
 
 	switch (t->goal[towneffect_id]) {
 		case TOWN_GROWTH_WINTER:
-			if (TileHeight(t->xy) >= GetSnowLine() && t->cache.population > 90) return 1;
+			if (TileHeight(::Tile(t->xy)) >= GetSnowLine() && t->cache.population > 90) return 1;
 			return 0;
 
 		case TOWN_GROWTH_DESERT:
-			if (GetTropicZone(t->xy) == TROPICZONE_DESERT && t->cache.population > 60) return 1;
+			if (GetTropicZone(::Tile(t->xy)) == TROPICZONE_DESERT && t->cache.population > 60) return 1;
 			return 0;
 
 		default: return t->goal[towneffect_id];

@@ -21,16 +21,16 @@ inline bool IsDepotTypeTile(TileIndex tile, TransportType type)
 	switch (type) {
 		default: NOT_REACHED();
 		case TRANSPORT_RAIL:
-			return IsRailDepotTile(tile);
+			return IsRailDepotTile(Tile::GetByType(tile, MP_RAILWAY));
 
 		case TRANSPORT_ROAD:
-			return IsRoadDepotTile(tile);
+			return IsRoadDepotTile(Tile::GetByType(tile, MP_ROAD));
 
 		case TRANSPORT_WATER:
-			return IsShipDepotTile(tile);
+			return IsShipDepotTile(Tile::GetByType(tile, MP_WATER));
 
 		case TRANSPORT_AIR:
-			return IsHangarTile(tile);
+			return IsHangarTile(Tile::GetByType(tile, MP_STATION));
 	}
 }
 
@@ -41,7 +41,8 @@ inline bool IsDepotTypeTile(TileIndex tile, TransportType type)
  */
 inline bool IsDepotTile(TileIndex tile)
 {
-	return IsRailDepotTile(tile) || IsRoadDepotTile(tile) || IsShipDepotTile(tile) || IsHangarTile(tile);
+	return IsRailDepotTile(Tile::GetByType(tile, MP_RAILWAY)) || IsRoadDepotTile(Tile::GetByType(tile, MP_ROAD)) ||
+			IsShipDepotTile(Tile::GetByType(tile, MP_WATER)) || IsHangarTile(Tile::GetByType(tile, MP_STATION));
 }
 
 /**
@@ -53,8 +54,10 @@ inline bool IsDepotTile(TileIndex tile)
 inline Tile GetDepotTile(TileIndex index)
 {
 	assert(IsDepotTile(index));
-	if (Tile rail = Tile::GetByType(index, MP_RAILWAY); rail.IsValid()) return rail;
-	return index;
+	for (auto type : {MP_RAILWAY, MP_ROAD, MP_WATER, MP_STATION}) {
+		if (Tile tile = Tile::GetByType(index, type); tile.IsValid()) return tile;
+	}
+	return INVALID_TILE;
 }
 
 /**
@@ -73,24 +76,27 @@ inline DepotID GetDepotIndex(Tile t)
 /**
  * Get the destination index of a 'depot'. For hangars that's the station index, for the rest a depot index.
  * @param t the tile
- * @pre IsRailDepotTile(t) || IsRoadDepotTile(t) || IsShipDepotTile(t) || IsHangarTile(t)
+ * @pre IsDepotTile
  * @return DepotID
  */
 inline DestinationID GetDepotDestinationIndex(TileIndex t)
 {
-	if (IsHangarTile(t)) return GetStationIndex(t);
-	return GetDepotIndex(t);
+	if (Tile hangar = Tile::GetByType(t, MP_STATION); IsHangarTile(hangar)) return GetStationIndex(hangar);
+	return GetDepotIndex(GetDepotTile(t));
 }
 
 /**
  * Get the index of which depot is attached to the tile.
- * @param t the tile
+ * @param index the tile
  * @pre IsRailDepotTile(t) || IsRoadDepotTile(t) || IsShipDepotTile(t)
  * @return DepotID
  */
-inline DepotID GetDepotIndex(TileIndex t)
+inline DepotID GetDepotIndex(TileIndex index)
 {
-	return GetDepotIndex(GetDepotTile(t));
+	Tile tile = Tile::GetByType(index, MP_RAILWAY);
+	if (!tile.IsValid()) tile = Tile::GetByType(index, MP_ROAD);
+	if (!tile.IsValid()) tile = Tile::GetByType(index, MP_WATER);
+	return GetDepotIndex(tile);
 }
 
 /**
@@ -126,7 +132,7 @@ inline VehicleType GetDepotVehicleType(TileIndex t)
 	assert(IsDepotTile(t));
 
 	if (Tile::HasType(t, MP_RAILWAY)) return VEH_TRAIN;
-	switch (GetTileType(t)) {
+	switch (GetTileType(Tile(t))) {
 		default: NOT_REACHED();
 		case MP_ROAD:    return VEH_ROAD;
 		case MP_WATER:   return VEH_SHIP;

@@ -31,8 +31,8 @@ static OrderType GetOrderTypeByTile(TileIndex t)
 {
 	if (!::IsValidTile(t)) return OT_END;
 	if (::IsDepotTile(t)) return OT_GOTO_DEPOT;
-	if (::IsTileType(t, MP_STATION)) {
-		return IsBuoy(t) || IsRailWaypoint(t) || IsRoadWaypoint(t) ? OT_GOTO_WAYPOINT : OT_GOTO_STATION;
+	if (::IsTileType(::Tile(t), MP_STATION)) {
+		return IsBuoy(::Tile(t)) || IsRailWaypoint(::Tile(t)) || IsRoadWaypoint(::Tile(t)) ? OT_GOTO_WAYPOINT : OT_GOTO_STATION;
 	}
 
 	return OT_END;
@@ -266,7 +266,7 @@ static ScriptOrder::OrderPosition RealOrderPositionToScriptOrderPosition(Vehicle
 				}
 			} else if (st->ship_station.tile != INVALID_TILE) {
 				for (TileIndex t : st->ship_station) {
-					if (IsTileType(t, MP_STATION) && (IsDock(t) || IsOilRig(t)) && GetStationIndex(t) == st->index) return t;
+					if (IsTileType(::Tile(t), MP_STATION) && (IsDock(::Tile(t)) || IsOilRig(::Tile(t))) && GetStationIndex(::Tile(t)) == st->index) return t;
 				}
 			} else if (st->bus_stops != nullptr) {
 				return st->bus_stops->xy;
@@ -274,7 +274,7 @@ static ScriptOrder::OrderPosition RealOrderPositionToScriptOrderPosition(Vehicle
 				return st->truck_stops->xy;
 			} else if (st->airport.tile != INVALID_TILE) {
 				for (TileIndex tile : st->airport) {
-					if (st->TileBelongsToAirport(tile) && !::IsHangar(tile)) return tile;
+					if (st->TileBelongsToAirport(tile) && !::IsHangar(::Tile(tile))) return tile;
 				}
 			}
 			return INVALID_TILE;
@@ -490,10 +490,10 @@ static ScriptOrder::OrderPosition RealOrderPositionToScriptOrderPosition(Vehicle
 				/* Check explicitly if the order is to a station (for aircraft) or
 				 * to a depot (other vehicle types). */
 				if (::Vehicle::Get(vehicle_id)->type == VEH_AIRCRAFT) {
-					if (!::IsTileType(destination, MP_STATION)) return false;
-					order.MakeGoToDepot(::GetStationIndex(destination), odtf, onsf, odaf);
+					if (!::IsTileType(::Tile(destination), MP_STATION)) return false;
+					order.MakeGoToDepot(::GetStationIndex(::Tile(destination)), odtf, onsf, odaf);
 				} else {
-					if (::IsTileType(destination, MP_STATION)) return false;
+					if (::IsTileType(::Tile(destination), MP_STATION)) return false;
 					order.MakeGoToDepot(::GetDepotIndex(destination), odtf, onsf, odaf);
 				}
 			}
@@ -501,14 +501,14 @@ static ScriptOrder::OrderPosition RealOrderPositionToScriptOrderPosition(Vehicle
 		}
 
 		case OT_GOTO_STATION:
-			order.MakeGoToStation(::GetStationIndex(destination));
+			order.MakeGoToStation(::GetStationIndex(::Tile(destination)));
 			order.SetLoadType((OrderLoadFlags)GB(order_flags, 5, 3));
 			order.SetUnloadType((OrderUnloadFlags)GB(order_flags, 2, 3));
 			order.SetStopLocation(OSL_PLATFORM_FAR_END);
 			break;
 
 		case OT_GOTO_WAYPOINT:
-			order.MakeGoToWaypoint(::GetStationIndex(destination));
+			order.MakeGoToWaypoint(::GetStationIndex(::Tile(destination)));
 			break;
 
 		default:
@@ -689,11 +689,11 @@ static void _DoCommandReturnSetOrderFlags(class ScriptInstance *instance)
 {
 	if (vehicle_type == ScriptVehicle::VT_AIR) {
 		if (ScriptTile::IsStationTile(origin_tile)) {
-			const Station *orig_station = ::Station::GetByTile(origin_tile);
+			const Station *orig_station = ::Station::GetByTile(::Tile(origin_tile));
 			if (orig_station != nullptr && orig_station->airport.tile != INVALID_TILE) origin_tile = orig_station->airport.tile;
 		}
 		if (ScriptTile::IsStationTile(dest_tile)) {
-			const Station *dest_station = ::Station::GetByTile(dest_tile);
+			const Station *dest_station = ::Station::GetByTile(::Tile(dest_tile));
 			if (dest_station != nullptr && dest_station->airport.tile != INVALID_TILE) dest_tile = dest_station->airport.tile;
 		}
 

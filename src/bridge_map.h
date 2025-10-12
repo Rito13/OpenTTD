@@ -28,6 +28,17 @@ inline bool IsBridge(Tile t)
 }
 
 /**
+ * Checks if this is a bridge, instead of a tunnel
+ * @param i The tile to analyze
+ * @pre IsTileType(t, MP_TUNNELBRIDGE)
+ * @return true if the structure is a bridge one
+ */
+inline bool IsBridge(TileIndex i)
+{
+	return IsBridge(Tile::GetByType(i, MP_TUNNELBRIDGE));
+}
+
+/**
  * checks if there is a bridge on this tile
  * @param t The tile to analyze
  * @return true if a bridge is present
@@ -35,6 +46,16 @@ inline bool IsBridge(Tile t)
 inline bool IsBridgeTile(Tile t)
 {
 	return IsTileType(t, MP_TUNNELBRIDGE) && IsBridge(t);
+}
+
+/**
+ * checks if there is a bridge on this tile
+ * @param i The tile to analyze
+ * @return true if a bridge is present
+ */
+inline bool IsBridgeTile(TileIndex i)
+{
+	return IsBridgeTile(Tile::GetByType(i, MP_TUNNELBRIDGE));
 }
 
 /**
@@ -60,6 +81,17 @@ inline BridgeType GetBridgeType(Tile t)
 }
 
 /**
+ * Determines the type of bridge on a tile
+ * @param i The tile to analyze
+ * @pre IsBridgeTile(t)
+ * @return The bridge type
+ */
+inline BridgeType GetBridgeType(TileIndex i)
+{
+	return GetBridgeType(Tile::GetByType(i, MP_TUNNELBRIDGE));
+}
+
+/**
  * Get the axis of the bridge that goes over the tile. Not the axis or the ramp.
  * @param t The tile to analyze
  * @pre IsBridgeAbove(t)
@@ -69,6 +101,17 @@ inline Axis GetBridgeAxis(Tile t)
 {
 	assert(IsBridgeAbove(t));
 	return (Axis)(GB(t.type(), 2, 2) - 1);
+}
+
+/**
+ * Get the axis of the bridge that goes over the tile. Not the axis or the ramp.
+ * @param i The tile to analyze
+ * @pre IsBridgeAbove(t)
+ * @return the above mentioned axis
+ */
+inline Axis GetBridgeAxis(TileIndex i)
+{
+	return GetBridgeAxis(Tile(i));
 }
 
 TileIndex GetNorthernBridgeEnd(TileIndex t);

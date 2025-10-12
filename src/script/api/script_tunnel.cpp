@@ -21,7 +21,7 @@
 /* static */ bool ScriptTunnel::IsTunnelTile(TileIndex tile)
 {
 	if (!::IsValidTile(tile)) return false;
-	return ::IsTunnelTile(tile);
+	return ::IsTunnelTile(::Tile(tile));
 }
 
 /* static */ TileIndex ScriptTunnel::GetOtherTunnelEnd(TileIndex tile)

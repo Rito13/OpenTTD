@@ -196,7 +196,7 @@ const AirportFTAClass *GetAirport(const uint8_t airport_type)
  */
 uint8_t GetVehiclePosOnBuild(TileIndex hangar_tile)
 {
-	const Station *st = Station::GetByTile(hangar_tile);
+	const Station *st = Station::GetByTile(Tile::GetByType(hangar_tile, MP_STATION));
 	const AirportFTAClass *apc = st->airport.GetFTA();
 	/* When we click on hangar we know the tile it is on. By that we know
 	 * its position in the array of depots the airport has.....we can search

@@ -40,7 +40,7 @@ protected:
 		TILE(TileIndex tile, Trackdir td, Tile rail_tile = {}) : tile(tile), td(td)
 		{
 			this->rail_tile = rail_tile.IsValid() ? rail_tile : GetRailTileFromTrack(tile, TrackdirToTrack(td));
-			this->rail_type = GetRailType(this->rail_tile ? this->rail_tile : tile);
+			this->rail_type = GetRailType(this->rail_tile ? this->rail_tile : Tile(tile));
 		}
 	};
 
@@ -395,9 +395,9 @@ no_entry_cost: // jump here at the beginning if the node has no parent (it is th
 				/* We will end in this pass (depot is possible target) */
 				end_segment_reason.Set(EndSegmentReason::Depot);
 
-			} else if (IsRailWaypointTile(cur.tile)) {
+			} else if (Tile ct = Tile::GetByType(cur.tile, MP_STATION); IsRailWaypointTile(ct)) {
 				if (v->current_order.IsType(OT_GOTO_WAYPOINT) &&
-						GetStationIndex(cur.tile) == v->current_order.GetDestination() &&
+						GetStationIndex(ct) == v->current_order.GetDestination() &&
 						!Waypoint::Get(v->current_order.GetDestination().ToStationID())->IsSingleTile()) {
 					/* This waypoint is our destination; maybe this isn't an unreserved
 					 * one, so check that and if so see that as the last signal being
@@ -592,7 +592,7 @@ no_entry_cost: // jump here at the beginning if the node has no parent (it is th
 
 			/* Station platform-length penalty. */
 			if (end_segment_reason.Test(EndSegmentReason::Station)) {
-				const BaseStation *st = BaseStation::GetByTile(n.GetLastTile());
+				const BaseStation *st = BaseStation::GetByTile(Tile::GetByType(n.GetLastTile(), MP_STATION));
 				assert(st != nullptr);
 				uint platform_length = st->GetPlatformLength(n.GetLastTile(), ReverseDiagDir(TrackdirToExitdir(n.GetLastTrackdir())));
 				/* Reduce the extra cost caused by passing-station penalty (each station receives it in the segment cost). */

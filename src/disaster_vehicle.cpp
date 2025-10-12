@@ -264,10 +264,13 @@ static bool DisasterTick_Zeppeliner(DisasterVehicle *v)
 	if (v->state > 2) {
 		if (++v->age <= 13320) return true;
 
-		if (IsValidTile(v->tile) && IsAirportTile(v->tile)) {
-			Station *st = Station::GetByTile(v->tile);
-			st->airport.blocks.Reset(AirportBlock::RunwayIn);
-			AI::NewEvent(GetTileOwner(v->tile), new ScriptEventDisasterZeppelinerCleared(st->index));
+		if (IsValidTile(v->tile)) {
+			Tile vt = Tile::GetByType(v->tile, MP_STATION);
+			if (IsAirportTile(vt)) {
+				Station *st = Station::GetByTile(vt);
+				st->airport.blocks.Reset(AirportBlock::RunwayIn);
+				AI::NewEvent(GetTileOwner(vt), new ScriptEventDisasterZeppelinerCleared(st->index));
+			}
 		}
 
 		v->UpdatePosition(v->x_pos, v->y_pos, GetAircraftFlightLevel(v));
@@ -302,8 +305,9 @@ static bool DisasterTick_Zeppeliner(DisasterVehicle *v)
 		v->age = CalendarTime::MIN_DATE;
 	}
 
-	if (IsValidTile(v->tile) && IsAirportTile(v->tile)) {
-		Station::GetByTile(v->tile)->airport.blocks.Set(AirportBlock::RunwayIn);
+	if (IsValidTile(v->tile)) {
+		Tile vt = Tile::GetByType(v->tile, MP_STATION);
+		if (IsAirportTile(vt)) Station::GetByTile(vt)->airport.blocks.Set(AirportBlock::RunwayIn);
 	}
 
 	return true;
@@ -412,7 +416,7 @@ static void DestructIndustry(Industry *i)
 {
 	for (const auto tile : Map::IterateIndex()) {
 		if (i->TileBelongsToIndustry(tile)) {
-			ResetIndustryConstructionStage(tile);
+			ResetIndustryConstructionStage(Tile::GetByType(tile, MP_INDUSTRY));
 			MarkTileDirtyByTile(tile);
 		}
 	}
@@ -476,8 +480,8 @@ static bool DisasterTick_Aircraft(DisasterVehicle *v, uint16_t image_override, b
 
 		if ((uint)x > Map::MaxX() * TILE_SIZE - 1) return true;
 
-		TileIndex tile = TileVirtXY(x, y);
-		if (!IsTileType(tile, MP_INDUSTRY)) return true;
+		Tile tile = Tile::GetByType(TileVirtXY(x, y), MP_INDUSTRY);
+		if (!tile.IsValid()) return true;
 
 		IndustryID ind = GetIndustryIndex(tile);
 		v->dest_tile = TileIndex{ind.base()};
@@ -856,7 +860,7 @@ static void Disaster_Submarine_Init(DisasterSubType subtype)
 		if (_settings_game.construction.freeform_edges) y += TILE_SIZE;
 		dir = DIR_SE;
 	}
-	if (!IsWaterTile(TileVirtXY(x, y))) return;
+	if (Tile wt = Tile::GetByType(TileVirtXY(x, y), MP_WATER); !IsWaterTile(wt)) return;
 
 	new DisasterVehicle(x, y, dir, subtype);
 }

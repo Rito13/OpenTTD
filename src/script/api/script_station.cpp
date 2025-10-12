@@ -35,8 +35,8 @@
 
 /* static */ StationID ScriptStation::GetStationID(TileIndex tile)
 {
-	if (!::IsValidTile(tile) || !::IsTileType(tile, MP_STATION)) return StationID::Invalid();
-	return ::GetStationIndex(tile);
+	if (!::IsValidTile(tile) || !::IsTileType(::Tile(tile), MP_STATION)) return StationID::Invalid();
+	return ::GetStationIndex(::Tile(tile));
 }
 
 template <bool Tfrom, bool Tvia>
@@ -218,10 +218,10 @@ template <bool Tfrom, bool Tvia>
 	if (!ScriptRoad::IsRoadTypeAvailable(road_type)) return false;
 
 	for (const RoadStop *rs = ::Station::Get(station_id)->GetPrimaryRoadStop(RoadStopType::Bus); rs != nullptr; rs = rs->next) {
-		if (::GetPresentRoadTypes(rs->xy).Test(::RoadType(road_type))) return true;
+		if (::GetPresentRoadTypes(::Tile(rs->xy)).Test(::RoadType(road_type))) return true;
 	}
 	for (const RoadStop *rs = ::Station::Get(station_id)->GetPrimaryRoadStop(RoadStopType::Truck); rs != nullptr; rs = rs->next) {
-		if (::GetPresentRoadTypes(rs->xy).Test(::RoadType(road_type))) return true;
+		if (::GetPresentRoadTypes(::Tile(rs->xy)).Test(::RoadType(road_type))) return true;
 	}
 
 	return false;

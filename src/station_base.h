@@ -561,19 +561,19 @@ public:
 		return this->catchment_tiles.HasTile(tile);
 	}
 
-	inline bool TileBelongsToRailStation(TileIndex tile) const override
+	inline bool TileBelongsToRailStation(TileIndex index) const override
 	{
-		return IsRailStationTile(tile) && GetStationIndex(tile) == this->index;
+		return IsRailStationTile(Tile::GetByType(index, MP_STATION)) && GetStationIndex(Tile::GetByType(index, MP_STATION)) == this->index;
 	}
 
-	inline bool TileBelongsToRoadStop(TileIndex tile) const
+	inline bool TileBelongsToRoadStop(TileIndex index) const
 	{
-		return IsStationRoadStopTile(tile) && GetStationIndex(tile) == this->index;
+		return IsStationRoadStopTile(Tile::GetByType(index, MP_STATION)) && GetStationIndex(Tile::GetByType(index, MP_STATION)) == this->index;
 	}
 
-	inline bool TileBelongsToAirport(TileIndex tile) const
+	inline bool TileBelongsToAirport(TileIndex index) const
 	{
-		return IsAirportTile(tile) && GetStationIndex(tile) == this->index;
+		return IsAirportTile(Tile::GetByType(index, MP_STATION)) && GetStationIndex(Tile::GetByType(index, MP_STATION)) == this->index;
 	}
 
 	uint32_t GetNewGRFVariable(const ResolverObject &object, uint8_t variable, uint8_t parameter, bool &available) const override;
@@ -634,7 +634,7 @@ void ForAllStationsAroundTiles(const TileArea &ta, Func func)
 	uint max_c = _settings_game.station.modified_catchment ? MAX_CATCHMENT : CA_UNMODIFIED;
 	TileArea ta_ext = TileArea(ta).Expand(max_c);
 	for (TileIndex tile : ta_ext) {
-		if (IsTileType(tile, MP_STATION)) seen_stations.insert(GetStationIndex(tile));
+		if (Tile st = Tile::GetByType(tile, MP_STATION); st.IsValid()) seen_stations.insert(GetStationIndex(st));
 	}
 
 	for (StationID stationid : seen_stations) {

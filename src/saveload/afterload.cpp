@@ -89,11 +89,13 @@ extern Company *DoStartupNewCompany(bool is_ai, CompanyID company = CompanyID::I
  */
 void SetWaterClassDependingOnSurroundings(TileIndex t, bool include_invalid_water_class)
 {
+	Tile tile(t);
+
 	/* If the slope is not flat, we always assume 'land' (if allowed). Also for one-corner-raised-shores.
 	 * Note: Wrt. autosloping under industry tiles this is the most fool-proof behaviour. */
 	if (!IsTileFlat(t)) {
 		if (include_invalid_water_class) {
-			SetWaterClass(t, WATER_CLASS_INVALID);
+			SetWaterClass(tile, WATER_CLASS_INVALID);
 			return;
 		} else {
 			SlErrorCorrupt("Invalid water class for dry tile");
@@ -105,7 +107,7 @@ void SetWaterClassDependingOnSurroundings(TileIndex t, bool include_invalid_wate
 
 	if (TileX(t) == 0 || TileY(t) == 0 || TileX(t) == Map::MaxX() - 1 || TileY(t) == Map::MaxY() - 1) {
 		/* tiles at map borders are always WATER_CLASS_SEA */
-		SetWaterClass(t, WATER_CLASS_SEA);
+		SetWaterClass(tile, WATER_CLASS_SEA);
 		return;
 	}
 
@@ -114,7 +116,7 @@ void SetWaterClassDependingOnSurroundings(TileIndex t, bool include_invalid_wate
 	bool has_river = false;
 
 	for (DiagDirection dir = DIAGDIR_BEGIN; dir < DIAGDIR_END; dir++) {
-		Tile neighbour = TileAddByDiagDir(t, dir);
+		Tile neighbour = Tile(TileAddByDiagDir(t, dir));
 		switch (GetTileType(neighbour)) {
 			case MP_WATER:
 				/* clear water and shipdepots have already a WaterClass associated */
@@ -145,16 +147,16 @@ void SetWaterClassDependingOnSurroundings(TileIndex t, bool include_invalid_wate
 	}
 
 	if (!has_water && !has_canal && !has_river && include_invalid_water_class) {
-		SetWaterClass(t, WATER_CLASS_INVALID);
+		SetWaterClass(tile, WATER_CLASS_INVALID);
 		return;
 	}
 
 	if (has_river && !has_canal) {
-		SetWaterClass(t, WATER_CLASS_RIVER);
+		SetWaterClass(tile, WATER_CLASS_RIVER);
 	} else if (has_canal || !has_water) {
-		SetWaterClass(t, WATER_CLASS_CANAL);
+		SetWaterClass(tile, WATER_CLASS_CANAL);
 	} else {
-		SetWaterClass(t, WATER_CLASS_SEA);
+		SetWaterClass(tile, WATER_CLASS_SEA);
 	}
 }
 
@@ -216,9 +218,10 @@ static inline RailType UpdateRailType(RailType rt, RailType min)
 /* Decompose the tile into ground and additional sub-tiles. */
 void DecomposeTile(TileIndex index)
 {
-	switch (GetTileType(index)) {
+	Tile tile = Tile(index);
+	switch (GetTileType(tile)) {
 		case MP_TREES: {
-			Tile new_tile = Tile::New(index, MP_TREES, index, true);
+			Tile new_tile = Tile::New(index, MP_TREES, tile, true);
 			Tile old_tile(new_tile.tile - 1);
 
 			/* Copy old tile to the new tile. */
@@ -252,7 +255,7 @@ void DecomposeTile(TileIndex index)
 		}
 
 		case MP_RAILWAY: {
-			Tile new_tile = Tile::New(index, MP_RAILWAY, index, true);
+			Tile new_tile = Tile::New(index, MP_RAILWAY, tile, true);
 			Tile old_tile(new_tile.tile - 1);
 
 			/* Copy old tile to the new tile. */
@@ -282,9 +285,9 @@ void DecomposeTile(TileIndex index)
 		}
 
 		case MP_ROAD: {
-			if (GetRoadTileType(index) == 1 /* ROAD_TILE_CROSSING */) {
+			if (GetRoadTileType(tile) == 1 /* ROAD_TILE_CROSSING */) {
 				/* Level crossing, extract info. */
-				Tile road = index;
+				Tile road = tile;
 				Axis road_axis = (Axis)GB(road.m5(), 0, 1);
 				TrackBits tracks = road_axis == AXIS_X ? TRACK_BIT_Y : TRACK_BIT_X;
 				bool reserved = HasBit(road.m5(), 4);
@@ -296,10 +299,10 @@ void DecomposeTile(TileIndex index)
 				SetCrossingBarred(rail, barred);
 
 				/* Change road tile to normal road. */
-				RoadType rt_road = GetRoadTypeRoad(index);
-				RoadType rt_tram = GetRoadTypeTram(index);
-				TownID town = GetTownIndex(index);
-				MakeRoadNormal(index, road_axis == AXIS_X ? ROAD_X : ROAD_Y, rt_road, rt_tram, town, GetRoadOwner(index, RTT_ROAD), rt_tram != INVALID_ROADTYPE ? GetRoadOwner(index, RTT_TRAM) : OWNER_NONE);
+				RoadType rt_road = GetRoadTypeRoad(tile);
+				RoadType rt_tram = GetRoadTypeTram(tile);
+				TownID town = GetTownIndex(tile);
+				MakeRoadNormal(tile, road_axis == AXIS_X ? ROAD_X : ROAD_Y, rt_road, rt_tram, town, GetRoadOwner(tile, RTT_ROAD), rt_tram != INVALID_ROADTYPE ? GetRoadOwner(tile, RTT_TRAM) : OWNER_NONE);
 			}
 			break;
 		}
@@ -534,8 +537,8 @@ static void FixOwnerOfRailTrack(TileIndex ti, Tile t)
 		TileIndex tt{ti + TileOffsByDiagDir(dd)};
 		if (GetTileTrackStatus(ti, TRANSPORT_RAIL, 0, dd) != 0 &&
 				GetTileTrackStatus(tt, TRANSPORT_RAIL, 0, ReverseDiagDir(dd)) != 0 &&
-				Company::IsValidID(GetTileOwner(tt))) {
-			SetTileOwner(t, GetTileOwner(tt));
+				Company::IsValidID(GetTileOwner(Tile(tt)))) {
+			SetTileOwner(t, GetTileOwner(Tile(tt)));
 			return;
 		}
 	}
@@ -1018,64 +1021,60 @@ bool AfterLoadGame()
 		}
 	}
 
-	for (const auto t : Map::IterateIndex()) {
-		switch (GetTileType(t)) {
-			case MP_STATION: {
-				BaseStation *bst = BaseStation::GetByTile(t);
+	for (const auto ti : Map::IterateIndex()) {
+		Tile t = Tile::GetByType(ti, MP_STATION);
+		if (!t.IsValid()) continue;
 
-				/* Sanity check */
-				if (!IsBuoy(t) && bst->owner != GetTileOwner(t)) SlErrorCorrupt("Wrong owner for station tile");
+		BaseStation *bst = BaseStation::GetByTile(t);
 
-				/* Set up station spread */
-				bst->rect.BeforeAddTile(t, StationRect::ADD_FORCE);
+		/* Sanity check */
+		if (!IsBuoy(t) && bst->owner != GetTileOwner(t)) SlErrorCorrupt("Wrong owner for station tile");
 
-				/* Waypoints don't have road stops/oil rigs in the old format */
-				if (!Station::IsExpected(bst)) break;
-				Station *st = Station::From(bst);
+		/* Set up station spread */
+		bst->rect.BeforeAddTile(ti, StationRect::ADD_FORCE);
 
-				switch (GetStationType(t)) {
-					case StationType::Truck:
-					case StationType::Bus:
-						if (IsSavegameVersionBefore(SLV_6)) {
-							/* Before version 5 you could not have more than 250 stations.
-							 * Version 6 adds large maps, so you could only place 253*253
-							 * road stops on a map (no freeform edges) = 64009. So, yes
-							 * someone could in theory create such a full map to trigger
-							 * this assertion, it's safe to assume that's only something
-							 * theoretical and does not happen in normal games. */
-							assert(RoadStop::CanAllocateItem());
+		/* Waypoints don't have road stops/oil rigs in the old format */
+		if (!Station::IsExpected(bst)) break;
+		Station *st = Station::From(bst);
 
-							/* From this version on there can be multiple road stops of the
-							 * same type per station. Convert the existing stops to the new
-							 * internal data structure. */
-							RoadStop *rs = new RoadStop(t);
+		switch (GetStationType(t)) {
+			case StationType::Truck:
+			case StationType::Bus:
+				if (IsSavegameVersionBefore(SLV_6)) {
+					/* Before version 5 you could not have more than 250 stations.
+						* Version 6 adds large maps, so you could only place 253*253
+						* road stops on a map (no freeform edges) = 64009. So, yes
+						* someone could in theory create such a full map to trigger
+						* this assertion, it's safe to assume that's only something
+						* theoretical and does not happen in normal games. */
+					assert(RoadStop::CanAllocateItem());
 
-							RoadStop **head =
-								IsTruckStop(t) ? &st->truck_stops : &st->bus_stops;
-							*head = rs;
-						}
-						break;
+					/* From this version on there can be multiple road stops of the
+						* same type per station. Convert the existing stops to the new
+						* internal data structure. */
+					RoadStop *rs = new RoadStop(ti);
 
-					case StationType::Oilrig: {
-						/* The internal encoding of oil rigs was changed twice.
-						 * It was 3 (till 2.2) and later 5 (till 5.1).
-						 * DeleteOilRig asserts on the correct type, and
-						 * setting it unconditionally does not hurt.
-						 */
-						Station::GetByTile(t)->airport.type = AT_OILRIG;
+					RoadStop **head =
+						IsTruckStop(t) ? &st->truck_stops : &st->bus_stops;
+					*head = rs;
+				}
+				break;
 
-						/* Very old savegames sometimes have phantom oil rigs, i.e.
-						 * an oil rig which got shut down, but not completely removed from
-						 * the map
-						 */
-						TileIndex t1 = TileAddXY(t, 0, 1);
-						if (!IsTileType(t1, MP_INDUSTRY) || GetIndustryGfx(t1) != GFX_OILRIG_1) {
-							DeleteOilRig(t);
-						}
-						break;
-					}
+			case StationType::Oilrig: {
+				/* The internal encoding of oil rigs was changed twice.
+					* It was 3 (till 2.2) and later 5 (till 5.1).
+					* DeleteOilRig asserts on the correct type, and
+					* setting it unconditionally does not hurt.
+					*/
+				Station::GetByTile(t)->airport.type = AT_OILRIG;
 
-					default: break;
+				/* Very old savegames sometimes have phantom oil rigs, i.e.
+					* an oil rig which got shut down, but not completely removed from
+					* the map
+					*/
+				Tile t1 = Tile::GetByType(TileAddXY(ti, 0, 1), MP_INDUSTRY);
+				if (!t1.IsValid() || GetIndustryGfx(t1) != GFX_OILRIG_1) {
+					DeleteOilRig(ti);
 				}
 				break;
 			}
@@ -1368,8 +1367,8 @@ bool AfterLoadGame()
 
 		for (Vehicle *v : Vehicle::Iterate()) {
 			if (!v->IsGroundVehicle()) continue;
-			if (IsBridgeTile(v->tile)) {
-				DiagDirection dir = GetTunnelBridgeDirection(v->tile);
+			if (Tile vt = Tile::GetByType(v->tile, MP_TUNNELBRIDGE); IsBridgeTile(vt)) {
+				DiagDirection dir = GetTunnelBridgeDirection(vt);
 
 				if (dir != DirToDiagDir(v->direction)) continue;
 				switch (dir) {
@@ -1701,7 +1700,8 @@ bool AfterLoadGame()
 	 * be OWNER_NONE. So replace OWNER_NONE with OWNER_WATER. */
 	if (IsSavegameVersionBefore(SLV_46)) {
 		for (Waypoint *wp : Waypoint::Iterate()) {
-			if (wp->facilities.Test(StationFacility::Dock) && IsTileOwner(wp->xy, OWNER_NONE) && TileHeight(wp->xy) == 0) SetTileOwner(wp->xy, OWNER_WATER);
+			Tile t(wp->xy);
+			if (wp->facilities.Test(StationFacility::Dock) && IsTileOwner(t, OWNER_NONE) && TileHeight(t) == 0) SetTileOwner(t, OWNER_WATER);
 		}
 	}
 
@@ -1982,8 +1982,8 @@ bool AfterLoadGame()
 		for (const auto t : Map::IterateIndex()) {
 			if (!IsTileFlat(t)) continue;
 
-			if (IsTileType(t, MP_WATER) && IsLock(t)) SetWaterClassDependingOnSurroundings(t, false);
-			if (IsTileType(t, MP_STATION) && (IsDock(t) || IsBuoy(t))) SetWaterClassDependingOnSurroundings(t, false);
+			if (Tile wt = Tile::GetByType(t, MP_WATER); wt.IsValid() && IsLock(wt)) SetWaterClassDependingOnSurroundings(t, false);
+			if (Tile st = Tile::GetByType(t, MP_STATION); st.IsValid() && (IsDock(st) || IsBuoy(st))) SetWaterClassDependingOnSurroundings(t, false);
 		}
 	}
 
@@ -2009,7 +2009,7 @@ bool AfterLoadGame()
 				if (IsBuoyTile(t)) {
 					/* reset buoy owner to OWNER_NONE in the station struct
 					 * (even if it is owned by active company) */
-					Waypoint::GetByTile(ti)->owner = OWNER_NONE;
+					Waypoint::GetByTile(t)->owner = OWNER_NONE;
 				}
 			} else if (IsTileType(t, MP_ROAD)) {
 				/* works for all RoadTileType */
@@ -2067,7 +2067,7 @@ bool AfterLoadGame()
 				SetWaterClassDependingOnSurroundings(ti, true);
 			}
 			if (IsTileType(t, MP_INDUSTRY)) {
-				if (GetIndustrySpec(GetIndustryType(ti))->behaviour.Test(IndustryBehaviour::BuiltOnWater)) {
+				if (GetIndustrySpec(GetIndustryType(t))->behaviour.Test(IndustryBehaviour::BuiltOnWater)) {
 					SetWaterClassDependingOnSurroundings(ti, true);
 				} else {
 					SetWaterClass(t, WATER_CLASS_INVALID);
@@ -2231,8 +2231,8 @@ bool AfterLoadGame()
 					Object::IncTypeCount(type);
 				} else {
 					/* We're at an offset, so get the ID from our "root". */
-					Tile northern_tile = ti - TileXY(GB(offset, 0, 4), GB(offset, 4, 4));
-					assert(IsTileType(northern_tile, MP_OBJECT));
+					Tile northern_tile = Tile::GetByType(ti - TileXY(GB(offset, 0, 4), GB(offset, 4, 4)), MP_OBJECT);
+					assert(northern_tile.IsValid());
 					t.m2() = northern_tile.m2();
 				}
 			}
@@ -2327,7 +2327,7 @@ bool AfterLoadGame()
 
 		for (auto tile = _animated_tiles.begin(); tile < _animated_tiles.end(); /* Nothing */) {
 			/* Remove if tile is not animated */
-			bool remove = !MayAnimateTile(*tile);
+			bool remove = !MayAnimateTile(Tile(*tile));
 
 			/* and remove if duplicate */
 			for (auto j = _animated_tiles.begin(); !remove && j < tile; j++) {
@@ -2357,12 +2357,12 @@ bool AfterLoadGame()
 
 		for (auto t : Map::IterateIndex()) {
 			/* Ensure there is no spurious animated tile state. */
-			if (MayAnimateTile(t)) SetAnimatedTileState(t, AnimatedTileState::None);
+			if (MayAnimateTile(Tile(t))) SetAnimatedTileState(Tile(t), AnimatedTileState::None);
 		}
 
 		/* Set animated flag for all valid animated tiles. */
 		for (const TileIndex &tile : _animated_tiles) {
-			if (tile != INVALID_TILE) SetAnimatedTileState(tile, AnimatedTileState::Animated);
+			if (tile != INVALID_TILE) SetAnimatedTileState(Tile(tile), AnimatedTileState::Animated);
 		}
 	}
 
@@ -2470,7 +2470,7 @@ bool AfterLoadGame()
 				continue;
 			}
 			Tile(tile).m2() = d->index.base();
-			if (IsTileType(tile, MP_WATER)) Tile(GetOtherShipDepotTile(tile)).m2() = d->index.base();
+			if (Tile::GetByType(tile, MP_WATER).IsValid()) Tile(GetOtherShipDepotTile(tile)).m2() = d->index.base();
 		}
 	}
 
@@ -2651,15 +2651,16 @@ bool AfterLoadGame()
 	/* Add (random) colour to all objects. */
 	if (IsSavegameVersionBefore(SLV_148)) {
 		for (Object *o : Object::Iterate()) {
-			Owner owner = GetTileOwner(o->location.tile);
+			Owner owner = GetTileOwner(Tile(o->location.tile));
 			o->colour = (owner == OWNER_NONE) ? static_cast<Colours>(GB(Random(), 0, 4)) : Company::Get(owner)->livery[0].colour1;
 		}
 	}
 
 	if (IsSavegameVersionBefore(SLV_149)) {
-		for (const auto t : Map::IterateIndex()) {
-			if (!IsTileType(t, MP_STATION)) continue;
-			if (!IsBuoy(t) && !IsOilRig(t) && !(IsDock(t) && IsTileFlat(t))) {
+		for (const auto i : Map::IterateIndex()) {
+			Tile t = Tile::GetByType(i, MP_STATION);
+			if (!t.IsValid()) continue;
+			if (!IsBuoy(t) && !IsOilRig(t) && !(IsDock(t) && IsTileFlat(i))) {
 				SetWaterClass(t, WATER_CLASS_INVALID);
 			}
 		}
@@ -2689,17 +2690,17 @@ bool AfterLoadGame()
 			if (!v->IsGroundVehicle()) continue;
 
 			/* Is the vehicle in a tunnel? */
-			if (!IsTunnelTile(v->tile)) continue;
+			if (!IsTunnelTile(Tile::GetByType(v->tile, MP_TUNNELBRIDGE))) continue;
 
 			/* Is the vehicle actually at a tunnel entrance/exit? */
 			TileIndex vtile = TileVirtXY(v->x_pos, v->y_pos);
-			if (!IsTunnelTile(vtile)) continue;
+			if (!IsTunnelTile(Tile::GetByType(vtile, MP_TUNNELBRIDGE))) continue;
 
 			/* Are we actually in this tunnel? Or maybe a lower tunnel? */
 			if (GetSlopePixelZ(v->x_pos, v->y_pos, true) != v->z_pos) continue;
 
 			/* What way are we going? */
-			const DiagDirection dir = GetTunnelBridgeDirection(vtile);
+			const DiagDirection dir = GetTunnelBridgeDirection(Tile::GetByType(vtile, MP_TUNNELBRIDGE));
 			const DiagDirection vdir = DirToDiagDir(v->direction);
 
 			/* Have we passed the visibility "switch" state already? */
@@ -2856,12 +2857,12 @@ bool AfterLoadGame()
 					continue;
 			}
 
-			if (IsBridgeTile(v->tile) && TileVirtXY(v->x_pos, v->y_pos) == v->tile) {
+			if (Tile vt = Tile::GetByType(v->tile, MP_TUNNELBRIDGE); IsBridgeTile(vt) && TileVirtXY(v->x_pos, v->y_pos) == v->tile) {
 				/* In old versions, z_pos was 1 unit lower on bridge heads.
 				 * However, this invalid state could be converted to new savegames
 				 * by loading and saving the game in a new version. */
 				v->z_pos = GetSlopePixelZ(v->x_pos, v->y_pos, true);
-				DiagDirection dir = GetTunnelBridgeDirection(v->tile);
+				DiagDirection dir = GetTunnelBridgeDirection(vt);
 				if (v->type == VEH_TRAIN && !v->vehstatus.Test(VehState::Crashed) &&
 						v->direction != DiagDirToDir(dir)) {
 					/* If the train has left the bridge, it shouldn't have
@@ -2973,12 +2974,12 @@ bool AfterLoadGame()
 			if (!IsTileType(t, MP_CLEAR) && !IsTileType(t, MP_TREES)) continue;
 			if (IsTileType(t, MP_CLEAR) && IsClearGround(t, CLEAR_FIELDS)) continue;
 			uint fence = GB(t.m4(), 5, 3);
-			if (fence != 0 && IsTileType(TileAddXY(ti, 1, 0), MP_CLEAR) && IsClearGround(TileAddXY(ti, 1, 0), CLEAR_FIELDS)) {
-				SetFence(TileAddXY(ti, 1, 0), DIAGDIR_NE, fence);
+			if (Tile taxy = Tile::GetByType(TileAddXY(ti, 1, 0), MP_CLEAR); fence != 0 && taxy.IsValid() && IsClearGround(taxy, CLEAR_FIELDS)) {
+				SetFence(taxy, DIAGDIR_NE, fence);
 			}
 			fence = GB(t.m4(), 2, 3);
-			if (fence != 0 && IsTileType(TileAddXY(ti, 0, 1), MP_CLEAR) && IsClearGround(TileAddXY(ti, 0, 1), CLEAR_FIELDS)) {
-				SetFence(TileAddXY(ti, 0, 1), DIAGDIR_NW, fence);
+			if (Tile taxy = Tile::GetByType(TileAddXY(ti, 0, 1), MP_CLEAR); fence != 0 && taxy.IsValid() && IsClearGround(taxy, CLEAR_FIELDS)) {
+				SetFence(taxy, DIAGDIR_NW, fence);
 			}
 			SB(t.m4(), 2, 3, 0);
 			SB(t.m4(), 5, 3, 0);
@@ -3246,7 +3247,7 @@ bool AfterLoadGame()
 		/* Move ships from lock slope to upper or lower position. */
 		for (Ship *s : Ship::Iterate()) {
 			/* Suitable tile? */
-			if (!IsTileType(s->tile, MP_WATER) || !IsLock(s->tile) || GetLockPart(s->tile) != LOCK_PART_MIDDLE) continue;
+			if (Tile st = Tile(s->tile); !IsTileType(st, MP_WATER) || !IsLock(st) || GetLockPart(st) != LOCK_PART_MIDDLE) continue;
 
 			/* We don't need to adjust position when at the tile centre */
 			int x = s->x_pos & 0xF;
@@ -3288,9 +3289,9 @@ bool AfterLoadGame()
 
 		/* Link oil rigs to their industry and back. */
 		for (Station *st : Station::Iterate()) {
-			if (IsTileType(st->xy, MP_STATION) && IsOilRig(st->xy)) {
+			if (Tile stxy = Tile::GetByType(st->xy, MP_STATION); stxy.IsValid() && IsOilRig(stxy)) {
 				/* Industry tile is always adjacent during construction by TileDiffXY(0, 1) */
-				st->industry = Industry::GetByTile(st->xy + TileDiffXY(0, 1));
+				st->industry = Industry::GetByTile(Tile(st->xy + TileDiffXY(0, 1)));
 				st->industry->neutral_station = st;
 			}
 		}

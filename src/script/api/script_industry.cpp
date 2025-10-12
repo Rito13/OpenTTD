@@ -38,8 +38,8 @@
 
 /* static */ IndustryID ScriptIndustry::GetIndustryID(TileIndex tile)
 {
-	if (!::IsValidTile(tile) || !::IsTileType(tile, MP_INDUSTRY)) return IndustryID::Invalid();
-	return ::GetIndustryIndex(tile);
+	if (!::IsValidTile(tile) || !::IsTileType(::Tile(tile), MP_INDUSTRY)) return IndustryID::Invalid();
+	return ::GetIndustryIndex(::Tile(tile));
 }
 
 /* static */ std::optional<std::string> ScriptIndustry::GetName(IndustryID industry_id)
@@ -182,7 +182,7 @@
 
 	const Industry *ind = ::Industry::Get(industry_id);
 	for (TileIndex tile_cur : ind->location) {
-		if (IsTileType(tile_cur, MP_STATION) && IsOilRig(tile_cur)) {
+		if (IsTileType(::Tile(tile_cur), MP_STATION) && IsOilRig(::Tile(tile_cur))) {
 			return tile_cur;
 		}
 	}
@@ -204,7 +204,7 @@
 
 	const Industry *ind = ::Industry::Get(industry_id);
 	for (TileIndex tile_cur : ind->location) {
-		if (IsTileType(tile_cur, MP_STATION) && IsOilRig(tile_cur)) {
+		if (IsTileType(::Tile(tile_cur), MP_STATION) && IsOilRig(::Tile(tile_cur))) {
 			return tile_cur;
 		}
 	}

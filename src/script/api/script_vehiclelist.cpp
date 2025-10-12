@@ -60,21 +60,21 @@ ScriptVehicleList_Depot::ScriptVehicleList_Depot(TileIndex tile)
 		type = VEH_TRAIN;
 		dest = GetDepotIndex(GetRailDepotTile(tile));
 	} else {
-		switch (GetTileType(tile)) {
+		switch (GetTileType(::Tile(tile))) {
 			case MP_STATION: // Aircraft
-				if (!IsAirport(tile)) return;
+				if (!IsAirport(::Tile(tile))) return;
 				type = VEH_AIRCRAFT;
-				dest = GetStationIndex(tile);
+				dest = GetStationIndex(::Tile(tile));
 				break;
 
 			case MP_ROAD:
-				if (!IsRoadDepot(tile)) return;
+				if (!IsRoadDepot(::Tile(tile))) return;
 				type = VEH_ROAD;
 				dest = GetDepotIndex(tile);
 				break;
 
 			case MP_WATER:
-				if (!IsShipDepot(tile)) return;
+				if (!IsShipDepot(::Tile(tile))) return;
 				type = VEH_SHIP;
 				dest = GetDepotIndex(tile);
 				break;

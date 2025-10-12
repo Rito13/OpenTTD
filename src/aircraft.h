@@ -101,7 +101,7 @@ struct Aircraft final : public SpecializedVehicle<Aircraft, VEH_AIRCRAFT> {
 	bool IsInDepot() const override
 	{
 		assert(this->IsPrimaryVehicle());
-		return this->vehstatus.Test(VehState::Hidden) && IsHangarTile(this->tile);
+		return this->vehstatus.Test(VehState::Hidden) && IsHangarTile(Tile::GetByType(this->tile, MP_STATION));
 	}
 
 	bool Tick() override;
