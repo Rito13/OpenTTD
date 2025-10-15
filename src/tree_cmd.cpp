@@ -53,7 +53,7 @@ enum ExtraTreePlacement : uint8_t {
 };
 
 /** Determines when to consider building more trees. */
-uint8_t _trees_tick_ctr;
+uint16_t _trees_tick_ctr;
 
 static const uint16_t DEFAULT_TREE_STEPS = 1000;             ///< Default number of attempts for placing trees.
 static const uint16_t DEFAULT_RAINFOREST_TREE_STEPS = 15000; ///< Default number of attempts for placing extra trees at rainforest in tropic.
@@ -945,10 +945,10 @@ static void TileLoop_Trees(TileIndex tile)
 bool DecrementTreeCounter()
 {
 	/* Ensure _trees_tick_ctr can be decremented past zero only once for the largest map size. */
-	static_assert(2 * (MAX_MAP_SIZE_BITS - MIN_MAP_SIZE_BITS) - 4 <= std::numeric_limits<uint8_t>::digits);
+	static_assert(2 * (MAX_MAP_SIZE_BITS - MIN_MAP_SIZE_BITS) - 4 <= std::numeric_limits<uint16_t>::digits);
 
 	/* byte underflow */
-	uint8_t old_trees_tick_ctr = _trees_tick_ctr;
+	uint16_t old_trees_tick_ctr = _trees_tick_ctr;
 	_trees_tick_ctr -= Map::ScaleBySize(1);
 	return old_trees_tick_ctr <= _trees_tick_ctr;
 }
