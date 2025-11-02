@@ -77,9 +77,9 @@
 /** Width of the toolbar, shared by statusbar. */
 uint _toolbar_width = 0;
 
-RailType _last_built_railtype;
-RoadType _last_built_roadtype;
-RoadType _last_built_tramtype;
+LastUsedTypes<RailType> _last_built_railtype;
+LastUsedTypes<RoadType> _last_built_roadtype;
+LastUsedTypes<RoadType> _last_built_tramtype;
 
 /** Toolbar modes */
 enum ToolbarMode : uint8_t {
@@ -881,7 +881,7 @@ static CallBackFunction ToolbarBuildRailClick(Window *w)
  */
 static CallBackFunction MenuClickBuildRail(int index)
 {
-	_last_built_railtype = (RailType)index;
+	_last_built_railtype.UpdateLastType((RailType)index);
 	ShowBuildRailToolbar(_last_built_railtype);
 	return CBF_NONE;
 }
@@ -902,7 +902,7 @@ static CallBackFunction ToolbarBuildRoadClick(Window *w)
  */
 static CallBackFunction MenuClickBuildRoad(int index)
 {
-	_last_built_roadtype = (RoadType)index;
+	_last_built_roadtype.UpdateLastType((RoadType)index);
 	ShowBuildRoadToolbar(_last_built_roadtype);
 	return CBF_NONE;
 }
@@ -923,7 +923,7 @@ static CallBackFunction ToolbarBuildTramClick(Window *w)
  */
 static CallBackFunction MenuClickBuildTram(int index)
 {
-	_last_built_tramtype = (RoadType)index;
+	_last_built_tramtype.UpdateLastType((RoadType)index);
 	ShowBuildRoadToolbar(_last_built_tramtype);
 	return CBF_NONE;
 }
@@ -1259,7 +1259,7 @@ static CallBackFunction ToolbarScenBuildRoadClick(Window *w)
  */
 static CallBackFunction ToolbarScenBuildRoad(int index)
 {
-	_last_built_roadtype = (RoadType)index;
+	_last_built_roadtype.UpdateLastType((RoadType)index);
 	ShowBuildRoadScenToolbar(_last_built_roadtype);
 	return CBF_NONE;
 }
@@ -1278,7 +1278,7 @@ static CallBackFunction ToolbarScenBuildTramClick(Window *w)
  */
 static CallBackFunction ToolbarScenBuildTram(int index)
 {
-	_last_built_tramtype = (RoadType)index;
+	_last_built_tramtype.UpdateLastType((RoadType)index);
 	ShowBuildRoadScenToolbar(_last_built_tramtype);
 	return CBF_NONE;
 }
@@ -2566,8 +2566,10 @@ static WindowDesc _toolb_scen_desc(
 void AllocateToolbar()
 {
 	/* Clean old GUI values; railtype is (re)set by rail_gui.cpp */
-	_last_built_roadtype = ROADTYPE_ROAD;
-	_last_built_tramtype = ROADTYPE_TRAM;
+	_last_built_roadtype[0] = ROADTYPE_ROAD;
+	_last_built_tramtype[0] = ROADTYPE_TRAM;
+	_last_built_roadtype[1] = INVALID_ROADTYPE;
+	_last_built_tramtype[1] = INVALID_ROADTYPE;
 
 	if (_game_mode == GM_EDITOR) {
 		new ScenarioEditorToolbarWindow(_toolb_scen_desc);

@@ -44,6 +44,7 @@
 #include "picker_gui.h"
 #include "timer/timer.h"
 #include "timer/timer_game_calendar.h"
+#include "toolbar_gui.h"
 
 #include "widgets/road_widget.h"
 
@@ -862,13 +863,11 @@ struct BuildRoadToolbarWindow : Window {
 
 	static EventState RoadToolbarGlobalHotkeys(int hotkey)
 	{
-		extern RoadType _last_built_roadtype;
 		return RoadTramToolbarGlobalHotkeys(hotkey, _last_built_roadtype, RTT_ROAD);
 	}
 
 	static EventState TramToolbarGlobalHotkeys(int hotkey)
 	{
-		extern RoadType _last_built_tramtype;
 		return RoadTramToolbarGlobalHotkeys(hotkey, _last_built_tramtype, RTT_TRAM);
 	}
 
@@ -1803,9 +1802,32 @@ DropDownList GetRoadTypeDropDownList(RoadTramTypes rtts, bool for_replacement, b
 	/* Shared list so that each item can take ownership. */
 	auto badge_class_list = std::make_shared<GUIBadgeClasses>(GSF_ROADTYPES);
 
-	for (const auto &rt : _sorted_roadtypes) {
+	RoadTypes already_in_dropdown;
+	size_t last_built_type_size = HasBit(rtts, RTT_TRAM) ? _last_built_tramtype.size() : 0;
+	last_built_type_size += HasBit(rtts, RTT_ROAD) ? _last_built_roadtype.size() : 0;
+
+	std::vector<RoadType> roadtypes;
+	roadtypes.reserve(last_built_type_size + _sorted_roadtypes.size());
+	auto it = roadtypes.begin();
+
+	if (HasBit(rtts, RTT_ROAD)) {
+		roadtypes.insert(it, _last_built_roadtype.begin(), _last_built_roadtype.end());
+		it += _last_built_roadtype.size();
+	}
+
+	if (HasBit(rtts, RTT_TRAM)) {
+		roadtypes.insert(it, _last_built_tramtype.begin(), _last_built_tramtype.end());
+		it += _last_built_tramtype.size();
+	}
+
+	roadtypes.insert(it, _sorted_roadtypes.begin(), _sorted_roadtypes.end());
+
+	for (const auto &rt : roadtypes) {
 		/* If it's not used ever, don't show it to the user. */
 		if (!used_roadtypes.Test(rt)) continue;
+
+		if (already_in_dropdown.Test(rt)) continue;
+		already_in_dropdown.Set(rt);
 
 		const RoadTypeInfo *rti = GetRoadTypeInfo(rt);
 
@@ -1822,6 +1844,19 @@ DropDownList GetRoadTypeDropDownList(RoadTramTypes rtts, bool for_replacement, b
 	if (list.empty()) {
 		/* Empty dropdowns are not allowed */
 		list.push_back(MakeDropDownListStringItem(STR_NONE, INVALID_ROADTYPE, true));
+	} else {
+		auto list_it = list.begin();
+
+		if (HasBit(rtts, RTT_ROAD)) {
+			list_it += (_last_built_roadtype[1] == INVALID_ROADTYPE ? 1 : 2);
+			list.insert(list_it, MakeDropDownListDividerItem());
+			list_it += 1;
+		}
+
+		if (HasBit(rtts, RTT_TRAM)) {
+			list_it += (_last_built_tramtype[1] == INVALID_ROADTYPE ? 1 : 2);
+			list.insert(list_it, MakeDropDownListDividerItem());
+		}
 	}
 
 	return list;
