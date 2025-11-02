@@ -2070,16 +2070,25 @@ DropDownList GetRailTypeDropDownList(bool for_replacement, bool all_option)
 	RailTypes already_in_dropdown;
 
 	std::vector<RailType> railtypes;
-	railtypes.reserve(_last_built_railtype.size() + _sorted_railtypes.size());
-	railtypes.insert(railtypes.begin(), _last_built_railtype.begin(), _last_built_railtype.end());
-	railtypes.insert(railtypes.begin() + _last_built_railtype.size(), _sorted_railtypes.begin(), _sorted_railtypes.end());
+	/* One  more than the size of type list in order to contain dropdown list divider. */
+	railtypes.reserve(_last_built_railtype.size() + 1 + _sorted_railtypes.size());
+	railtypes.insert(railtypes.end(), _last_built_railtype.begin(), _last_built_railtype.end());
+	railtypes.push_back(RAILTYPE_END); ///< Mark end of sub list.
+	railtypes.insert(railtypes.end(), _sorted_railtypes.begin(), _sorted_railtypes.end());
 
 	for (const auto &rt : railtypes) {
+		if (rt == RAILTYPE_END) {
+			list.push_back(MakeDropDownListDividerItem());
+			continue;
+		}
+
 		/* If it's not used ever, don't show it to the user. */
 		if (!used_railtypes.Test(rt)) continue;
 
 		if (already_in_dropdown.Test(rt)) continue;
 		already_in_dropdown.Set(rt);
+
+		if (c->hidden_railtypes.Test(rt)) continue;
 
 		const RailTypeInfo *rti = GetRailTypeInfo(rt);
 
@@ -2096,8 +2105,6 @@ DropDownList GetRailTypeDropDownList(bool for_replacement, bool all_option)
 	if (list.empty()) {
 		/* Empty dropdowns are not allowed */
 		list.push_back(MakeDropDownListStringItem(STR_NONE, INVALID_RAILTYPE, true));
-	} else {
-		list.insert(list.begin() + (_last_built_railtype[1] == INVALID_RAILTYPE ? 1 : 2), MakeDropDownListDividerItem());
 	}
 
 	return list;
