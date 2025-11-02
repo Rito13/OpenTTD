@@ -624,8 +624,8 @@ Company *DoStartupNewCompany(bool is_ai, CompanyID company = CompanyID::Invalid(
 	c->inaugurated_year = TimerGameEconomy::year;
 	c->inaugurated_year_calendar = TimerGameCalendar::year;
 
-	/* If starting a player company in singleplayer and a favorite company manager face is selected, choose it. Otherwise, use a random face.
-	 * In a network game, we'll choose the favorite face later in CmdCompanyCtrl to sync it to all clients. */
+	/* If starting a player company in singleplayer and a favourite company manager face is selected, choose it. Otherwise, use a random face.
+	 * In a network game, we'll choose the favourite face later in CmdCompanyCtrl to sync it to all clients. */
 	bool randomise_face = true;
 	if (!_company_manager_face.empty() && !is_ai && !_networking) {
 		auto cmf = ParseCompanyManagerFaceCode(_company_manager_face);
@@ -918,7 +918,7 @@ CommandCost CmdCompanyCtrl(DoCommandFlags flags, CompanyCtrlAction cca, CompanyI
 				SetLocalCompany(c->index);
 
 				/*
-				 * If a favorite company manager face is selected, choose it. Otherwise, use a random face.
+				 * If a favourite company manager face is selected, choose it. Otherwise, use a random face.
 				 * Because this needs to be synchronised over the network, only the client knows
 				 * its configuration and we are currently in the execution of a command, we have
 				 * to circumvent the normal ::Post logic for commands and just send the command.
@@ -1188,6 +1188,29 @@ CommandCost CmdSetRailRoadTypeCompanyHidden(DoCommandFlags flags, RailType rail_
 	if (flags.Test(DoCommandFlag::Execute)) {
 		if (rail_type < RAILTYPE_END) c->hidden_railtypes.Set(rail_type, is_hidden);
 		if (road_type < ROADTYPE_END) c->hidden_roadtypes.Set(road_type, is_hidden);
+		InvalidateWindowClassesData(WC_DROPDOWN_MENU);
+	}
+
+	return CommandCost();
+}
+
+/**
+ * Change favourite status of the rail type in build rail window.
+ * @param flags operation to perform
+ * @param rail_type rail type to set
+ * @param road_type road/tram type to set
+ * @param is_favourite the new favourite status
+ * @return the cost of this operation or an error
+ */
+CommandCost CmdSetRailRoadTypeCompanyFavourite(DoCommandFlags flags, RailType rail_type, RoadType road_type, bool is_favourite)
+{
+	Company *c = Company::Get(_current_company);
+
+	if (rail_type >= RAILTYPE_END && road_type >= ROADTYPE_END) return CMD_ERROR;
+
+	if (flags.Test(DoCommandFlag::Execute)) {
+		if (rail_type < RAILTYPE_END) c->favourite_railtypes.Set(rail_type, is_favourite);
+		if (road_type < ROADTYPE_END) c->favourite_roadtypes.Set(road_type, is_favourite);
 		InvalidateWindowClassesData(WC_DROPDOWN_MENU);
 	}
 

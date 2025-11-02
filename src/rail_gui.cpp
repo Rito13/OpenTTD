@@ -2070,15 +2070,28 @@ DropDownList GetRailTypeDropDownList(bool for_replacement, bool all_option)
 	RailTypes already_in_dropdown;
 
 	std::vector<RailType> railtypes;
-	/* One  more than the size of type list in order to contain dropdown list divider. */
-	railtypes.reserve(_last_built_railtype.size() + 1 + _sorted_railtypes.size());
+	/* One  more than the size of last built type list in order to contain dropdown list divider. */
+	railtypes.reserve(_last_built_railtype.size() + 1
+		+ (c->favourite_railtypes.Any() ? c->favourite_railtypes.Count() + 1 : 0) // Also a divider.
+		+ _sorted_railtypes.size());
 	railtypes.insert(railtypes.end(), _last_built_railtype.begin(), _last_built_railtype.end());
 	railtypes.push_back(RAILTYPE_END); ///< Mark end of sub list.
+
+	if (c->favourite_railtypes.Any()) {
+		for (RailType rt : c->favourite_railtypes) {
+			railtypes.push_back(rt);
+		}
+		railtypes.push_back(RAILTYPE_END); ///< Mark end of sub list.
+	}
+
 	railtypes.insert(railtypes.end(), _sorted_railtypes.begin(), _sorted_railtypes.end());
+
+	size_t num_dividers = 0;
 
 	for (const auto &rt : railtypes) {
 		if (rt == RAILTYPE_END) {
 			list.push_back(MakeDropDownListDividerItem());
+			num_dividers += 1;
 			continue;
 		}
 
@@ -2102,7 +2115,8 @@ DropDownList GetRailTypeDropDownList(bool for_replacement, bool all_option)
 		}
 	}
 
-	if (list.empty()) {
+	if (list.size() <= num_dividers) {
+		list.clear();
 		/* Empty dropdowns are not allowed */
 		list.push_back(MakeDropDownListStringItem(STR_NONE, INVALID_RAILTYPE, true));
 	}
