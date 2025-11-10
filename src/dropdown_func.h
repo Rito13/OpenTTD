@@ -17,7 +17,8 @@
 void ShowDropDownMenu(Window *w, std::span<const StringID> strings, int selected, WidgetID button, uint32_t disabled_mask, uint32_t hidden_mask, uint width = 0);
 
 /* Helper functions for commonly used drop down list items. */
-std::unique_ptr<DropDownListItem> MakeDropDownListDividerItem();
+template <FontSize TFs = FS_NORMAL>
+extern std::unique_ptr<DropDownListItem> MakeDropDownListDividerItem();
 std::unique_ptr<DropDownListItem> MakeDropDownListStringItem(StringID str, int value, bool masked = false, bool shaded = false);
 std::unique_ptr<DropDownListItem> MakeDropDownListStringItem(std::string &&str, int value, bool masked = false, bool shaded = false);
 std::unique_ptr<DropDownListItem> MakeDropDownListIconItem(SpriteID sprite, PaletteID palette, StringID str, int value, bool masked = false, bool shaded = false);

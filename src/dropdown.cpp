@@ -21,15 +21,22 @@
 #include "widgets/dropdown_widget.h"
 
 #include "table/strings.h"
+#include "table/sprites.h"
 
 #include "dropdown_common_type.h"
 
 #include "safeguards.h"
 
+const PaletteID DEFAULT_DROP_DOWN_SORTER_PALETTE = PALETTE_ALL_BLACK;
+
+template <FontSize TFs>
 std::unique_ptr<DropDownListItem> MakeDropDownListDividerItem()
 {
-	return std::make_unique<DropDownListDividerItem>(-1);
+	return std::make_unique<DropDownDivider<DropDownListItem, TFs>>(-1);
 }
+
+template std::unique_ptr<DropDownListItem> MakeDropDownListDividerItem<FS_NORMAL>();
+template std::unique_ptr<DropDownListItem> MakeDropDownListDividerItem<FS_SMALL>();
 
 std::unique_ptr<DropDownListItem> MakeDropDownListStringItem(StringID str, int value, bool masked, bool shaded)
 {
@@ -277,7 +284,7 @@ struct DropdownWindow : Window {
 				Rect full = ir.WithY(y, y + item_height - 1);
 
 				bool selected = (this->selected_result == item->result) && item->Selectable();
-				if (selected) GfxFillRect(full, PC_BLACK);
+				if (selected) GfxFillRect(full, item->GetSelectedBGColour(colour));
 
 				item->Draw(full, full.Shrink(WidgetDimensions::scaled.dropdowntext, RectPadding::zero), selected, selected ? this->selected_click_result : -1, colour);
 			}
