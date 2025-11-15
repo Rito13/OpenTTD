@@ -1790,6 +1790,11 @@ DropDownList GetRoadTypeDropDownList(RoadTramTypes rtts, bool for_replacement, b
 		list.push_back(MakeDropDownListStringItem(STR_REPLACE_ALL_ROADTYPE, INVALID_ROADTYPE));
 	}
 
+	if (!for_replacement) {
+		list.push_back(MakeDropDownListSorterItem(STR_REPLACE_ALL_ROADTYPE, 2, false, INVALID_ROADTYPE + 1, 3));
+		list.push_back(MakeDropDownListDividerItem<FS_SMALL>());
+	}
+
 	Dimension d = { 0, 0 };
 	/* Get largest icon size, to ensure text is aligned on each menu item. */
 	if (!for_replacement) {
@@ -1831,11 +1836,11 @@ DropDownList GetRoadTypeDropDownList(RoadTramTypes rtts, bool for_replacement, b
 
 	roadtypes.insert(roadtypes.end(), _sorted_roadtypes.begin(), _sorted_roadtypes.end());
 
-	size_t num_dividers = 0;
+	size_t num_dividers = for_replacement ? 0 : 2;
 
 	for (const auto &rt : roadtypes) {
 		if (rt == ROADTYPE_SUBLIST_END) {
-			list.push_back(MakeDropDownListDividerItem());
+			list.push_back(MakeDropDownListDividerItem<FS_SMALL>());
 			num_dividers += 1;
 			continue;
 		}

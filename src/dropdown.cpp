@@ -525,7 +525,11 @@ struct DropdownWindow : Window, TBase {
 
 	void ReplaceList(DropDownList &&list, std::optional<int> selected_result)
 	{
-		this->list = std::move(list);
+		if (list.empty()) {
+			this->list = this->GetDropDownList(this->badge_filter_choices);
+		} else {
+			this->list = std::move(list);
+		}
 		if (selected_result.has_value()) this->selected_result = *selected_result;
 		this->UpdateSizeAndPosition();
 		this->ReInit(0, 0);
@@ -667,3 +671,7 @@ void ShowDropDownMenu(Window *w, std::span<const StringID> strings, int selected
 template void ShowDropDownList<DefaultDropdownWindowBase>(Window *w, DropDownList &&list, int selected, WidgetID button, uint width, bool instant_close, bool persist);
 template void ShowDropDownListAt<DefaultDropdownWindowBase>(Window *w, DropDownList &&list, int selected, WidgetID button, Rect wi_rect, Colours wi_colour, bool instant_close, bool persist);
 template void ReplaceDropDownList<DefaultDropdownWindowBase>(Window *parent, DropDownList &&list, std::optional<int> selected_result);
+
+template void ShowDropDownList<RailTypeDropdownWindowBase>(Window *w, DropDownList &&list, int selected, WidgetID button, uint width, bool instant_close, bool persist);
+template void ShowDropDownListAt<RailTypeDropdownWindowBase>(Window *w, DropDownList &&list, int selected, WidgetID button, Rect wi_rect, Colours wi_colour, bool instant_close, bool persist);
+template void ReplaceDropDownList<RailTypeDropdownWindowBase>(Window *parent, DropDownList &&list, std::optional<int> selected_result);
