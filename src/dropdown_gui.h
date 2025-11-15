@@ -11,6 +11,7 @@
 #include "newgrf.h"
 #include "newgrf_badge_type.h"
 #include "rail.h"
+#include "road.h"
 #include "newgrf_badge_gui.h"
 #include "strings_type.h"
 #include "strings_func.h"
@@ -107,6 +108,24 @@ public:
 	bool IsSortOrderInverted() const override { return _railtypes_invert_sort_order; }
 	DropDownList GetDropDownList(const BadgeFilterChoices &badge_filter_choices) const override;
 	GrfSpecFeature GetGrfSpecFeature() const override { return GSF_RAILTYPES; }
+	DropDownList GetSortDropDownList() const override;
+};
+
+class RoadTypeDropdownWindowBase : public DropdownWindow {
+public:
+	/** @see DropdownWindow::DropdownWindow. */
+	RoadTypeDropdownWindowBase(int window_id, Window *parent, DropDownList &&list, int selected, WidgetID button, const Rect wi_rect, bool instant_close, Colours wi_colour, bool persist) : DropdownWindow(window_id, parent, std::move(list), selected, button, wi_rect, instant_close, wi_colour, persist, true)
+	{
+		this->FinishInitNested(window_id);
+		this->flags.Reset(WindowFlag::WhiteBorder);
+	}
+
+	void SetSortCriteria(int) override {}
+	StringID GetSortCriteriaString() const override;
+	void SetSortOrderInverted(bool is_sort_order_inverted) override;
+	bool IsSortOrderInverted() const override { return _roadtypes_invert_sort_order; }
+	DropDownList GetDropDownList(const BadgeFilterChoices &badge_filter_choices) const override;
+	GrfSpecFeature GetGrfSpecFeature() const override { return GSF_ROADTYPES; }
 	DropDownList GetSortDropDownList() const override;
 };
 

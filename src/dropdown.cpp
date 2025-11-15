@@ -665,3 +665,4 @@ void ShowDropDownMenu(Window *w, std::span<const StringID> strings, int selected
 
 	if (!list.empty()) ShowDropDownList(w, std::move(list), selected, button, width);
 }
+
