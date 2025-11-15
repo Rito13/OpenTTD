@@ -8,4 +8,14 @@
 /** @file dropdown_window_bases.h Custom base types for dropdown window. */
 
 #include "dropdown_type.h"
+#include "rail.h"
 
+struct RailTypeDropdownWindowBase {
+	void SetSortCriteria(int) {}
+	StringID GetSortCriteriaString() const;
+	void SetSortOrderInverted(bool is_sort_order_inverted);
+	bool IsSortOrderInverted() const { return _railtypes_invert_sort_order; }
+	DropDownList GetDropDownList(const BadgeFilterChoices &badge_filter_choices) const;
+	GrfSpecFeature GetGrfSpecFeature() const { return GSF_RAILTYPES; }
+	DropDownList GetSortDropDownList() const;
+};

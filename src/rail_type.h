@@ -37,6 +37,12 @@ DECLARE_INCREMENT_DECREMENT_OPERATORS(RailType)
 
 using RailTypes = EnumBitSet<RailType, uint64_t>;
 
+enum RailTypeSorter : int {
+	RAILTYPE_SORTER_INDEX = INVALID_RAILTYPE + 1,
+	RAILTYPE_SORTER_CHANGE = 2,
+	RAILTYPE_SORTER_CONFIGURE,
+};
+
 static constexpr RailTypes INVALID_RAILTYPES{UINT64_MAX};
 
 #endif /* RAIL_TYPE_H */
