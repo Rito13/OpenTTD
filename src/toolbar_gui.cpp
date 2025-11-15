@@ -916,8 +916,13 @@ static CallBackFunction MenuClickBuildRail(int index)
 		Command<CMD_SET_RAIL_ROAD_TYPE_FAVOURITE>::Post((RailType)index, INVALID_ROADTYPE, new_value);
 	} else {
 		CloseWindowByClass(WC_DROPDOWN_MENU);
-		_last_built_railtype.UpdateLastType((RailType)index);
-		ShowBuildRailToolbar(_last_built_railtype);
+		const Company *c = Company::Get(_local_company);
+
+		if (c->avail_railtypes.Test((RailType)index)) {
+			_last_built_railtype.UpdateLastType((RailType)index);
+			ShowBuildRailToolbar(_last_built_railtype);
+		}
+
 		return CBF_NONE;
 	}
 	return CBF_REOPEN_DROPDOWN;
@@ -955,8 +960,13 @@ static CallBackFunction MenuClickBuildRoad(int index)
 		Command<CMD_SET_RAIL_ROAD_TYPE_FAVOURITE>::Post(INVALID_RAILTYPE, (RoadType)index, new_value);
 	} else {
 		CloseWindowByClass(WC_DROPDOWN_MENU);
-		_last_built_roadtype.UpdateLastType((RoadType)index);
-		ShowBuildRoadToolbar(_last_built_roadtype);
+		const Company *c = Company::Get(_local_company);
+
+		if (c->avail_roadtypes.Test((RoadType)index)) {
+			_last_built_roadtype.UpdateLastType((RoadType)index);
+			ShowBuildRoadToolbar(_last_built_roadtype);
+		}
+
 		return CBF_NONE;
 	}
 	return CBF_REOPEN_DROPDOWN;
