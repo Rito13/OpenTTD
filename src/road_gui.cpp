@@ -30,6 +30,7 @@
 #include "zoom_func.h"
 #include "dropdown_type.h"
 #include "dropdown_func.h"
+#include "dropdown_window_bases.h"
 #include "engine_base.h"
 #include "station_base.h"
 #include "waypoint_base.h"
@@ -1764,7 +1765,12 @@ void InitializeRoadGUI()
 
 static constexpr RoadType ROADTYPE_SUBLIST_END{ROADTYPE_END + 1};
 
-DropDownList GetRoadTypeDropDownList(RoadTramTypes rtts, bool for_replacement, bool all_option)
+DropDownList RoadTypeDropdownWindowBase::GetDropDownList(const BadgeFilterChoices &badge_filter_choices) const
+{
+	return GetRoadTypeDropDownList(RTTB_ROAD, false, false, badge_filter_choices);
+}
+
+DropDownList GetRoadTypeDropDownList(RoadTramTypes rtts, bool for_replacement, bool all_option, const BadgeFilterChoices &badge_filter_choices)
 {
 	RoadTypes used_roadtypes;
 	RoadTypes avail_roadtypes;
@@ -1788,11 +1794,6 @@ DropDownList GetRoadTypeDropDownList(RoadTramTypes rtts, bool for_replacement, b
 
 	if (all_option) {
 		list.push_back(MakeDropDownListStringItem(STR_REPLACE_ALL_ROADTYPE, INVALID_ROADTYPE));
-	}
-
-	if (!for_replacement) {
-		list.push_back(MakeDropDownListSorterItem(STR_REPLACE_ALL_ROADTYPE, 2, false, INVALID_ROADTYPE + 1, 3));
-		list.push_back(MakeDropDownListDividerItem<FS_SMALL>());
 	}
 
 	Dimension d = { 0, 0 };
@@ -1824,7 +1825,8 @@ DropDownList GetRoadTypeDropDownList(RoadTramTypes rtts, bool for_replacement, b
 
 	if (c->favourite_roadtypes.Any()) {
 		bool has_added_favourite_type = false;
-		for (RoadType rt : c->favourite_roadtypes) {
+		for (RoadType rt : _sorted_roadtypes) {
+			if (!c->favourite_roadtypes.Test(rt)) continue;
 			if (!used_roadtypes.Test(rt)) continue;
 			roadtypes.push_back(rt);
 			has_added_favourite_type = true;
@@ -1849,7 +1851,7 @@ DropDownList GetRoadTypeDropDownList(RoadTramTypes rtts, bool for_replacement, b
 
 	roadtypes.insert(roadtypes.end(), _sorted_roadtypes.begin(), _sorted_roadtypes.end());
 
-	size_t num_dividers = for_replacement ? 0 : 2;
+	size_t num_dividers = 0;
 
 	for (const auto &rt : roadtypes) {
 		if (rt == ROADTYPE_SUBLIST_END) {
