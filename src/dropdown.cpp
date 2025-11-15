@@ -679,3 +679,7 @@ template void ReplaceDropDownList<RailTypeDropdownWindowBase>(Window *parent, Dr
 template void ShowDropDownList<RoadTypeDropdownWindowBase>(Window *w, DropDownList &&list, int selected, WidgetID button, uint width, bool instant_close, bool persist);
 template void ShowDropDownListAt<RoadTypeDropdownWindowBase>(Window *w, DropDownList &&list, int selected, WidgetID button, Rect wi_rect, Colours wi_colour, bool instant_close, bool persist);
 template void ReplaceDropDownList<RoadTypeDropdownWindowBase>(Window *parent, DropDownList &&list, std::optional<int> selected_result);
+
+template void ShowDropDownList<TramTypeDropdownWindowBase>(Window *w, DropDownList &&list, int selected, WidgetID button, uint width, bool instant_close, bool persist);
+template void ShowDropDownListAt<TramTypeDropdownWindowBase>(Window *w, DropDownList &&list, int selected, WidgetID button, Rect wi_rect, Colours wi_colour, bool instant_close, bool persist);
+template void ReplaceDropDownList<TramTypeDropdownWindowBase>(Window *parent, DropDownList &&list, std::optional<int> selected_result);

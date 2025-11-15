@@ -30,3 +30,13 @@ struct RoadTypeDropdownWindowBase {
 	GrfSpecFeature GetGrfSpecFeature() const { return GSF_ROADTYPES; }
 	DropDownList GetSortDropDownList() const;
 };
+
+struct TramTypeDropdownWindowBase {
+	void SetSortCriteria(int) {}
+	StringID GetSortCriteriaString() const;
+	void SetSortOrderInverted(bool is_sort_order_inverted);
+	bool IsSortOrderInverted() const { return _tramtypes_invert_sort_order; }
+	DropDownList GetDropDownList(const BadgeFilterChoices &badge_filter_choices) const;
+	GrfSpecFeature GetGrfSpecFeature() const { return GSF_TRAMTYPES; }
+	DropDownList GetSortDropDownList() const;
+};
