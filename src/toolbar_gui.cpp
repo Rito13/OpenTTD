@@ -7,6 +7,7 @@
 
 /** @file toolbar_gui.cpp Code related to the (main) toolbar. */
 
+#include "rail.h"
 #include "stdafx.h"
 #include "rail.h"
 #include "gui.h"
@@ -872,13 +873,11 @@ static CallBackFunction ToolbarZoomOutClick(Window *w)
 
 /* --- Rail button menu --- */
 
-StringID RailTypeDropdownWindowBase::GetSortCriteriaString() const { return STR_REPLACE_ALL_RAILTYPE; }
-
-DropDownList RailTypeDropdownWindowBase::GetSortDropDownList() const
+void RailTypeDropdownWindowBase::SetSortCriteria(int new_sort_criteria)
 {
-	DropDownList list;
-	list.push_back(MakeDropDownListStringItem(STR_REPLACE_ALL_RAILTYPE, INVALID_RAILTYPE));
-	return list;
+	if (new_sort_criteria < 0) return;
+	_railtypes_sort_criteria = new_sort_criteria;
+	InitRailTypes();
 }
 
 void RailTypeDropdownWindowBase::SetSortOrderInverted(bool is_sort_order_inverted)
