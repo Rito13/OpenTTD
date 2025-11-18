@@ -312,23 +312,18 @@ public:
  */
 template <class TBase>
 class DropDownCustomSelectedBGColour : public TBase {
+public:
 	/**
 	 * Colours is converted to PixelColour
 	 * true evalueates to current window colour
 	 * false falls back to TBase::GetSelectedBGColour
 	 */
 	typedef std::variant<PixelColour, Colours, bool> ColourType;
-
+private:
 	ColourType colour;
 	ColourType shift_colour;
 	ColourType ctrl_colour;
 public:
-	template <typename... Args>
-	explicit DropDownCustomSelectedBGColour(const ColourType &colour, Args&&... args)
-		: TBase(std::forward<Args>(args)...), colour(colour), shift_colour(colour), ctrl_colour(colour)
-	{
-	}
-
 	template <typename... Args>
 	explicit DropDownCustomSelectedBGColour(const ColourType &colour, const ColourType &shift_colour, const ColourType &ctrl_colour, Args&&... args)
 		: TBase(std::forward<Args>(args)...), colour(colour), shift_colour(shift_colour), ctrl_colour(ctrl_colour)
