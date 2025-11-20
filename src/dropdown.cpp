@@ -8,7 +8,6 @@
 /** @file dropdown.cpp Implementation of the dropdown widget. */
 
 #include "stdafx.h"
-#include "dropdown_window_bases.h"
 #include "dropdown_func.h"
 #include "strings_func.h"
 #include "sound_func.h"
@@ -27,8 +26,10 @@
 #include "core/geometry_func.hpp"
 
 #include "dropdown_common_type.h"
+#include "dropdown_gui.h"
 
 #include "safeguards.h"
+#include <utility>
 
 /**
  * Positive indexes are used to represent selected value.
@@ -90,460 +91,484 @@ static WindowDesc _dropdown_desc(
 	_nested_dropdown_menu_widgets
 );
 
-StringID DefaultDropdownWindowBase::GetSortCriteriaString() const
-{
-	return STR_EMPTY;
-}
-
-/** Drop-down menu window */
-template<DropDownWindowBaseType TBase>
-struct DropdownWindow : Window, TBase {
-	WidgetID parent_button{}; ///< Parent widget number where the window is dropped from.
-	Rect wi_rect{}; ///< Rect of the button that opened the dropdown.
-	DropDownList list{}; ///< List with dropdown menu items.
-	int selected_result = 0; ///< Result value of the selected item in the list.
-	int selected_click_result = -1; ///< Click result value, from the OnClick handler of the selected item.
-	uint8_t click_delay = 0; ///< Timer to delay selection.
-	bool drag_mode = true;
-	bool instant_close = false; ///< Close the window when the mouse button is raised.
-	bool persist = false; ///< Persist dropdown menu.
-	int scrolling = 0; ///< If non-zero, auto-scroll the item list (one time).
-	Point position{}; ///< Position of the topleft corner of the window.
-	Scrollbar *vscroll = nullptr;
-	bool last_shift_state; ///< Whether the shift button was pressed during last frame.
-	bool last_ctrl_state; ///< Whether the ctrl button was pressed during last frame.
-
-	bool has_subdropdown_open = false;
-	Colours window_colour = COLOUR_GREY;
-
-	GUIBadgeClasses badge_classes{};
-	static constexpr int BADGE_COLUMNS = 1; ///< Number of columns available for badges (0 = at the end)
-	std::pair<WidgetID, WidgetID> badge_filters{}; ///< First and last widgets IDs of badge filters.
-	BadgeFilterChoices badge_filter_choices{};
-
-	Dimension items_dim{}; ///< Calculated cropped and padded dimension for the items widget.
-
-	/**
-	 * Create a dropdown menu.
-	 * @param window_id Id of the dropdown window.
-	 * @param parent        Parent window.
-	 * @param list          Dropdown item list.
-	 * @param selected      Initial selected result of the list.
-	 * @param button        Widget of the parent window doing the dropdown.
-	 * @param wi_rect       Rect of the button that opened the dropdown.
-	 * @param instant_close Close the window when the mouse button is raised.
-	 * @param wi_colour     Colour of the parent widget.
-	 * @param persist       Dropdown menu will persist.
-	 */
-	DropdownWindow(int window_id, Window *parent, DropDownList &&list, int selected, WidgetID button, const Rect wi_rect, bool instant_close, Colours wi_colour, bool persist)
-			: Window(_dropdown_desc)
-			, parent_button(button)
-			, wi_rect(wi_rect)
-			, list(std::move(list))
-			, selected_result(selected)
-			, instant_close(instant_close)
-			, persist(persist)
-			, last_shift_state(_shift_pressed)
-			, last_ctrl_state(_ctrl_pressed)
-			, window_colour(wi_colour)
-	{
-		if (this->list.empty()) {
-			this->list = this->GetDropDownList(this->badge_filter_choices);
-		}
-
-		assert(!this->list.empty());
-
-		this->parent = parent;
-		this->window_number = window_id;
-
-		this->CreateNestedTree();
-
-		for (auto widget : {WID_DM_ITEMS, WID_DM_SCROLL, WID_DM_SORT_ASCENDING_DESCENDING, WID_DM_SORT_SUBDROPDOWN, WID_DM_CONFIGURE}) {
-			this->template GetWidget<NWidgetCore>(widget)->colour = wi_colour;
-		}
-
-		this->vscroll = this->GetScrollbar(WID_DM_SCROLL);
-		this->UpdateSizeAndPosition();
-
-		/* GSF_INVALID will always break badges, so turn them off. */
-		if (this->GetGrfSpecFeature() == GSF_INVALID) {
-			this->template GetWidget<NWidgetStacked>(WID_DM_SHOW_SORTER)->SetDisplayedPlane(SZSP_HORIZONTAL);
-		}
-
-		this->FinishInitNested(window_id);
-		this->flags.Reset(WindowFlag::WhiteBorder);
-	}
-
-	void OnInit() override
-	{
-		this->badge_classes = GUIBadgeClasses(this->GetGrfSpecFeature());
-
-		auto container = this->template GetWidget<NWidgetContainer>(WID_DM_BADGE_FILTER);
-		container->UnFocusWidgets(this);
-		this->badge_filters = AddBadgeDropdownFilters(*container, WID_DM_BADGE_FILTER, window_colour, this->GetGrfSpecFeature());
-
-		this->widget_lookup.clear();
-		this->nested_root->FillWidgetLookup(this->widget_lookup);
-	}
-
-	void Close([[maybe_unused]] int data = 0) override
-	{
-		/* Finish closing the dropdown, so it doesn't affect new window placement.
-		 * Also mark it dirty in case the callback deals with the screen. (e.g. screenshots). */
-		this->Window::Close();
-
-		Point pt = _cursor.pos;
-		pt.x -= this->parent->left;
-		pt.y -= this->parent->top;
-		this->parent->OnDropdownClose(pt, this->parent_button, this->selected_result, this->selected_click_result, this->instant_close);
-
-		/* Set flag on parent widget to indicate that we have just closed. */
-		NWidgetCore *nwc = this->parent->template GetWidget<NWidgetCore>(this->parent_button);
-		if (nwc != nullptr) nwc->disp_flags.Set(NWidgetDisplayFlag::DropdownClosed);
-	}
-
-	void OnFocusLost(bool closing) override
-	{
-		if (closing) return;
-		if (this->has_subdropdown_open) return;
-		this->instant_close = false;
-		this->Close();
-	}
-
-	/**
-	 * Fit dropdown list into available height, rounding to average item size. Width is adjusted if scrollbar is present.
-	 * @param[in,out] desired Desired dimensions of dropdown list.
-	 * @param list Dimensions of the list itself, without padding or cropping.
-	 * @param available_height Available height to fit list within.
-	 */
-	void FitAvailableHeight(Dimension &desired, const Dimension &list, uint available_height)
-	{
-		if (desired.height < available_height) return;
-
-		/* If the dropdown doesn't fully fit, we a need a dropdown. */
-		uint avg_height = list.height / (uint)this->list.size();
-		uint rows = std::max((available_height - WidgetDimensions::scaled.dropdownlist.Vertical()) / avg_height, 1U);
-
-		desired.width = std::max(list.width, desired.width - NWidgetScrollbar::GetVerticalDimension().width);
-		desired.height = rows * avg_height + WidgetDimensions::scaled.dropdownlist.Vertical();
-	}
-
-	/**
-	 * Update size and position of window to fit dropdown list into available space.
-	 */
-	void UpdateSizeAndPosition()
-	{
-		Rect button_rect = this->wi_rect.Translate(this->parent->left, this->parent->top);
-
-		/* Get the dimensions required for the list. */
-		Dimension list_dim = GetDropDownListDimension(this->list);
-
-		/* Set up dimensions for the items widget. */
-		Dimension widget_dim = list_dim;
-		widget_dim.width += WidgetDimensions::scaled.dropdownlist.Horizontal();
-		widget_dim.height += WidgetDimensions::scaled.dropdownlist.Vertical();
-
-		/* Width should match at least the width of the parent widget. */
-		widget_dim.width = std::max<uint>(widget_dim.width, button_rect.Width());
-
-		/* Available height below (or above, if the dropdown is placed above the widget). */
-		uint available_height_below = std::max(GetMainViewBottom() - button_rect.bottom - 1, 0);
-		uint available_height_above = std::max(button_rect.top - 1 - GetMainViewTop(), 0);
-
-		/* Is it better to place the dropdown above the widget? */
-		if (widget_dim.height > available_height_below && available_height_above > available_height_below) {
-			FitAvailableHeight(widget_dim, list_dim, available_height_above);
-			this->position.y = button_rect.top - widget_dim.height;
-		} else {
-			FitAvailableHeight(widget_dim, list_dim, available_height_below);
-			this->position.y = button_rect.bottom + 1;
-		}
-
-		if (_current_text_dir == TD_RTL) {
-			/* In case the list is wider than the parent button, the list should be right aligned to the button and overflow to the left. */
-			this->position.x = button_rect.right + 1 - (int)(widget_dim.width + (list_dim.height > widget_dim.height ? NWidgetScrollbar::GetVerticalDimension().width : 0));
-		} else {
-			this->position.x = button_rect.left;
-		}
-
-		this->items_dim = widget_dim;
-		this->template GetWidget<NWidgetStacked>(WID_DM_SHOW_SCROLL)->SetDisplayedPlane(list_dim.height > widget_dim.height ? 0 : SZSP_NONE);
-
-		/* Capacity is the average number of items visible */
-		this->vscroll->SetCapacity((widget_dim.height - WidgetDimensions::scaled.dropdownlist.Vertical()) * this->list.size() / list_dim.height);
-		this->vscroll->SetCount(this->list.size());
-
-		/* If the dropdown is positioned above the parent widget, start selection at the bottom. */
-		if (this->position.y < button_rect.top && list_dim.height > widget_dim.height) this->vscroll->UpdatePosition(INT_MAX);
-	}
-
-	void UpdateWidgetSize(WidgetID widget, Dimension &size, [[maybe_unused]] const Dimension &padding, [[maybe_unused]] Dimension &fill, [[maybe_unused]] Dimension &resize) override
-	{
-		if (widget == WID_DM_ITEMS) size = this->items_dim;
-		else if (widget == WID_DM_SORT_ASCENDING_DESCENDING) {
-			Dimension d = GetStringBoundingBox(this->template GetWidget<NWidgetCore>(widget)->GetString());
-			d.width += padding.width + Window::SortButtonWidth() * 2; // Doubled since the string is centred and it also looks better.
-			d.height += padding.height;
-			size = maxdim(size, d);
-		} else if (widget == WID_DM_CONFIGURE) {
-			/* Hide the configuration button if no configurable badges are present. */
-			if (this->badge_classes.GetClasses().empty()) size = {0, 0};
-		}
-	}
-
-	Point OnInitialPosition([[maybe_unused]] int16_t sm_width, [[maybe_unused]] int16_t sm_height, [[maybe_unused]] int window_number) override
-	{
-		return this->position;
-	}
-
-	/**
-	 * Find the dropdown item under the cursor.
-	 * @param[out] result Selected item, if function returns \c true.
-	 * @param[out] click_result Click result from OnClick of Selected item, if function returns \c true.
-	 * @return Cursor points to a dropdown item.
-	 */
-	bool GetDropDownItem(int &result, int &click_result)
-	{
-		WidgetID widget = GetWidgetFromPos(this, _cursor.pos.x - this->left, _cursor.pos.y - this->top);
-		if (widget < 0) return false;
-
-		if (widget != WID_DM_ITEMS ) {
-			if (widget == WID_DM_SORT_ASCENDING_DESCENDING || widget == WID_DM_SORT_SUBDROPDOWN || widget == WID_DM_CONFIGURE
-				|| IsInsideMM(widget, this->badge_filters.first, this->badge_filters.second)) {
-				result = DROPDOWN_SORTER_ITEM_INDEX;
-				click_result = widget;
-				return true;
-			}
-			return false;
-		}
-
-		const Rect &r = this->template GetWidget<NWidgetBase>(WID_DM_ITEMS)->GetCurrentRect().Shrink(WidgetDimensions::scaled.dropdownlist).Shrink(WidgetDimensions::scaled.dropdowntext, RectPadding::zero);
-		int y     = _cursor.pos.y - this->top - r.top;
-		int pos   = this->vscroll->GetPosition();
-
-		for (const auto &item : this->list) {
-			/* Skip items that are scrolled up */
-			if (--pos >= 0) continue;
-
-			int item_height = item->Height();
-
-			if (y < item_height) {
-				if (item->masked || !item->Selectable()) return false;
-				result = item->result;
-				click_result = item->OnClick(r.WithY(0, item_height - 1), {_cursor.pos.x - this->left, y});
-				return true;
-			}
-
-			y -= item_height;
-		}
-
-		return false;
-	}
-
-	void DrawWidget(const Rect &r, WidgetID widget) const override
-	{
-		if (widget == WID_DM_SORT_ASCENDING_DESCENDING) {
-			this->DrawSortButtonState(WID_DM_SORT_ASCENDING_DESCENDING, this->IsSortOrderInverted() ? SBS_UP : SBS_DOWN);
-			return;
-		}
-
-		if (widget != WID_DM_ITEMS) return;
-
-		Colours colour = this->template GetWidget<NWidgetCore>(widget)->colour;
-
-		Rect ir = r.Shrink(WidgetDimensions::scaled.dropdownlist);
-		int y = ir.top;
-		int pos = this->vscroll->GetPosition();
-		for (const auto &item : this->list) {
-			int item_height = item->Height();
-
-			/* Skip items that are scrolled up */
-			if (--pos >= 0) continue;
-
-			if (y + item_height - 1 <= ir.bottom) {
-				Rect full = ir.WithY(y, y + item_height - 1);
-
-				bool selected = (this->selected_result == item->result) && item->Selectable();
-				if (selected) GfxFillRect(full, item->GetSelectedBGColour(colour));
-
-				item->Draw(full, full.Shrink(WidgetDimensions::scaled.dropdowntext, RectPadding::zero), selected, selected ? this->selected_click_result : -1, colour);
-			}
-			y += item_height;
-		}
-	}
-
-	void OnClick([[maybe_unused]] Point pt, [[maybe_unused]] WidgetID widget, [[maybe_unused]] int click_count) override
-	{
-		int result, click_result;
-		if (this->GetDropDownItem(result, click_result)) {
-			this->click_delay = 4;
-			this->selected_result = result;
-			this->selected_click_result = click_result;
-			this->SetDirty();
-		}
-	}
-
-	std::string GetWidgetString(WidgetID widget, StringID stringid) const override
-	{
-		if (widget == WID_DM_SORT_SUBDROPDOWN) {
-			return GetString(this->GetSortCriteriaString());
-		} else if (IsInsideMM(widget, this->badge_filters.first, this->badge_filters.second)) {
-			return this->template GetWidget<NWidgetBadgeFilter>(widget)->GetStringParameter(this->badge_filter_choices);
-		}
-		return this->Window::GetWidgetString(widget, stringid);
-	}
-
-	/** Rate limit how fast scrolling happens. */
-	const IntervalTimer<TimerWindow> scroll_interval = {std::chrono::milliseconds(30), [this](auto) {
+/**
+ * Create a dropdown menu.
+ * @param window_id Id of the dropdown window.
+ * @param parent Parent window.
+ * @param list Dropdown item list.
+ * @param selected Initial selected result of the list.
+ * @param button Widget of the parent window doing the dropdown.
+ * @param wi_rect Rect of the button that opened the dropdown.
+ * @param instant_close Close the window when the mouse button is raised.
+ * @param wi_colour Colour of the parent widget.
+ * @param persist Dropdown menu will persist.
+ * @param has_sorter Defines if the dropdown has widgets for sorting and filtering.
+ */
+DropdownWindow::DropdownWindow(int window_id, Window *parent, DropDownList &&list, int selected, WidgetID button, const Rect wi_rect, bool instant_close, Colours wi_colour, bool persist, bool has_sorter)
+	: Window(_dropdown_desc)
+	, scroll_interval{std::chrono::milliseconds(30), [this](auto) {
 		if (this->scrolling == 0) return;
 
 		if (this->vscroll->UpdatePosition(this->scrolling)) this->SetDirty();
 
 		this->scrolling = 0;
-	}};
+	}}
+	, parent_button(button)
+	, wi_rect(wi_rect)
+	, list(std::move(list))
+	, selected_result(selected)
+	, instant_close(instant_close)
+	, persist(persist)
+	, last_shift_state(_shift_pressed)
+	, last_ctrl_state(_ctrl_pressed)
+	, window_colour(wi_colour)
+{
+	this->parent = parent;
+	this->window_number = window_id;
 
-	void OnDropdownSelect(WidgetID widget, int index, int click_result) override
-	{
-		switch (widget) {
-			case WID_DM_SORT_SUBDROPDOWN: this->SetSortCriteria(index); break;
-			case WID_DM_CONFIGURE:
-				if (HandleBadgeConfigurationDropDownClick(this->GetGrfSpecFeature(), BADGE_COLUMNS, index, click_result, this->badge_filter_choices)) {
-					ReplaceDropDownList(this, BuildBadgeClassConfigurationList(this->badge_classes, BADGE_COLUMNS, {}), -1);
-				} else {
-					this->CloseChildWindows(WC_DROPDOWN_MENU);
-				}
-				break;
+	this->CreateNestedTree();
 
-			default:
-				if (IsInsideMM(widget, this->badge_filters.first, this->badge_filters.second)) {
-					if (index < 0) {
-						ResetBadgeFilter(this->badge_filter_choices, this->template GetWidget<NWidgetBadgeFilter>(widget)->GetBadgeClassID());
-					} else {
-						SetBadgeFilter(this->badge_filter_choices, BadgeID(index));
-					}
-				}
-		}
-		this->ReplaceList(this->GetDropDownList(this->badge_filter_choices), std::nullopt);
+	for (auto widget : {WID_DM_ITEMS, WID_DM_SCROLL, WID_DM_SORT_ASCENDING_DESCENDING, WID_DM_SORT_SUBDROPDOWN, WID_DM_CONFIGURE}) {
+		this->template GetWidget<NWidgetCore>(widget)->colour = wi_colour;
 	}
 
-	void OnDropdownClose(Point pt, WidgetID widget, int index, int click_result, bool instant_close) override
-	{
-		this->has_subdropdown_open = false;
-		this->Window::OnDropdownClose(pt, widget, index, click_result, instant_close);
-		SetFocusedWindow(this);
+	this->vscroll = this->GetScrollbar(WID_DM_SCROLL);
+
+	if (has_sorter) return;
+
+	this->template GetWidget<NWidgetStacked>(WID_DM_SHOW_SORTER)->SetDisplayedPlane(SZSP_HORIZONTAL);
+}
+
+/**
+ * Create a dropdown menu.
+ * @param window_id Id of the dropdown window.
+ * @param parent Parent window.
+ * @param list Dropdown item list.
+ * @param selected Initial selected result of the list.
+ * @param button Widget of the parent window doing the dropdown.
+ * @param wi_rect Rect of the button that opened the dropdown.
+ * @param instant_close Close the window when the mouse button is raised.
+ * @param wi_colour Colour of the parent widget.
+ * @param persist Dropdown menu will persist.
+ */
+DropdownWindow::DropdownWindow(int window_id, Window *parent, DropDownList &&list, int selected, WidgetID button, const Rect wi_rect, bool instant_close, Colours wi_colour, bool persist)
+	: DropdownWindow(window_id, parent, std::move(list), selected, button, wi_rect, instant_close, wi_colour, persist, false)
+{
+	this->FinishInitNested(window_id);
+	this->flags.Reset(WindowFlag::WhiteBorder);
+}
+
+void DropdownWindow::OnInit()
+{
+	if (this->list.empty()) {
+		this->list = this->GetDropDownList(this->badge_filter_choices);
 	}
 
-	/**
-	 * Shows sub dropdown window bound to this dropdown.
-	 * @param widget Button for showing hiding the sub dropdown.
-	 * @param list Elements of the sub dropdown.
-	 * @param sub_dropdown_id Window id for the sub dropdown.
-	 * @param persist If true sub dropdown will not close after an item has been chosen.
-	 * @param selected_result Result when no item has been chosen.
-	 */
-	void ShowSubDropDownList(WidgetID widget, DropDownList &&list, int sub_dropdown_id = 1, bool persist = false, int selected_result = -1)
-	{
-		NWidgetCore *nwi = this->template GetWidget<NWidgetCore>(widget);
-		nwi->SetLowered(true);
-		this->has_subdropdown_open = true;
-		SetFocusedWindow(ShowSubDropDownListAt(sub_dropdown_id, this, std::move(list), selected_result, widget, nwi->GetCurrentRect(), nwi->colour, false, persist));
+	assert(!this->list.empty());
+	this->UpdateSizeAndPosition();
+
+	this->badge_classes = GUIBadgeClasses(this->GetGrfSpecFeature());
+
+	auto container = this->template GetWidget<NWidgetContainer>(WID_DM_BADGE_FILTER);
+	container->UnFocusWidgets(this);
+	this->badge_filters = AddBadgeDropdownFilters(*container, WID_DM_BADGE_FILTER, window_colour, this->GetGrfSpecFeature());
+
+	this->widget_lookup.clear();
+	this->nested_root->FillWidgetLookup(this->widget_lookup);
+}
+
+void DropdownWindow::Close([[maybe_unused]] int data)
+{
+	/* Finish closing the dropdown, so it doesn't affect new window placement.
+	 * Also mark it dirty in case the callback deals with the screen. (e.g. screenshots). */
+	this->Window::Close();
+
+	Point pt = _cursor.pos;
+	pt.x -= this->parent->left;
+	pt.y -= this->parent->top;
+	this->parent->OnDropdownClose(pt, this->parent_button, this->selected_result, this->selected_click_result, this->instant_close);
+
+	/* Set flag on parent widget to indicate that we have just closed. */
+	NWidgetCore *nwc = this->parent->template GetWidget<NWidgetCore>(this->parent_button);
+	if (nwc != nullptr) nwc->disp_flags.Set(NWidgetDisplayFlag::DropdownClosed);
+}
+
+void DropdownWindow::OnFocusLost(bool closing)
+{
+	if (closing) return;
+	if (this->has_subdropdown_open) return;
+	this->instant_close = false;
+	this->Close();
+}
+
+/**
+ * Fit dropdown list into available height, rounding to average item size. Width is adjusted if scrollbar is present.
+ * @param[in,out] desired Desired dimensions of dropdown list.
+ * @param list Dimensions of the list itself, without padding or cropping.
+ * @param available_height Available height to fit list within.
+ */
+void DropdownWindow::FitAvailableHeight(Dimension &desired, const Dimension &list, uint available_height)
+{
+	if (desired.height < available_height) return;
+
+	/* If the dropdown doesn't fully fit, we a need a dropdown. */
+	uint avg_height = list.height / (uint)this->list.size();
+	uint rows = std::max((available_height - WidgetDimensions::scaled.dropdownlist.Vertical()) / avg_height, 1U);
+
+	desired.width = std::max(list.width, desired.width - NWidgetScrollbar::GetVerticalDimension().width);
+	desired.height = rows * avg_height + WidgetDimensions::scaled.dropdownlist.Vertical();
+}
+
+/**
+ * Update size and position of window to fit dropdown list into available space.
+ */
+void DropdownWindow::UpdateSizeAndPosition()
+{
+	Rect button_rect = this->wi_rect.Translate(this->parent->left, this->parent->top);
+
+	/* Get the dimensions required for the list. */
+	Dimension list_dim = GetDropDownListDimension(this->list);
+
+	/* Set up dimensions for the items widget. */
+	Dimension widget_dim = list_dim;
+	widget_dim.width += WidgetDimensions::scaled.dropdownlist.Horizontal();
+	widget_dim.height += WidgetDimensions::scaled.dropdownlist.Vertical();
+
+	/* Width should match at least the width of the parent widget. */
+	widget_dim.width = std::max<uint>(widget_dim.width, button_rect.Width());
+
+	/* Available height below (or above, if the dropdown is placed above the widget). */
+	uint available_height_below = std::max(GetMainViewBottom() - button_rect.bottom - 1, 0);
+	uint available_height_above = std::max(button_rect.top - 1 - GetMainViewTop(), 0);
+
+	/* Is it better to place the dropdown above the widget? */
+	if (widget_dim.height > available_height_below && available_height_above > available_height_below) {
+		FitAvailableHeight(widget_dim, list_dim, available_height_above);
+		this->position.y = button_rect.top - widget_dim.height;
+	} else {
+		FitAvailableHeight(widget_dim, list_dim, available_height_below);
+		this->position.y = button_rect.bottom + 1;
 	}
 
-	void OnMouseLoop() override
-	{
-		if (this->last_ctrl_state != _ctrl_pressed || this->last_shift_state != _shift_pressed) {
-			/* Dropdown might contain an item with specified custom bg colours, allow it to update. */
-			this->SetDirty();
-			this->last_ctrl_state = _ctrl_pressed;
-			this->last_shift_state = _shift_pressed;
-		}
-
-		if (this->click_delay != 0 && --this->click_delay == 0) {
-			/* Close the dropdown, so it doesn't affect new window placement.
-			 * Also mark it dirty in case the callback deals with the screen. (e.g. screenshots). */
-			if (!this->persist) this->Close();
-			if (this->selected_result == DROPDOWN_SORTER_ITEM_INDEX) {
-				this->RaiseWidget(this->selected_click_result);
-				switch (this->selected_click_result) {
-					case WID_DM_SORT_ASCENDING_DESCENDING:
-						this->SetSortOrderInverted(!this->IsSortOrderInverted());
-						this->ReplaceList(this->GetDropDownList(this->badge_filter_choices), std::nullopt);
-						break;
-
-					case WID_DM_SORT_SUBDROPDOWN:
-						this->ShowSubDropDownList(WID_DM_SORT_SUBDROPDOWN, this->GetSortDropDownList());
-						break;
-
-					case WID_DM_CONFIGURE:
-						if (this->badge_classes.GetClasses().empty()) break;
-						this->ShowSubDropDownList(WID_DM_CONFIGURE, BuildBadgeClassConfigurationList(this->badge_classes, BADGE_COLUMNS, {}), 1, true);
-						break;
-
-					default:
-						this->ShowSubDropDownList(this->selected_click_result, this->template GetWidget<NWidgetBadgeFilter>(this->selected_click_result)->GetDropDownList());
-						break;
-				}
-				return;
-			}
-			this->parent->OnDropdownSelect(this->parent_button, this->selected_result, this->selected_click_result);
-			return;
-		}
-
-		if (this->drag_mode) {
-			int result, click_result;
-
-			if (!_left_button_clicked) {
-				this->drag_mode = false;
-				if (!this->GetDropDownItem(result, click_result)) {
-					if (this->instant_close) this->Close();
-					return;
-				}
-				this->click_delay = 2;
-			} else {
-				if (_cursor.pos.y <= this->top + WidgetDimensions::scaled.dropdownlist.top) {
-					/* Cursor is above the list, set scroll up */
-					this->scrolling = -1;
-					return;
-				} else if (_cursor.pos.y >= this->top + this->height - WidgetDimensions::scaled.dropdownlist.bottom) {
-					/* Cursor is below list, set scroll down */
-					this->scrolling = 1;
-					return;
-				}
-
-				if (!this->GetDropDownItem(result, click_result)) return;
-			}
-
-			if (this->selected_result != result || this->selected_click_result != click_result) {
-				if (this->selected_result == DROPDOWN_SORTER_ITEM_INDEX) this->RaiseWidget(this->selected_click_result);
-				if (result == DROPDOWN_SORTER_ITEM_INDEX) this->LowerWidget(click_result);
-				this->selected_result = result;
-				this->selected_click_result = click_result;
-				this->SetDirty();
-			}
-		}
+	if (_current_text_dir == TD_RTL) {
+		/* In case the list is wider than the parent button, the list should be right aligned to the button and overflow to the left. */
+		this->position.x = button_rect.right + 1 - (int)(widget_dim.width + (list_dim.height > widget_dim.height ? NWidgetScrollbar::GetVerticalDimension().width : 0));
+	} else {
+		this->position.x = button_rect.left;
 	}
 
-	void ReplaceList(DropDownList &&list, std::optional<int> selected_result)
-	{
-		if (list.empty()) {
-			this->list = this->GetDropDownList(this->badge_filter_choices);
-		} else {
-			this->list = std::move(list);
+	this->items_dim = widget_dim;
+	this->template GetWidget<NWidgetStacked>(WID_DM_SHOW_SCROLL)->SetDisplayedPlane(list_dim.height > widget_dim.height ? 0 : SZSP_NONE);
+
+	/* Capacity is the average number of items visible */
+	this->vscroll->SetCapacity((widget_dim.height - WidgetDimensions::scaled.dropdownlist.Vertical()) * this->list.size() / list_dim.height);
+	this->vscroll->SetCount(this->list.size());
+
+	/* If the dropdown is positioned above the parent widget, start selection at the bottom. */
+	if (this->position.y < button_rect.top && list_dim.height > widget_dim.height) this->vscroll->UpdatePosition(INT_MAX);
+}
+
+void DropdownWindow::UpdateWidgetSize(WidgetID widget, Dimension &size, [[maybe_unused]] const Dimension &padding, [[maybe_unused]] Dimension &fill, [[maybe_unused]] Dimension &resize)
+{
+	if (widget == WID_DM_ITEMS) size = this->items_dim;
+	else if (widget == WID_DM_SORT_ASCENDING_DESCENDING) {
+		Dimension d = GetStringBoundingBox(this->template GetWidget<NWidgetCore>(widget)->GetString());
+		d.width += padding.width + Window::SortButtonWidth() * 2; // Doubled since the string is centred and it also looks better.
+		d.height += padding.height;
+		size = maxdim(size, d);
+	} else if (widget == WID_DM_CONFIGURE) {
+		/* Hide the configuration button if no configurable badges are present. */
+		if (this->badge_classes.GetClasses().empty()) size = {0, 0};
+	}
+}
+
+Point DropdownWindow::OnInitialPosition([[maybe_unused]] int16_t sm_width, [[maybe_unused]] int16_t sm_height, [[maybe_unused]] int window_number)
+{
+	return this->position;
+}
+
+/**
+ * Find the dropdown item under the cursor.
+ * @param[out] result Selected item, if function returns \c true.
+ * @param[out] click_result Click result from OnClick of Selected item, if function returns \c true.
+ * @return Whether the cursor points to a dropdown item.
+ */
+bool DropdownWindow::GetDropDownItem(int &result, int &click_result)
+{
+	WidgetID widget = GetWidgetFromPos(this, _cursor.pos.x - this->left, _cursor.pos.y - this->top);
+	if (widget < 0) return false;
+
+	if (widget != WID_DM_ITEMS ) {
+		if (widget == WID_DM_SORT_ASCENDING_DESCENDING || widget == WID_DM_SORT_SUBDROPDOWN || widget == WID_DM_CONFIGURE
+			|| IsInsideMM(widget, this->badge_filters.first, this->badge_filters.second)) {
+			result = DROPDOWN_SORTER_ITEM_INDEX;
+			click_result = widget;
+			return true;
 		}
-		if (selected_result.has_value()) this->selected_result = *selected_result;
-		this->UpdateSizeAndPosition();
-		this->ReInit(0, 0);
-		this->InitializePositionSize(this->position.x, this->position.y, this->nested_root->smallest_x, this->nested_root->smallest_y);
-		this->FindWindowPlacementAndResize(this->window_desc.GetDefaultWidth(), this->window_desc.GetDefaultHeight(), true);
+		return false;
+	}
+
+	const Rect &r = this->template GetWidget<NWidgetBase>(WID_DM_ITEMS)->GetCurrentRect().Shrink(WidgetDimensions::scaled.dropdownlist).Shrink(WidgetDimensions::scaled.dropdowntext, RectPadding::zero);
+	int y = _cursor.pos.y - this->top - r.top;
+	int pos = this->vscroll->GetPosition();
+
+	for (const auto &item : this->list) {
+		/* Skip items that are scrolled up */
+		if (--pos >= 0) continue;
+
+		int item_height = item->Height();
+
+		if (y < item_height) {
+			if (item->masked || !item->Selectable()) return false;
+			result = item->result;
+			click_result = item->OnClick(r.WithY(0, item_height - 1), {_cursor.pos.x - this->left, y});
+			return true;
+		}
+
+		y -= item_height;
+	}
+
+	return false;
+}
+
+void DropdownWindow::DrawWidget(const Rect &r, WidgetID widget) const
+{
+	if (widget == WID_DM_SORT_ASCENDING_DESCENDING) {
+		this->DrawSortButtonState(WID_DM_SORT_ASCENDING_DESCENDING, this->IsSortOrderInverted() ? SBS_UP : SBS_DOWN);
+		return;
+	}
+
+	if (widget != WID_DM_ITEMS) return;
+
+	Colours colour = this->template GetWidget<NWidgetCore>(widget)->colour;
+
+	Rect ir = r.Shrink(WidgetDimensions::scaled.dropdownlist);
+	int y = ir.top;
+	int pos = this->vscroll->GetPosition();
+	for (const auto &item : this->list) {
+		int item_height = item->Height();
+
+		/* Skip items that are scrolled up */
+		if (--pos >= 0) continue;
+
+		if (y + item_height - 1 <= ir.bottom) {
+			Rect full = ir.WithY(y, y + item_height - 1);
+
+			bool selected = (this->selected_result == item->result) && item->Selectable();
+			if (selected) GfxFillRect(full, item->GetSelectedBGColour(colour));
+
+			item->Draw(full, full.Shrink(WidgetDimensions::scaled.dropdowntext, RectPadding::zero), selected, selected ? this->selected_click_result : -1, colour);
+		}
+		y += item_height;
+	}
+}
+
+void DropdownWindow::OnClick([[maybe_unused]] Point pt, [[maybe_unused]] WidgetID widget, [[maybe_unused]] int click_count)
+{
+	int result, click_result;
+	if (this->GetDropDownItem(result, click_result)) {
+		this->click_delay = 4;
+		this->selected_result = result;
+		this->selected_click_result = click_result;
 		this->SetDirty();
 	}
-};
+}
 
-template<DropDownWindowBaseType TBase>
+std::string DropdownWindow::GetWidgetString(WidgetID widget, StringID stringid) const
+{
+	if (widget == WID_DM_SORT_SUBDROPDOWN) {
+		return GetString(this->GetSortCriteriaString());
+	} else if (IsInsideMM(widget, this->badge_filters.first, this->badge_filters.second)) {
+		return this->template GetWidget<NWidgetBadgeFilter>(widget)->GetStringParameter(this->badge_filter_choices);
+	}
+	return this->Window::GetWidgetString(widget, stringid);
+}
+
+void DropdownWindow::OnDropdownSelect(WidgetID widget, int index, int click_result)
+{
+	switch (widget) {
+		case WID_DM_SORT_SUBDROPDOWN: this->SetSortCriteria(index); break;
+		case WID_DM_CONFIGURE:
+			if (HandleBadgeConfigurationDropDownClick(this->GetGrfSpecFeature(), BADGE_COLUMNS, index, click_result, this->badge_filter_choices)) {
+				ReplaceDropDownList(this, BuildBadgeClassConfigurationList(this->badge_classes, BADGE_COLUMNS, {}), -1);
+			} else {
+				this->CloseChildWindows(WC_DROPDOWN_MENU);
+			}
+			break;
+
+		default:
+			if (IsInsideMM(widget, this->badge_filters.first, this->badge_filters.second)) {
+				if (index < 0) {
+					ResetBadgeFilter(this->badge_filter_choices, this->template GetWidget<NWidgetBadgeFilter>(widget)->GetBadgeClassID());
+				} else {
+					SetBadgeFilter(this->badge_filter_choices, BadgeID(index));
+				}
+			}
+	}
+	this->ReplaceList(this->GetDropDownList(this->badge_filter_choices), std::nullopt);
+}
+
+void DropdownWindow::OnDropdownClose(Point pt, WidgetID widget, int index, int click_result, bool instant_close)
+{
+	this->has_subdropdown_open = false;
+	this->Window::OnDropdownClose(pt, widget, index, click_result, instant_close);
+	SetFocusedWindow(this);
+}
+
+/**
+ * Shows sub dropdown window bound to this dropdown.
+ * @param widget Button for showing hiding the sub dropdown.
+ * @param list Elements of the sub dropdown.
+ * @param sub_dropdown_id Window id for the sub dropdown.
+ * @param persist If true sub dropdown will not close after an item has been chosen.
+ * @param selected_result Result when no item has been chosen.
+ */
+void DropdownWindow::ShowSubDropDownList(WidgetID widget, DropDownList &&list, int sub_dropdown_id, bool persist, int selected_result)
+{
+	NWidgetCore *nwi = this->template GetWidget<NWidgetCore>(widget);
+	nwi->SetLowered(true);
+	this->has_subdropdown_open = true;
+	SetFocusedWindow(ShowSubDropDownListAt(sub_dropdown_id, this, std::move(list), selected_result, widget, nwi->GetCurrentRect(), nwi->colour, false, persist));
+}
+
+void DropdownWindow::OnMouseLoop()
+{
+	if (this->last_ctrl_state != _ctrl_pressed || this->last_shift_state != _shift_pressed) {
+		/* Dropdown might contain an item with specified custom bg colours, allow it to update. */
+		this->SetDirty();
+		this->last_ctrl_state = _ctrl_pressed;
+		this->last_shift_state = _shift_pressed;
+	}
+
+	if (this->click_delay != 0 && --this->click_delay == 0) {
+		/* Close the dropdown, so it doesn't affect new window placement.
+		 * Also mark it dirty in case the callback deals with the screen. (e.g. screenshots). */
+		if (!this->persist) this->Close();
+		if (this->selected_result == DROPDOWN_SORTER_ITEM_INDEX) {
+			this->RaiseWidget(this->selected_click_result);
+			switch (this->selected_click_result) {
+				case WID_DM_SORT_ASCENDING_DESCENDING:
+					this->SetSortOrderInverted(!this->IsSortOrderInverted());
+					this->ReplaceList(this->GetDropDownList(this->badge_filter_choices), std::nullopt);
+					break;
+
+				case WID_DM_SORT_SUBDROPDOWN:
+					this->ShowSubDropDownList(WID_DM_SORT_SUBDROPDOWN, this->GetSortDropDownList());
+					break;
+
+				case WID_DM_CONFIGURE:
+					if (this->badge_classes.GetClasses().empty()) break;
+					this->ShowSubDropDownList(WID_DM_CONFIGURE, BuildBadgeClassConfigurationList(this->badge_classes, BADGE_COLUMNS, {}), 1, true);
+					break;
+
+				default:
+					this->ShowSubDropDownList(this->selected_click_result, this->template GetWidget<NWidgetBadgeFilter>(this->selected_click_result)->GetDropDownList());
+					break;
+			}
+			return;
+		}
+		this->parent->OnDropdownSelect(this->parent_button, this->selected_result, this->selected_click_result);
+		return;
+	}
+
+	if (this->drag_mode) {
+		int result, click_result;
+
+		if (!_left_button_clicked) {
+			this->drag_mode = false;
+			if (!this->GetDropDownItem(result, click_result)) {
+				if (this->instant_close) this->Close();
+				return;
+			}
+			this->click_delay = 2;
+		} else {
+			if (_cursor.pos.y <= this->top + WidgetDimensions::scaled.dropdownlist.top) {
+				/* Cursor is above the list, set scroll up */
+				this->scrolling = -1;
+				return;
+			} else if (_cursor.pos.y >= this->top + this->height - WidgetDimensions::scaled.dropdownlist.bottom) {
+				/* Cursor is below list, set scroll down */
+				this->scrolling = 1;
+				return;
+			}
+
+			if (!this->GetDropDownItem(result, click_result)) return;
+		}
+
+		if (this->selected_result != result || this->selected_click_result != click_result) {
+			if (this->selected_result == DROPDOWN_SORTER_ITEM_INDEX) this->RaiseWidget(this->selected_click_result);
+			if (result == DROPDOWN_SORTER_ITEM_INDEX) this->LowerWidget(click_result);
+			this->selected_result = result;
+			this->selected_click_result = click_result;
+			this->SetDirty();
+		}
+	}
+}
+
+/**
+ * Replaces the content with provided one.
+ * If new constent is empty, uses return value of @see GetDropDownList instead.
+ * @param list The new content.
+ * @param selected_result Id of the selected item.
+ */
+void DropdownWindow::ReplaceList(DropDownList &&list, std::optional<int> selected_result)
+{
+	this->list = std::move(list);
+	if (selected_result.has_value()) this->selected_result = *selected_result;
+	this->ReInit(0, 0);
+	this->InitializePositionSize(this->position.x, this->position.y, this->nested_root->smallest_x, this->nested_root->smallest_y);
+	this->FindWindowPlacementAndResize(this->window_desc.GetDefaultWidth(), this->window_desc.GetDefaultHeight(), true);
+	this->SetDirty();
+}
+
+/**
+ * Determines string for currently selected sorting criteria.
+ * @return StringID for sort criteria subdropdown.
+ */
+StringID DropdownWindow::GetSortCriteriaString() const
+{
+	return STR_EMPTY;
+}
+
+/**
+ * Checks if the sort order is inverted.
+ * @return true iff sort order is inverted.
+ */
+bool DropdownWindow::IsSortOrderInverted() const
+{
+	return false;
+}
+
+/**
+ * Gets the new content for itself.
+ * @return New dropdown list that should replace the current one.
+ */
+DropDownList DropdownWindow::GetDropDownList([[maybe_unused]] const BadgeFilterChoices &badge_filter_choices) const
+{
+	NOT_REACHED();
+}
+
+/**
+ * Get the grf feature of the content of the dropdown, mainly used for badges.
+ * @return grf feature of dropdown's content.
+ */
+GrfSpecFeature DropdownWindow::GetGrfSpecFeature() const
+{
+	return GSF_INVALID;
+}
+
+/**
+ * Get the content for the sort criteria subdropdown.
+ * @return New dropdown list that represents possible sort criteria.
+ */
+DropDownList DropdownWindow::GetSortDropDownList() const
+{
+	NOT_REACHED();
+}
+
 void ReplaceDropDownList(Window *parent, DropDownList &&list, std::optional<int> selected_result)
 {
-	DropdownWindow<TBase> *ddw = dynamic_cast<DropdownWindow<TBase> *>(parent->FindChildWindow(WC_DROPDOWN_MENU));
-	if (ddw != nullptr) ddw->ReplaceList(std::move(list), selected_result);
+	ReplaceDropDownList<DropdownWindow>(parent, std::move(list), selected_result);
 }
 
 /**
@@ -574,11 +599,10 @@ Dimension GetDropDownListDimension(const DropDownList &list)
  *                      list regardless of where the cursor is.
  * @param persist  Set if this dropdown should stay open after an option is selected.
  */
-template<DropDownWindowBaseType TBase>
 void ShowDropDownListAt(Window *w, DropDownList &&list, int selected, WidgetID button, Rect wi_rect, Colours wi_colour, bool instant_close, bool persist)
 {
 	CloseWindowByClass(WC_DROPDOWN_MENU);
-	new DropdownWindow<TBase>(0, w, std::move(list), selected, button, wi_rect, instant_close, wi_colour, persist);
+	new DropdownWindow(0, w, std::move(list), selected, button, wi_rect, instant_close, wi_colour, persist);
 }
 
 /**
@@ -593,11 +617,10 @@ void ShowDropDownListAt(Window *w, DropDownList &&list, int selected, WidgetID b
  * @param persist Set if this dropdown should stay open after an option is selected.
  * @return Pointer to the newly created window.
  */
-template<DropDownWindowBaseType TBase>
 Window *ShowSubDropDownListAt(int sub_dropdown_id, Window *w, DropDownList &&list, int selected, WidgetID button, Rect wi_rect, Colours wi_colour, bool instant_close, bool persist)
 {
 	CloseWindowById(WC_DROPDOWN_MENU, sub_dropdown_id);
-	return new DropdownWindow<TBase>(sub_dropdown_id, w, std::move(list), selected, button, wi_rect, instant_close, wi_colour, persist);
+	return new DropdownWindow(sub_dropdown_id, w, std::move(list), selected, button, wi_rect, instant_close, wi_colour, persist);
 }
 
 /**
@@ -612,34 +635,9 @@ Window *ShowSubDropDownListAt(int sub_dropdown_id, Window *w, DropDownList &&lis
  *                      list regardless of where the cursor is.
  * @param persist  Set if this dropdown should stay open after an option is selected.
  */
-template<DropDownWindowBaseType TBase>
 void ShowDropDownList(Window *w, DropDownList &&list, int selected, WidgetID button, uint width, bool instant_close, bool persist)
 {
-	/* Handle the beep of the player's click. */
-	SndClickBeep();
-
-	/* Our parent's button widget is used to determine where to place the drop
-	 * down list window. */
-	NWidgetCore *nwi = w->GetWidget<NWidgetCore>(button);
-	Rect wi_rect      = nwi->GetCurrentRect();
-	Colours wi_colour = nwi->colour;
-
-	if ((nwi->type & WWT_MASK) == NWID_BUTTON_DROPDOWN) {
-		nwi->disp_flags.Set(NWidgetDisplayFlag::DropdownActive);
-	} else {
-		nwi->SetLowered(true);
-	}
-	nwi->SetDirty(w);
-
-	if (width != 0) {
-		if (_current_text_dir == TD_RTL) {
-			wi_rect.left = wi_rect.right + 1 - ScaleGUITrad(width);
-		} else {
-			wi_rect.right = wi_rect.left + ScaleGUITrad(width) - 1;
-		}
-	}
-
-	ShowDropDownListAt<TBase>(w, std::move(list), selected, button, wi_rect, wi_colour, instant_close, persist);
+	ShowCustomDropdownList<DropdownWindow>(w, std::move(list), selected, button, width, instant_close, persist);
 }
 
 /**
@@ -667,11 +665,3 @@ void ShowDropDownMenu(Window *w, std::span<const StringID> strings, int selected
 
 	if (!list.empty()) ShowDropDownList(w, std::move(list), selected, button, width);
 }
-
-template void ShowDropDownList<DefaultDropdownWindowBase>(Window *w, DropDownList &&list, int selected, WidgetID button, uint width, bool instant_close, bool persist);
-template void ShowDropDownListAt<DefaultDropdownWindowBase>(Window *w, DropDownList &&list, int selected, WidgetID button, Rect wi_rect, Colours wi_colour, bool instant_close, bool persist);
-template void ReplaceDropDownList<DefaultDropdownWindowBase>(Window *parent, DropDownList &&list, std::optional<int> selected_result);
-
-template void ShowDropDownList<RailTypeDropdownWindowBase>(Window *w, DropDownList &&list, int selected, WidgetID button, uint width, bool instant_close, bool persist);
-template void ShowDropDownListAt<RailTypeDropdownWindowBase>(Window *w, DropDownList &&list, int selected, WidgetID button, Rect wi_rect, Colours wi_colour, bool instant_close, bool persist);
-template void ReplaceDropDownList<RailTypeDropdownWindowBase>(Window *parent, DropDownList &&list, std::optional<int> selected_result);

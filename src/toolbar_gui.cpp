@@ -8,12 +8,13 @@
 /** @file toolbar_gui.cpp Code related to the (main) toolbar. */
 
 #include "stdafx.h"
+#include "rail.h"
 #include "gui.h"
 #include "window_gui.h"
 #include "window_func.h"
 #include "viewport_func.h"
 #include "command_func.h"
-#include "dropdown_window_bases.h"
+#include "dropdown_gui.h"
 #include "dropdown_func.h"
 #include "house.h"
 #include "vehicle_gui.h"
@@ -891,7 +892,7 @@ static CallBackFunction ToolbarBuildRailClick(Window *w)
 	if (_replace_dropdown_list) {
 		ReplaceDropDownList<RailTypeDropdownWindowBase>(w, {}, _last_built_railtype);
 	} else {
-		ShowDropDownList<RailTypeDropdownWindowBase>(w, {}, _last_built_railtype, WID_TN_RAILS, 140, _settings_client.gui.toolbar_dropdown_autoselect, true);
+		ShowCustomDropdownList<RailTypeDropdownWindowBase>(w, {}, _last_built_railtype, WID_TN_RAILS, 140, _settings_client.gui.toolbar_dropdown_autoselect, true);
 	}
 	return CBF_NONE;
 }

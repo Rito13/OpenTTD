@@ -158,8 +158,8 @@ add_files(
     dropdown.cpp
     dropdown_common_type.h
     dropdown_func.h
+    dropdown_gui.h
     dropdown_type.h
-    dropdown_window_bases.h
     economy.cpp
     economy_base.h
     economy_cmd.h

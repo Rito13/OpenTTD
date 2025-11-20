@@ -60,39 +60,14 @@ public:
  */
 typedef std::vector<std::unique_ptr<const DropDownListItem>> DropDownList;
 
-template<typename TBase>
-concept DropDownWindowBaseType = requires (TBase base, const TBase const_base, WindowDesc &description, const BadgeFilterChoices &badge_filter_choices, int sort_criteria, bool sort_order_inverted) {
-	{ base.SetSortCriteria(sort_criteria) };
-	{ const_base.GetSortCriteriaString() } -> std::convertible_to<StringID>;
-	{ base.SetSortOrderInverted(sort_order_inverted) };
-	{ const_base.IsSortOrderInverted() } -> std::convertible_to<bool>;
-	{ const_base.GetDropDownList(badge_filter_choices) } -> std::convertible_to<DropDownList>;
-	{ const_base.GetGrfSpecFeature() } -> std::convertible_to<GrfSpecFeature>;
-	{ const_base.GetSortDropDownList() } -> std::convertible_to<DropDownList>;
-};
-
-struct DefaultDropdownWindowBase {
-	void SetSortCriteria(int) {}
-	StringID GetSortCriteriaString() const;
-	void SetSortOrderInverted(bool) {}
-	bool IsSortOrderInverted() const { return false; }
-	DropDownList GetDropDownList( [[maybe_unused]] const BadgeFilterChoices &badge_filter_choices) const { return {}; }
-	GrfSpecFeature GetGrfSpecFeature() const { return GSF_INVALID; }
-	DropDownList GetSortDropDownList() const { return {}; }
-};
-
-template<DropDownWindowBaseType TBase = DefaultDropdownWindowBase>
 void ShowDropDownListAt(Window *w, DropDownList &&list, int selected, WidgetID button, Rect wi_rect, Colours wi_colour, bool instant_close = false, bool persist = false);
 
-template<DropDownWindowBaseType TBase = DefaultDropdownWindowBase>
 Window *ShowSubDropDownListAt(int sub_dropdown_id, Window *w, DropDownList &&list, int selected, WidgetID button, Rect wi_rect, Colours wi_colour, bool instant_close = false, bool persist = false);
 
-template<DropDownWindowBaseType TBase = DefaultDropdownWindowBase>
 void ShowDropDownList(Window *w, DropDownList &&list, int selected, WidgetID button, uint width = 0, bool instant_close = false, bool persist = false);
 
 Dimension GetDropDownListDimension(const DropDownList &list);
 
-template<DropDownWindowBaseType TBase = DefaultDropdownWindowBase>
 void ReplaceDropDownList(Window *parent, DropDownList &&list, std::optional<int> selected_result = std::nullopt);
 
 #endif /* DROPDOWN_TYPE_H */
