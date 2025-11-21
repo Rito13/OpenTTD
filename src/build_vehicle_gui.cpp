@@ -1335,6 +1335,7 @@ struct BuildVehicleWindow : Window {
 		this->SetCargoFilterArray();
 
 		auto container = this->GetWidget<NWidgetContainer>(WID_BV_BADGE_FILTER);
+		container->UnFocusWidgets(this);
 		this->badge_filters = AddBadgeDropdownFilters(*container, WID_BV_BADGE_FILTER, COLOUR_GREY, static_cast<GrfSpecFeature>(GSF_TRAINS + this->vehicle_type));
 
 		this->widget_lookup.clear();

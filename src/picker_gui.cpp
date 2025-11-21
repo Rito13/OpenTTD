@@ -253,6 +253,7 @@ void PickerWindow::OnInit()
 	this->badge_classes = GUIBadgeClasses(this->callbacks.GetFeature());
 
 	auto container = this->GetWidget<NWidgetContainer>(WID_PW_BADGE_FILTER);
+	container->UnFocusWidgets(this);
 	this->badge_filters = AddBadgeDropdownFilters(*container, WID_PW_BADGE_FILTER, COLOUR_DARK_GREEN, this->callbacks.GetFeature());
 
 	this->widget_lookup.clear();
