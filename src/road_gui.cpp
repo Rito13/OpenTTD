@@ -1820,7 +1820,7 @@ DropDownList GetRoadTypeDropDownList(RoadTramTypes rtts, bool for_replacement, b
 		}
 	}
 
-	if (_ctrl_pressed) {
+	if (c->hidden_roadtypes.Any()) {
 		bool has_added_hidden_type = false;
 		for (RoadType rt : _sorted_roadtypes) {
 			if (!c->hidden_roadtypes.Test(rt)) continue;
@@ -1850,17 +1850,15 @@ DropDownList GetRoadTypeDropDownList(RoadTramTypes rtts, bool for_replacement, b
 		if (already_in_dropdown.Test(rt)) continue;
 		already_in_dropdown.Set(rt);
 
-		if (!_ctrl_pressed && c->hidden_roadtypes.Test(rt)) continue;
-
 		const RoadTypeInfo *rti = GetRoadTypeInfo(rt);
 
 		if (for_replacement) {
-			list.push_back(MakeDropDownListBadgeItem(badge_class_list, rti->badges, GSF_ROADTYPES, rti->introduction_date, GetString(rti->strings.replace_text), rt, false, !avail_roadtypes.Test(rt) || c->hidden_roadtypes.Test(rt), COLOUR_MAUVE, COLOUR_ORANGE));
+			list.push_back(MakeDropDownListBadgeItem(badge_class_list, rti->badges, GSF_ROADTYPES, rti->introduction_date, GetString(rti->strings.replace_text), rt, false, !avail_roadtypes.Test(rt) || c->hidden_roadtypes.Test(rt), COLOUR_MAUVE, COLOUR_ORANGE, c->hidden_roadtypes.Test(rt)));
 		} else {
 			std::string str = rti->max_speed > 0
 				? GetString(STR_TOOLBAR_RAILTYPE_VELOCITY, rti->strings.menu_text, rti->max_speed / 2)
 				: GetString(rti->strings.menu_text);
-			list.push_back(MakeDropDownListBadgeIconItem(badge_class_list, rti->badges, GSF_ROADTYPES, rti->introduction_date, RoadBuildCost(rt), d, rti->gui_sprites.build_x_road, PAL_NONE, std::move(str), rt, false, !avail_roadtypes.Test(rt) || c->hidden_roadtypes.Test(rt), COLOUR_MAUVE, COLOUR_ORANGE));
+			list.push_back(MakeDropDownListBadgeIconItem(badge_class_list, rti->badges, GSF_ROADTYPES, rti->introduction_date, RoadBuildCost(rt), d, rti->gui_sprites.build_x_road, PAL_NONE, std::move(str), rt, false, !avail_roadtypes.Test(rt) || c->hidden_roadtypes.Test(rt), COLOUR_MAUVE, COLOUR_ORANGE, c->hidden_roadtypes.Test(rt)));
 		}
 	}
 
