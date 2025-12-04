@@ -22,6 +22,8 @@
  * \li GSEventVehicleCrashed::GetVehicleOwner
  * \li GSEventCompanyRenamed
  * \li GSEventPresidentRenamed
+ * \li GSEventEnginePreviewAccepted
+ * \li GSEventEnginePreviewEnded
  * \li GSCargo::CC_OVERSIZED
  * \li GSCargo::CC_POWDERIZED
  * \li GSCargo::CC_NON_POURABLE
