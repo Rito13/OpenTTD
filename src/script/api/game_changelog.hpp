@@ -34,6 +34,8 @@
  * \li GSError::ERR_BRIDGE_TOO_LOW
  * \li GSEngine::GetAllRailTypes
  * \li GSTile::IsHouseTile
+ * \li GSCompany::SetBlockPreview
+ * \li GSCompany::GetBlockPreview
  *
  * Other changes:
  * \li GSBridge::GetBridgeID renamed to GSBridge::GetBridgeType
