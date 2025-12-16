@@ -13,12 +13,14 @@
  *  List available resolutions.                                               *
  ******************************************************************************/
 
-#ifdef WITH_COCOA
+#if defined(WITH_COCOA) || defined(DOXYGEN_API)
 
 #include "../../stdafx.h"
 #include "../../os/macosx/macos.h"
 
-#define Rect  OTTDRect
+/** Rename Rect to OTTDRect in order to prevent name conflict. */
+#define Rect OTTDRect
+/** Rename Point to OTTDPoint in order to prevent name conflict. */
 #define Point OTTDPoint
 #import <Cocoa/Cocoa.h>
 #undef Rect
@@ -52,7 +54,7 @@
 #	define NSEventModifierFlagOption NSAlternateKeyMask
 #	define NSEventModifierFlagShift NSShiftKeyMask
 #	define NSEventModifierFlagCapsLock NSAlphaShiftKeyMask
-#endif
+#endif /* HAVE_OSX_1012_SDK */
 
 /**
  * Important notice regarding all modifications!!!!!!!
@@ -83,7 +85,7 @@ static const std::array<TouchBarButton, 9> _touchbar_buttons{{
 	{ @"openttd.build_airport", SPR_IMG_BUILDAIR,    MTHK_BUILD_AIRPORT, @"Airport" }
 }};
 
-#endif
+#endif /* HAVE_TOUCHBAR_SUPPORT */
 
 bool _allow_hidpi_window = true; // Referenced from table/misc_settings.ini
 
@@ -1304,4 +1306,4 @@ void CocoaDialog(std::string_view title, std::string_view message, std::string_v
 
 @end
 
-#endif /* WITH_COCOA */
+#endif /* WITH_COCOA or DOXYGEN_API */

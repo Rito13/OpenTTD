@@ -7,14 +7,16 @@
 
 /** @file cocoa_ogl.mm Code related to the cocoa OpengL video driver. */
 
-#ifdef WITH_COCOA
+#if defined(WITH_COCOA) || defined(DOXYGEN_API)
 
 #include "../../stdafx.h"
 #include "../../os/macosx/macos.h"
 
 #define GL_SILENCE_DEPRECATION
 
-#define Rect  OTTDRect
+/** Rename Rect to OTTDRect in order to prevent name conflict. */
+#define Rect OTTDRect
+/** Rename Point to OTTDPoint in order to prevent name conflict. */
 #define Point OTTDPoint
 #import <Cocoa/Cocoa.h>
 #import <QuartzCore/QuartzCore.h>
@@ -330,4 +332,4 @@ void VideoDriver_CocoaOpenGL::Paint()
 	[ CATransaction commit ];
 }
 
-#endif /* WITH_COCOA */
+#endif /* WITH_COCOA or DOXYGEN_API */
