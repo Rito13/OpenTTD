@@ -3,16 +3,7 @@ name: Docs checker
 on:
   pull_request:
     inputs:
-      compiler:
-        required: true
-        type: string
-      cxxcompiler:
-        required: true
-        type: string
-      libraries:
-        required: true
-        type: string
-      extra-cmake-parameters:
+      version:
         required: true
         type: string
 
@@ -21,9 +12,9 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 jobs:
-  commit-checker:
+  docs-checker:
     name: New doxygen warnings checker
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     env:
       CC: ${{ inputs.compiler }}
       CXX: ${{ inputs.cxxcompiler }}
@@ -37,10 +28,6 @@ jobs:
     - name: Get pull-request commits
       uses: OpenTTD/actions/checkout-pull-request@v6
 
-    - name: Setup vcpkg
-      id: vcpkg
-      uses: OpenTTD/actions/setup-vcpkg@v6
-
     - name: Install dependencies
       run: |
         echo "::group::Update apt"
@@ -49,50 +36,38 @@ jobs:
 
         echo "::group::Install dependencies"
         sudo apt-get install -y --no-install-recommends \
-          liballegro4-dev \
-          libcurl4-openssl-dev \
-          libfontconfig-dev \
-          libharfbuzz-dev \
-          libicu-dev \
-          liblzma-dev \
-          liblzo2-dev \
-          libogg-dev \
-          libopus-dev \
-          libopusfile-dev \
-          ${{ inputs.libraries }} \
-          zlib1g-dev \
           doxygen \
           # EOF
-
-        echo "::group::Install vcpkg dependencies"
-
-        # Disable vcpkg integration, as we mostly use system libraries.
-        mv vcpkg.json vcpkg-disabled.json
-
-        # We only use breakpad from vcpkg, as its CMake files
-        # are a bit special. So the Ubuntu's variant doesn't work.
-        ${{ steps.vcpkg.outputs.vcpkg }} install breakpad
-
         echo "::endgroup::"
       env:
         DEBIAN_FRONTEND: noninteractive
 
-    - name: Install GCC problem matcher
-      uses: ammaraskar/gcc-problem-matcher@master
-
     - name: Build docs for PR
       run: |
         mkdir build
+
+        echo "::group::CMake"
+        cmake -S . -B build -DOPTION_DOCS_ONLY=ON
+        echo "::endgroup::"
+
+        echo "::group::Build Source"
         echo "WARN_LOGFILE = $(pwd)/doxygen_warnings.PR" >> Doxyfile.in
-        echo "WARN_LOGFILE = $(pwd)/doxygen_AI_warnings.PR" >> src/script/api/Doxyfile_AI.in
-        echo "WARN_LOGFILE = $(pwd)/doxygen_GS_warnings.PR" >> src/script/api/Doxyfile_GS.in
         echo "WARN_FORMAT = \$file: \$text" >> Doxyfile.in
+        cmake --build build --target docs_source
+        echo "::endgroup::"
+
+        echo "::group::Build AI"
+        echo "WARN_LOGFILE = $(pwd)/doxygen_AI_warnings.PR" >> src/script/api/Doxyfile_AI.in
         echo "WARN_FORMAT = \$file: \$text" >> src/script/api/Doxyfile_AI.in
+        cmake --build build --target docs_ai
+        echo "::endgroup::"
+
+        echo "::group::Build GS"
+        echo "WARN_LOGFILE = $(pwd)/doxygen_GS_warnings.PR" >> src/script/api/Doxyfile_GS.in
         echo "WARN_FORMAT = \$file: \$text" >> src/script/api/Doxyfile_GS.in
-        cd build
-        cmake ..
-        make docs -j 64
-        cd ..
+        cmake --build build --target docs_game
+        echo "::endgroup::"
+
         rm -r build
         git restore Doxyfile.in src/script/api/Doxyfile_AI.in src/script/api/Doxyfile_GS.in
 
@@ -100,27 +75,45 @@ jobs:
       run: |
         git checkout HEAD^
         mkdir build
+
+        echo "::group::CMake"
+        cmake -S . -B build -DOPTION_DOCS_ONLY=ON
+        echo "::endgroup::"
+
+        echo "::group::Build Source"
         echo "WARN_LOGFILE = $(pwd)/doxygen_warnings.base" >> Doxyfile.in
-        echo "WARN_LOGFILE = $(pwd)/doxygen_AI_warnings.base" >> src/script/api/Doxyfile_AI.in
-        echo "WARN_LOGFILE = $(pwd)/doxygen_GS_warnings.base" >> src/script/api/Doxyfile_GS.in
         echo "WARN_FORMAT = \$file: \$text" >> Doxyfile.in
+        cmake --build build --target docs_source
+        echo "::endgroup::"
+
+        echo "::group::Build AI"
+        echo "WARN_LOGFILE = $(pwd)/doxygen_AI_warnings.base" >> src/script/api/Doxyfile_AI.in
         echo "WARN_FORMAT = \$file: \$text" >> src/script/api/Doxyfile_AI.in
+        cmake --build build --target docs_ai
+        echo "::endgroup::"
+
+        echo "::group::Build GS"
+        echo "WARN_LOGFILE = $(pwd)/doxygen_GS_warnings.base" >> src/script/api/Doxyfile_GS.in
         echo "WARN_FORMAT = \$file: \$text" >> src/script/api/Doxyfile_GS.in
-        cd build
-        cmake ..
-        make docs -j 64
-        cd ..
+        cmake --build build --target docs_game
+        echo "::endgroup::"
+
         rm -r build
 
     - name: Compare doxygen warnings and errors
       run: |
+        echo "::group::sort"
         sort doxygen_warnings.base > base.sorted
         sort doxygen_AI_warnings.base > base_AI.sorted
         sort doxygen_GS_warnings.base > base_GS.sorted
         sort doxygen_warnings.PR > PR.sorted
         sort doxygen_AI_warnings.PR > PR_AI.sorted
         sort doxygen_GS_warnings.PR > PR_GS.sorted
+        echo "::endgroup::"
+
+        echo "::group::compare"
         comm -13 base.sorted PR.sorted > comm.output
         comm -13 base_AI.sorted PR_AI.sorted >> comm.output
         comm -13 base_GS.sorted PR_GS.sorted >> comm.output
         if [ -s comm.output ]; then cat comm.output; exit 1; fi
+        echo "::endgroup::"
