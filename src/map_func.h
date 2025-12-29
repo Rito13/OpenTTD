@@ -147,6 +147,15 @@ public:
 	}
 
 	/**
+	 * The type and offset stored in the base tile.
+	 * @return reference to the uint64_t holding the data.
+	 */
+	[[debug_inline]] inline uint64_t &TypeAndOffset()
+	{
+		return base_tiles[this->tile.base()].base;
+	}
+
+	/**
 	 * The height of the northern corner
 	 *
 	 * Look at docs/landscape.html for the exact meaning of the data.

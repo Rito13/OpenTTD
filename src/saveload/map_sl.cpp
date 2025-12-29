@@ -71,24 +71,38 @@ struct MAPTChunkHandler : ChunkHandler {
 
 	void Load() const override
 	{
-		std::array<uint8_t, MAP_SL_BUF_SIZE> buf;
 		uint size = Map::Size();
+		if (IsSavegameVersionBefore(SLV_TILE_OFFSET)) {
+			std::array<uint8_t, MAP_SL_BUF_SIZE> buf;
 
-		for (TileIndex i{}; i != size;) {
-			SlCopy(buf.data(), MAP_SL_BUF_SIZE, SLE_UINT8);
-			for (uint j = 0; j != MAP_SL_BUF_SIZE; j++) Tile(i++).type() = buf[j];
+			for (TileIndex i{}; i != size;) {
+				SlCopy(buf.data(), MAP_SL_BUF_SIZE, SLE_UINT8);
+				for (uint j = 0; j != MAP_SL_BUF_SIZE; j++) {
+					Tile t(i);
+					t.type() = buf[j];
+					t.SetOffset(i.base() % INDEXES_PER_SUB_TILES_CHUNK);
+					++i;
+				}
+			}
+		} else {
+			std::array<uint32_t, MAP_SL_BUF_SIZE> buf;
+
+			for (TileIndex i{}; i != size;) {
+				SlCopy(buf.data(), MAP_SL_BUF_SIZE, SLE_UINT64);
+				for (uint j = 0; j != MAP_SL_BUF_SIZE; j++) Tile(i++).TypeAndOffset() = buf[j];
+			}
 		}
 	}
 
 	void Save() const override
 	{
-		std::array<uint8_t, MAP_SL_BUF_SIZE> buf;
+		std::array<uint32_t, MAP_SL_BUF_SIZE> buf;
 		uint size = Map::Size();
 
 		SlSetLength(size);
 		for (TileIndex i{}; i != size;) {
-			for (uint j = 0; j != MAP_SL_BUF_SIZE; j++) buf[j] = Tile(i++).type();
-			SlCopy(buf.data(), MAP_SL_BUF_SIZE, SLE_UINT8);
+			for (uint j = 0; j != MAP_SL_BUF_SIZE; j++) buf[j] = Tile(i++).TypeAndOffset();
+			SlCopy(buf.data(), MAP_SL_BUF_SIZE, SLE_UINT64);
 		}
 	}
 };
