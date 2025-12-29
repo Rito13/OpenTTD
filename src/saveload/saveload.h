@@ -414,6 +414,9 @@ enum SaveLoadVersion : uint16_t {
 	SLV_ENGINE_MULTI_RAILTYPE,              ///< 362  PR#14357 v15.0 Train engines can have multiple railtypes.
 	SLV_SIGN_TEXT_COLOURS,                  ///< 363  PR#14743 Configurable sign text colors in scenario editor.
 
+	/* Save version for conversion between old map storage and the new one. */
+	SLV_TILE_OFFSET,                        ///< Store offset for each base tile in sub tiles chunk.
+
 	SL_MAX_VERSION,                         ///< Highest possible saveload version
 };
 
