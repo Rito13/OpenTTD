@@ -121,6 +121,7 @@ public:
 #endif
 		Debug(misc, LANDINFOD_LEVEL, "TILE: {0} (0x{0:x}) ({1},{2})", (TileIndex)tile, TileX(tile), TileY(tile));
 		Debug(misc, LANDINFOD_LEVEL, "type   = 0x{:x}", tile.type());
+		Debug(misc, LANDINFOD_LEVEL, "offset = 0x{:x}", tile.offset());
 		Debug(misc, LANDINFOD_LEVEL, "height = 0x{:x}", tile.height());
 		Debug(misc, LANDINFOD_LEVEL, "m1     = 0x{:x}", tile.m1());
 		Debug(misc, LANDINFOD_LEVEL, "m2     = 0x{:x}", tile.m2());
