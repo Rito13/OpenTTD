@@ -32,11 +32,11 @@ private:
 	struct TileBase {
 		uint8_t type = 0; ///< The type (bits 4..7), bridges (2..3), rainforest/desert (0..1)
 		uint8_t height = 0; ///< The height of the northern corner.
-		uint16_t m2 = 0; ///< Primarily used for indices to towns, industries and stations
-		uint8_t m1 = 0; ///< Primarily used for ownership information
+		uint8_t offset = 0; ///< The offset in sub tiles array. @important Runtime only.
+		uint8_t m1 = 0; ///< Primarily used for ownership information.
+		uint16_t m2 = 0; ///< Primarily used for indices to towns, industries and stations.
 		uint8_t m3 = 0; ///< General purpose
 		uint8_t m4 = 0; ///< General purpose
-		uint8_t m5 = 0; ///< General purpose
 	};
 
 	static_assert(sizeof(TileBase) == 8);
@@ -46,13 +46,16 @@ private:
 	 * Look at docs/landscape.html for the exact meaning of the members.
 	 */
 	struct TileExtended {
+		uint8_t m5 = 0; ///< General purpose.
 		uint8_t m6 = 0; ///< General purpose
 		uint8_t m7 = 0; ///< Primarily used for newgrf support
 		uint16_t m8 = 0; ///< General purpose
 	};
 
+	static_assert(sizeof(TileExtended) == 6);
+
 	static std::unique_ptr<TileBase[]> base_tiles; ///< Pointer to the tile-array.
-	static std::unique_ptr<TileExtended[]> extended_tiles; ///< Pointer to the extended tile-array.
+	static std::unique_ptr<std::vector<TileExtended>[]> extended_tiles; ///< Pointer to the extended tile-array.
 
 	TileIndex tile; ///< The tile to access the map data for.
 
@@ -101,6 +104,24 @@ public:
 	[[debug_inline]] inline uint8_t &height()
 	{
 		return base_tiles[this->tile.base()].height;
+	}
+
+	/**
+	 * Get the offset in sub tiles array for this tile from offsets array.
+	 * @return Reference to the offset in sub tiles array.
+	 */
+	[[debug_inline]] inline uint8_t &offset()
+	{
+		return base_tiles[this->tile.base()].offset;
+	}
+
+	/**
+	 * Get how many sub tiles does this tile has.
+	 * @return The number of available sub tiles.
+	 */
+	uint8_t GetNumberOfSubTiles()
+	{
+		return 1;
 	}
 
 	/**
@@ -155,7 +176,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &m5()
 	{
-		return base_tiles[this->tile.base()].m5;
+		return extended_tiles[this->tile.base() / INDEXES_PER_SUB_TILES_CHUNK][this->offset()].m5;
 	}
 
 	/**
@@ -166,7 +187,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &m6()
 	{
-		return extended_tiles[this->tile.base()].m6;
+		return extended_tiles[this->tile.base() / INDEXES_PER_SUB_TILES_CHUNK][this->offset()].m6;
 	}
 
 	/**
@@ -177,7 +198,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &m7()
 	{
-		return extended_tiles[this->tile.base()].m7;
+		return extended_tiles[this->tile.base() / INDEXES_PER_SUB_TILES_CHUNK][this->offset()].m7;
 	}
 
 	/**
@@ -188,7 +209,53 @@ public:
 	 */
 	[[debug_inline]] inline uint16_t &m8()
 	{
-		return extended_tiles[this->tile.base()].m8;
+		return extended_tiles[this->tile.base() / INDEXES_PER_SUB_TILES_CHUNK][this->offset()].m8;
+	}
+
+	/**
+	 * Creates new sub tile in the sub tiles array for this tile index.
+	 */
+	void AddSubTile()
+	{
+		auto chunk = this->tile.base() / INDEXES_PER_SUB_TILES_CHUNK;
+		uint8_t new_offset = 0;
+		if (extended_tiles[chunk].size() > MAX_SUB_TILES_OFFSET) {
+			/* No space for new sub tile, clear unused parts. */
+			size_t available_sub_tiles = 0;
+			for (TileIndex i{chunk * INDEXES_PER_SUB_TILES_CHUNK}; i < (chunk + 1) * INDEXES_PER_SUB_TILES_CHUNK; ++i) {
+				available_sub_tiles += Tile(i).GetNumberOfSubTiles();
+			}
+			std::vector<Tile::TileExtended> new_state(available_sub_tiles + 1);
+			for (TileIndex i{chunk * INDEXES_PER_SUB_TILES_CHUNK}; i < (chunk + 1) * INDEXES_PER_SUB_TILES_CHUNK; ++i) {
+				if (i == this->tile) continue;
+				Tile t = Tile(i);
+				for (int j = 0; j < t.GetNumberOfSubTiles(); ++j) {
+					new_state[new_offset + j] = extended_tiles[chunk][t.offset() + j];
+				}
+				t.offset() = new_offset;
+				new_offset += t.GetNumberOfSubTiles();
+			}
+			for (int j = 0; j < this->GetNumberOfSubTiles(); ++j) {
+				new_state[new_offset + j] = extended_tiles[chunk][this->offset() + j];
+			}
+			new_state.swap(extended_tiles[chunk]);
+		} else {
+			new_offset = extended_tiles[chunk].size();
+			extended_tiles[chunk].resize(new_offset + this->GetNumberOfSubTiles() + 1);
+			for (int j = 0; j < this->GetNumberOfSubTiles(); ++j) {
+				extended_tiles[chunk][new_offset + j] = extended_tiles[chunk][this->offset() + j];
+			}
+		}
+		extended_tiles[chunk][new_offset + this->GetNumberOfSubTiles()] = Tile::TileExtended{}; // Clear new sub tile.
+		this->offset() = new_offset;
+	}
+
+	/**
+	 * Removes sub tile in the sub tiles array for this tile index.
+	 */
+	void RemoveSubTile()
+	{
+		/* Because GetNumberOfSubTiles always returns 1 and AddSubTile handes the removal in sub tiles array, we don't need to do anything here. */
 	}
 };
 
