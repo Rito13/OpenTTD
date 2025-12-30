@@ -39,6 +39,11 @@ static const uint MAX_MAP_SIZE_BITS = 12;                      ///< Maximal size
 static const uint MIN_MAP_SIZE      = 1U << MIN_MAP_SIZE_BITS; ///< Minimal map size = 64
 static const uint MAX_MAP_SIZE      = 1U << MAX_MAP_SIZE_BITS; ///< Maximal map size = 4096
 
+static constexpr uint BITS_FOR_SUB_TILES_OFFSET = 16; ///< How many bits from uint32_t utilize for offset.
+static constexpr uint MAX_SUB_TILES_QUANTITY = 4; ///< How many sub tiles per each base tile there can be.
+static constexpr uint SUB_TILES_CHUNK_MAX_SIZE = 1U << BITS_FOR_SUB_TILES_OFFSET; ///< Max number of sub tiles that can be stored in one chunk.
+static constexpr uint INDEXES_PER_SUB_TILES_CHUNK = SUB_TILES_CHUNK_MAX_SIZE / MAX_SUB_TILES_QUANTITY; ///< How many values of TileIndex correspond to one chunk.
+
 /** Argument for CmdLevelLand describing what to do. */
 enum LevelMode : uint8_t {
 	LM_LEVEL, ///< Level the land.
