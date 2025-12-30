@@ -80,7 +80,7 @@ private:
 	static_assert(sizeof(TileExtended) == 8);
 
 	static std::unique_ptr<BaseTile[]> base_tiles; ///< Pointer to the tile-array.
-	static std::unique_ptr<TileExtended[]> extended_tiles; ///< Pointer to the extended tile-array.
+	static std::unique_ptr<std::vector<TileExtended>[]> extended_tiles; ///< Pointer to the extended tile-array.
 
 	TileIndex tile; ///< The tile to access the map data for.
 
@@ -179,7 +179,7 @@ public:
 	 */
 	[[debug_inline]] inline uint16_t &m2()
 	{
-		return extended_tiles[this->tile.base()].m2;
+		return extended_tiles[this->tile.base() / INDEXES_PER_SUB_TILES_CHUNK][this->GetOffset()].m2;
 	}
 
 	/**
@@ -215,7 +215,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &m5()
 	{
-		return extended_tiles[this->tile.base()].m5;
+		return extended_tiles[this->tile.base() / INDEXES_PER_SUB_TILES_CHUNK][this->GetOffset()].m5;
 	}
 
 	/**
@@ -227,7 +227,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &m6()
 	{
-		return extended_tiles[this->tile.base()].m6;
+		return extended_tiles[this->tile.base() / INDEXES_PER_SUB_TILES_CHUNK][this->GetOffset()].m6;
 	}
 
 	/**
@@ -239,7 +239,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &m7()
 	{
-		return extended_tiles[this->tile.base()].m7;
+		return extended_tiles[this->tile.base() / INDEXES_PER_SUB_TILES_CHUNK][this->GetOffset()].m7;
 	}
 
 	/**
@@ -251,7 +251,7 @@ public:
 	 */
 	[[debug_inline]] inline uint16_t &m8()
 	{
-		return extended_tiles[this->tile.base()].m8;
+		return extended_tiles[this->tile.base() / INDEXES_PER_SUB_TILES_CHUNK][this->GetOffset()].m8;
 	}
 };
 
