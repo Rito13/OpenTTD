@@ -264,6 +264,20 @@ TownScopeResolver *RoadStopResolverObject::GetTown()
 	return &*this->town_scope;
 }
 
+/**
+ * Just a brief description.
+ * @param callback A callback.
+ * @param param1 First param.
+ * @param param2 Second param.
+ * @param roadstopspec A pointer.
+ * @param st Another pointer.
+ * @param tile Index in map array.
+ * @param roadtype Do I have to discribe it.
+ * @param type Why?
+ * @param view From the window.
+ * @param regs100 I don't know.
+ * @return 16 bits of output.
+ */
 uint16_t GetRoadStopCallback(CallbackID callback, uint32_t param1, uint32_t param2, const RoadStopSpec *roadstopspec, BaseStation *st, TileIndex tile, RoadType roadtype, StationType type, uint8_t view, std::span<int32_t> regs100)
 {
 	RoadStopResolverObject object(roadstopspec, st, tile, roadtype, type, view, callback, param1, param2);
