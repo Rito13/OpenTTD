@@ -28,24 +28,42 @@ private:
 
 	/** Common storage for all base tiles. */
 	struct BaseTileCommon {
+#if defined(_MSC_VER) /* MSVC is not able to use remaining bits from uint32_t for uint8_ts. */
+		uint16_t offset1 = 0; ///< Used to access sub tiles in corresponding chunk.
+		uint8_t offset2 : (BITS_FOR_SUB_TILES_OFFSET - 16) = 0; ///< Bits that could not end up in offset1.
+#else
 		uint32_t offset : BITS_FOR_SUB_TILES_OFFSET = 0; ///< Used to access sub tiles in corresponding chunk.
-		uint8_t type = 0; ///< The type (bits 4..7), bridges (2..3), rainforest/desert (0..1).
+#endif
+		uint8_t type : 2 = 0; ///< The type of the base tile. @note Max 4 base tile types are allowed.
+		uint8_t bridge_above : 2 = 0; ///< Presence and direction of bridge above.
+		uint8_t tropic_zone : 2 = 0; ///< Only meaningful in tropic climate. It contains the definition of the available zones.
+		uint8_t height = 0; ///< The height of the northern corner.
 	};
 
 	static_assert(sizeof(BaseTileCommon) == 4);
 
-	/**
-	 * Data that is stored per tile. Also used TileExtended for this.
-	 * Look at docs/landscape.html for the exact meaning of the members.
-	 */
-	struct TileBase : BaseTileCommon {
-		uint8_t height = 0; ///< The height of the northern corner.
+	/** Data that is stored per tile in old save games. Also used TileExtended for this. */
+	struct OldMapBaseTile : BaseTileCommon {
+		uint8_t type = 0; ///< The type (bits 4..7), bridges (2..3), rainforest/desert (0..1).
 		uint8_t m1 = 0; ///< Primarily used for ownership information
 		uint8_t m3 = 0; ///< General purpose
 		uint8_t m4 = 0; ///< General purpose
 	};
 
-	static_assert(sizeof(TileBase) == 8);
+	/**
+	 * Data that is stored per tile. Also used TileExtended for this.
+	 * Look at docs/landscape.html for the exact meaning of the members.
+	 */
+	union BaseTile {
+		uint64_t base; ///< Bare access to all bits, useful for saving, loading and constructing map array.
+		BaseTileCommon common; ///< Common storage for all base tiles.
+		OldMapBaseTile old_map; ///< Used to preserve compatibility with older save games.
+
+		/** Construct empty base tile storage. */
+		BaseTile() { this->base = 0; }
+	};
+
+	static_assert(sizeof(BaseTile) == 8);
 
 	/**
 	 * Data that is stored per tile. Also used TileBase for this.
@@ -61,7 +79,7 @@ private:
 
 	static_assert(sizeof(TileExtended) == 8);
 
-	static std::unique_ptr<TileBase[]> base_tiles; ///< Pointer to the tile-array.
+	static std::unique_ptr<BaseTile[]> base_tiles; ///< Pointer to the tile-array.
 	static std::unique_ptr<TileExtended[]> extended_tiles; ///< Pointer to the extended tile-array.
 
 	TileIndex tile; ///< The tile to access the map data for.
@@ -98,7 +116,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &type()
 	{
-		return base_tiles[this->tile.base()].type;
+		return base_tiles[this->tile.base()].old_map.type;
 	}
 
 	/**
@@ -107,7 +125,11 @@ public:
 	 */
 	[[debug_inline]] inline uint32_t GetOffset()
 	{
-		return base_tiles[this->tile.base()].offset;
+#if defined(_MSC_VER)
+		return base_tiles[this->tile.base()].common.offset1 | (base_tiles[this->tile.base()].common.offset2 << 16);
+#else
+		return base_tiles[this->tile.base()].common.offset;
+#endif
 	}
 
 	/**
@@ -116,7 +138,12 @@ public:
 	 */
 	[[debug_inline]] inline void SetOffset(uint32_t new_offset)
 	{
-		base_tiles[this->tile.base()].offset = new_offset;
+#if defined(_MSC_VER)
+		base_tiles[this->tile.base()].common.offset1 = new_offset & 0xFFFF;
+		base_tiles[this->tile.base()].common.offset2 = (new_offset & 0xFFFF0000) >> 16;
+#else
+		base_tiles[this->tile.base()].common.offset = new_offset;
+#endif
 	}
 
 	/**
@@ -128,7 +155,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &height()
 	{
-		return base_tiles[this->tile.base()].height;
+		return base_tiles[this->tile.base()].common.height;
 	}
 
 	/**
@@ -140,7 +167,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &m1()
 	{
-		return base_tiles[this->tile.base()].m1;
+		return base_tiles[this->tile.base()].old_map.m1;
 	}
 
 	/**
@@ -164,7 +191,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &m3()
 	{
-		return base_tiles[this->tile.base()].m3;
+		return base_tiles[this->tile.base()].old_map.m3;
 	}
 
 	/**
@@ -176,7 +203,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &m4()
 	{
-		return base_tiles[this->tile.base()].m4;
+		return base_tiles[this->tile.base()].old_map.m4;
 	}
 
 	/**
