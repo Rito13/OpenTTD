@@ -14,6 +14,7 @@
 #include "tile_type.h"
 #include "map_type.h"
 #include "direction_func.h"
+#include <cstdint>
 
 /**
  * Wrapper class to abstract away the way the tiles are stored. It is
@@ -37,12 +38,19 @@ private:
 
 	static_assert(sizeof(BaseTileCommon) == 4);
 
+	struct BaseTileClearCommon : BaseTileCommon {
+		uint8_t ground : 3 = 0;
+		uint8_t density : 2 = 0;
+		uint8_t update : 3 = 0;
+
+	};
+
 	/** Data that is stored per tile in old save games. Also used TileExtended for this. */
 	struct OldMapBaseTile : BaseTileCommon {
-		uint8_t type = 0; ///< The type (bits 4..7), bridges (2..3), rainforest/desert (0..1).
 		uint8_t m1 = 0; ///< Primarily used for ownership information
 		uint8_t m3 = 0; ///< General purpose
 		uint8_t m4 = 0; ///< General purpose
+		uint8_t type = 0; ///< The type (bits 4..7), bridges (2..3), rainforest/desert (0..1).
 	};
 
 	/**

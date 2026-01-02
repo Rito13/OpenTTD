@@ -11,6 +11,7 @@
 #define TILE_TYPE_H
 
 #include "core/strong_typedef_type.hpp"
+#include <cstdint>
 
 static constexpr uint TILE_SIZE           = 16;                    ///< Tile size in world coordinates.
 static constexpr uint TILE_UNIT_MASK      = TILE_SIZE - 1;         ///< For masking in/out the inner-tile world coordinate units.
@@ -56,6 +57,19 @@ enum TileType : uint8_t {
 	MP_INDUSTRY,            ///< Part of an industry
 	MP_TUNNELBRIDGE,        ///< Tunnel entry/exit and bridge heads
 	MP_OBJECT,              ///< Contains objects such as transmitters and owned land
+};
+
+/** */
+enum class SubTileType : uint8_t {
+	Empty, ///< A tile that can be removed, but wasn't so the offset didn't have to be updated.
+	Railway, ///< A railway.
+	Road, ///< A tile with road or tram track.
+	House, ///< A house by a town.
+	Object, ///< Contains objects such as transmitters and owned land.
+	Station, ///< A tile of a station.
+	Industry, ///< Part of an industry.
+	TunnelBridge, ///< Tunnel entry/exit or bridge head.
+	End, ///< Used for iteration.
 };
 
 /**
