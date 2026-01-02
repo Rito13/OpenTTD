@@ -58,6 +58,19 @@ enum TileType : uint8_t {
 	MP_OBJECT,              ///< Contains objects such as transmitters and owned land
 };
 
+/** The different types of sub tiles. */
+enum class SubTileType : uint8_t {
+	Empty, ///< A tile that can be removed, but wasn't so the offset didn't have to be updated.
+	Railway, ///< A railway.
+	Road, ///< A tile with road or tram track.
+	House, ///< A house by a town.
+	Object, ///< Contains objects such as transmitters and owned land.
+	Station, ///< A tile of a station.
+	Industry, ///< Part of an industry.
+	TunnelBridge, ///< Tunnel entry/exit or bridge head.
+	End, ///< End marker.
+};
+
 /**
  * Additional infos of a tile on a tropic game.
  *

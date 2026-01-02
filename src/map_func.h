@@ -42,6 +42,34 @@ private:
 
 	static_assert(sizeof(BaseTileCommon) == 4);
 
+#if defined(_MSC_VER)
+#pragma pack(push)
+#pragma pack(1)
+#endif
+
+	/** Common storage for base tiles that can have sub tiles. */
+	struct BaseTileWithSubTiles : BaseTileCommon {
+		uint8_t sub_tiles : 7 = 0; ///< What subtiles does this base tile has.
+	};
+
+#if defined(_MSC_VER)
+#pragma pack(pop)
+#endif
+
+	/** Storage for MP_CLEAR base tile. */
+	struct BaseTileClear : BaseTileWithSubTiles {
+		uint8_t ground : 3 = 0; ///< The type of ground.
+		uint8_t density : 2 = 0; ///< The density of a non-field clear tile.
+		uint8_t update : 3 = 0; ///< The counter used to advance to the next clear density/field type.
+		uint8_t hedge_NW : 3 = 0; ///< Type of hedge on NW border.
+		uint8_t bit_offset1 : 1 = 0; ///< Unused. @note Prevents save conversion.
+		uint8_t snow_presence : 1 = 0; ///< If the tile is covered with snow.
+		uint8_t hedge_NE : 3 = 0; ///< Type of hedge on NE border.
+		uint8_t bit_offset2 : 2 = 0; ///< Unused. @note Prevents save conversion.
+		uint8_t hedge_SE : 3 = 0; ///< Type of hedge on SE border.
+		uint8_t hedge_SW : 3 = 0; ///< Type of hedge on SW border.
+	};
+
 	/** Data that is stored per tile in old save games. Also used TileExtended for this. */
 	struct OldMapBaseTile : BaseTileCommon {
 		uint8_t type = 0; ///< The type (bits 4..7), bridges (2..3), rainforest/desert (0..1).
@@ -58,6 +86,7 @@ private:
 		uint64_t base; ///< Bare access to all bits, useful for saving, loading and constructing map array.
 		BaseTileCommon common; ///< Common storage for all base tiles.
 		OldMapBaseTile old_map; ///< Used to preserve compatibility with older save games.
+		BaseTileClear clear; ///< Storage for tiles with: grass, snow, sand etc.
 
 		/** Construct empty base tile storage. */
 		BaseTile() { this->base = 0; }
@@ -144,6 +173,14 @@ public:
 #else
 		base_tiles[this->tile.base()].common.offset = new_offset;
 #endif
+	}
+
+	template<TileType Type>
+	[[debug_inline]] inline auto &GetBaseTileAs()
+	{
+		if constexpr (Type == MP_CLEAR) {
+			return base_tiles[this->tile.base()].clear;
+		}
 	}
 
 	/**

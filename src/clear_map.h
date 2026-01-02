@@ -35,7 +35,7 @@ enum ClearGround : uint8_t {
 inline bool IsSnowTile(Tile t)
 {
 	assert(IsTileType(t, MP_CLEAR));
-	return HasBit(t.m3(), 4);
+	return t.GetBaseTileAs<MP_CLEAR>().snow_presence;
 }
 
 /**
@@ -211,9 +211,9 @@ inline uint GetFence(Tile t, DiagDirection side)
 	assert(IsClearGround(t, CLEAR_FIELDS));
 	switch (side) {
 		default: NOT_REACHED();
-		case DIAGDIR_SE: return GB(t.m4(), 2, 3);
-		case DIAGDIR_SW: return GB(t.m4(), 5, 3);
-		case DIAGDIR_NE: return GB(t.m3(), 5, 3);
+		case DIAGDIR_SE: return t.GetBaseTileAs<MP_CLEAR>().hedge_SE;
+		case DIAGDIR_SW: return t.GetBaseTileAs<MP_CLEAR>().hedge_SW;
+		case DIAGDIR_NE: return t.GetBaseTileAs<MP_CLEAR>().hedge_NE;
 		case DIAGDIR_NW: return GB(t.m6(), 2, 3);
 	}
 }
@@ -230,9 +230,9 @@ inline void SetFence(Tile t, DiagDirection side, uint h)
 	assert(IsClearGround(t, CLEAR_FIELDS));
 	switch (side) {
 		default: NOT_REACHED();
-		case DIAGDIR_SE: SB(t.m4(), 2, 3, h); break;
-		case DIAGDIR_SW: SB(t.m4(), 5, 3, h); break;
-		case DIAGDIR_NE: SB(t.m3(), 5, 3, h); break;
+		case DIAGDIR_SE: t.GetBaseTileAs<MP_CLEAR>().hedge_SE = h; break;
+		case DIAGDIR_SW: t.GetBaseTileAs<MP_CLEAR>().hedge_SW = h; break;
+		case DIAGDIR_NE: t.GetBaseTileAs<MP_CLEAR>().hedge_NE = h; break;
 		case DIAGDIR_NW: SB(t.m6(), 2, 3, h); break;
 	}
 }
