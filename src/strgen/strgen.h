@@ -10,6 +10,7 @@
 #ifndef STRGEN_H
 #define STRGEN_H
 
+#include "../stdafx.h"
 #include "../core/string_consumer.hpp"
 #include "../language.h"
 #include "../string_type.h"
