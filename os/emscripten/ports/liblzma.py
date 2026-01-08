@@ -1,46 +1,46 @@
 import os
 import logging
 
-VERSION = '5.4.6'
-HASH = '495cc890d25c075c927c907b77e60d86dd8a4c377cea5b1172c8e916984149a7bb5fb32db25091f7219346b83155b47e4bc0404cc8529d992014cd7ed0c278b7'
+VERSION = "5.4.6"
+HASH = "495cc890d25c075c927c907b77e60d86dd8a4c377cea5b1172c8e916984149a7bb5fb32db25091f7219346b83155b47e4bc0404cc8529d992014cd7ed0c278b7"
 
-URL = 'https://github.com/tukaani-project/xz'
-DESCRIPTION = 'liblzma provides a general-purpose data-compression library.'
-LICENSE = 'LGPL-2.1'
+URL = "https://github.com/tukaani-project/xz"
+DESCRIPTION = "liblzma provides a general-purpose data-compression library."
+LICENSE = "LGPL-2.1"
+
 
 def get(ports, settings, shared):
-  ports.fetch_project('contrib.liblzma', f'https://github.com/tukaani-project/xz/releases/download/v{VERSION}/xz-{VERSION}.tar.xz', sha512hash=HASH)
+    ports.fetch_project("contrib.liblzma", f"https://github.com/tukaani-project/xz/releases/download/v{VERSION}/xz-{VERSION}.tar.xz", sha512hash=HASH)
 
-  def create(final):
-    logging.info('building port: contrib.liblzma')
+    def create(final):
+        logging.info("building port: contrib.liblzma")
 
-    ports.clear_project_build('contrib.liblzma')
+        ports.clear_project_build("contrib.liblzma")
 
-    source_path = os.path.join(ports.get_dir(), 'contrib.liblzma', f'xz-{VERSION}', 'src', 'liblzma')
-    ports.write_file(os.path.join(source_path, 'config.h'), config_h)
-    ports.install_headers(os.path.join(source_path, 'api'), pattern='lzma.h')
-    ports.install_headers(os.path.join(source_path, 'api', 'lzma'), pattern='*.h', target='lzma')
+        source_path = os.path.join(ports.get_dir(), "contrib.liblzma", f"xz-{VERSION}", "src", "liblzma")
+        ports.write_file(os.path.join(source_path, "config.h"), config_h)
+        ports.install_headers(os.path.join(source_path, "api"), pattern="lzma.h")
+        ports.install_headers(os.path.join(source_path, "api", "lzma"), pattern="*.h", target="lzma")
 
-    build_flags = ['-DHAVE_CONFIG_H', '-DTUKLIB_SYMBOL_PREFIX=lzma_', '-fvisibility=hidden']
-    exclude_files = ['crc32_small.c', 'crc64_small.c', 'crc32_tablegen.c', 'crc64_tablegen.c', 'price_tablegen.c', 'fastpos_tablegen.c',
-                     'tuklib_exit.c', 'tuklib_mbstr_fw.c', 'tuklib_mbstr_width.c', 'tuklib_open_stdxxx.c', 'tuklib_progname.c']
-    include_dirs_rel = ['../common', 'api', 'check', 'common', 'delta', 'lz', 'lzma', 'rangecoder', 'simple']
+        build_flags = ["-DHAVE_CONFIG_H", "-DTUKLIB_SYMBOL_PREFIX=lzma_", "-fvisibility=hidden"]
+        exclude_files = ["crc32_small.c", "crc64_small.c", "crc32_tablegen.c", "crc64_tablegen.c", "price_tablegen.c", "fastpos_tablegen.c", "tuklib_exit.c", "tuklib_mbstr_fw.c", "tuklib_mbstr_width.c", "tuklib_open_stdxxx.c", "tuklib_progname.c"]
+        include_dirs_rel = ["../common", "api", "check", "common", "delta", "lz", "lzma", "rangecoder", "simple"]
 
-    include_dirs = [os.path.join(source_path, p) for p in include_dirs_rel]
-    ports.build_port(source_path, final, 'contrib.liblzma', flags=build_flags, exclude_files=exclude_files, includes=include_dirs)
+        include_dirs = [os.path.join(source_path, p) for p in include_dirs_rel]
+        ports.build_port(source_path, final, "contrib.liblzma", flags=build_flags, exclude_files=exclude_files, includes=include_dirs)
 
-  return [shared.cache.get_lib('liblzma.a', create, what='port')]
+    return [shared.cache.get_lib("liblzma.a", create, what="port")]
 
 
 def clear(ports, settings, shared):
-  shared.cache.erase_lib('liblzma.a')
+    shared.cache.erase_lib("liblzma.a")
 
 
 def process_args(ports):
-  return []
+    return []
 
 
-config_h = '''
+config_h = """
 #define ASSUME_RAM 128
 #define ENABLE_NLS 1
 #define HAVE_CHECK_CRC32 1
@@ -136,4 +136,4 @@ config_h = '''
 # define __EXTENSIONS__ 1
 #endif
 #define VERSION "5.4.0"
-'''
+"""

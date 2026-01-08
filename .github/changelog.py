@@ -6,6 +6,7 @@ This script assumes changelogs use the following format:
     ### <major>.<minor>[-<suffix>] <date etc> (eg. "## 15.0 (2025-04-01)", "### 15.1-beta1 (2024-12-25)") to indicate an individual version
 """
 
+
 def main():
     current_version = sys.argv[1]
     stable_version = current_version.split("-")[0]
@@ -32,5 +33,6 @@ def main():
 
             print(line.rstrip())
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

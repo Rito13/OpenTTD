@@ -1,0 +1,7 @@
+# Has to be ruff.toml and not pyproject.toml in order to vim see it.
+
+# 320 is max value.
+line-length = 320
+
+[format]
+docstring-code-format = true
