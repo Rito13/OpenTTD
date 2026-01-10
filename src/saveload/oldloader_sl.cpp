@@ -379,10 +379,10 @@ static bool FixTTOEngines()
 	/* Load the default engine set. Many of them will be overridden later */
 	{
 		EngineID j = EngineID::Begin();
-		for (uint16_t i = 0; i < lengthof(_orig_rail_vehicle_info); ++i, ++j) new (GetTempDataEngine(j)) Engine(VEH_TRAIN, i);
-		for (uint16_t i = 0; i < lengthof(_orig_road_vehicle_info); ++i, ++j) new (GetTempDataEngine(j)) Engine(VEH_ROAD, i);
-		for (uint16_t i = 0; i < lengthof(_orig_ship_vehicle_info); ++i, ++j) new (GetTempDataEngine(j)) Engine(VEH_SHIP, i);
-		for (uint16_t i = 0; i < lengthof(_orig_aircraft_vehicle_info); ++i, ++j) new (GetTempDataEngine(j)) Engine(VEH_AIRCRAFT, i);
+		for (uint16_t i = 0; i < lengthof(_orig_rail_vehicle_info); ++i, ++j) GetTempDataEngine(j, VEH_TRAIN, i);
+		for (uint16_t i = 0; i < lengthof(_orig_road_vehicle_info); ++i, ++j) GetTempDataEngine(j, VEH_ROAD, i);
+		for (uint16_t i = 0; i < lengthof(_orig_ship_vehicle_info); ++i, ++j) GetTempDataEngine(j, VEH_SHIP, i);
+		for (uint16_t i = 0; i < lengthof(_orig_aircraft_vehicle_info); ++i, ++j) GetTempDataEngine(j, VEH_AIRCRAFT, i);
 	}
 
 	TimerGameCalendar::Date aging_date = std::min(TimerGameCalendar::date + CalendarTime::DAYS_TILL_ORIGINAL_BASE_YEAR, TimerGameCalendar::ConvertYMDToDate(TimerGameCalendar::Year{2050}, 0, 1));
@@ -621,7 +621,7 @@ static const OldChunks town_chunk[] = {
 
 static bool LoadOldTown(LoadgameState &ls, int num)
 {
-	Town *t = new (TownID(num)) Town();
+	Town *t = Town::CreateAtIndex(TownID(num));
 	if (!LoadChunk(ls, t, town_chunk)) return false;
 
 	if (t->xy != 0) {
@@ -693,7 +693,7 @@ static const OldChunks depot_chunk[] = {
 
 static bool LoadOldDepot(LoadgameState &ls, int num)
 {
-	Depot *d = new (DepotID(num)) Depot();
+	Depot *d = Depot::CreateAtIndex(DepotID(num));
 	if (!LoadChunk(ls, d, depot_chunk)) return false;
 
 	if (d->xy != 0) {
@@ -735,7 +735,7 @@ static bool LoadOldGood(LoadgameState &ls, int num)
 	ge->status.Set(GoodsEntry::State::Acceptance, HasBit(_waiting_acceptance, 15));
 	ge->status.Set(GoodsEntry::State::Rating, _cargo_source != 0xFF);
 	if (GB(_waiting_acceptance, 0, 12) != 0 && CargoPacket::CanAllocateItem()) {
-		ge->GetOrCreateData().cargo.Append(new CargoPacket(GB(_waiting_acceptance, 0, 12), _cargo_periods, (_cargo_source == 0xFF) ? StationID::Invalid() : StationID{_cargo_source}, INVALID_TILE, 0),
+		ge->GetOrCreateData().cargo.Append(CargoPacket::Create(GB(_waiting_acceptance, 0, 12), _cargo_periods, (_cargo_source == 0xFF) ? StationID::Invalid() : StationID{_cargo_source}, INVALID_TILE, 0),
 				StationID::Invalid());
 	}
 
@@ -781,7 +781,7 @@ static const OldChunks station_chunk[] = {
 
 static bool LoadOldStation(LoadgameState &ls, int num)
 {
-	Station *st = new (StationID(num)) Station();
+	Station *st = Station::CreateAtIndex(StationID(num));
 	_current_station_id = st->index;
 
 	if (!LoadChunk(ls, st, station_chunk)) return false;
@@ -863,7 +863,7 @@ static const OldChunks industry_chunk[] = {
 
 static bool LoadOldIndustry(LoadgameState &ls, int num)
 {
-	Industry *i = new (IndustryID(num)) Industry();
+	Industry *i = Industry::CreateAtIndex(IndustryID(num));
 	if (!LoadChunk(ls, i, industry_chunk)) return false;
 
 	if (i->location.tile != 0) {
@@ -989,7 +989,7 @@ static const OldChunks _company_chunk[] = {
 
 static bool LoadOldCompany(LoadgameState &ls, int num)
 {
-	Company *c = new (CompanyID(num)) Company();
+	Company *c = Company::CreateAtIndex(CompanyID(num));
 
 	_current_company_id = (CompanyID)num;
 
@@ -1269,14 +1269,14 @@ bool LoadOldVehicle(LoadgameState &ls, int num)
 			uint type = ReadByte(ls);
 			switch (type) {
 				default: return false;
-				case 0x00 /* VEH_INVALID  */: v = nullptr;                                        break;
-				case 0x25 /* MONORAIL     */:
-				case 0x20 /* VEH_TRAIN    */: v = new (VehicleID(_current_vehicle_id)) Train();           break;
-				case 0x21 /* VEH_ROAD     */: v = new (VehicleID(_current_vehicle_id)) RoadVehicle();     break;
-				case 0x22 /* VEH_SHIP     */: v = new (VehicleID(_current_vehicle_id)) Ship();            break;
-				case 0x23 /* VEH_AIRCRAFT */: v = new (VehicleID(_current_vehicle_id)) Aircraft();        break;
-				case 0x24 /* VEH_EFFECT   */: v = new (VehicleID(_current_vehicle_id)) EffectVehicle();   break;
-				case 0x26 /* VEH_DISASTER */: v = new (VehicleID(_current_vehicle_id)) DisasterVehicle(); break;
+				case 0x00 /* VEH_INVALID */: v = nullptr; break;
+				case 0x25 /* MONORAIL */:
+				case 0x20 /* VEH_TRAIN */: v = Train::CreateAtIndex(VehicleID(_current_vehicle_id)); break;
+				case 0x21 /* VEH_ROAD */: v = RoadVehicle::CreateAtIndex(VehicleID(_current_vehicle_id)); break;
+				case 0x22 /* VEH_SHIP */: v = Ship::CreateAtIndex(VehicleID(_current_vehicle_id)); break;
+				case 0x23 /* VEH_AIRCRAFT */: v = Aircraft::CreateAtIndex(VehicleID(_current_vehicle_id)); break;
+				case 0x24 /* VEH_EFFECT */: v = EffectVehicle::CreateAtIndex(VehicleID(_current_vehicle_id)); break;
+				case 0x26 /* VEH_DISASTER */: v = DisasterVehicle::CreateAtIndex(VehicleID(_current_vehicle_id)); break;
 			}
 
 			if (!LoadChunk(ls, v, vehicle_chunk)) return false;
@@ -1346,13 +1346,13 @@ bool LoadOldVehicle(LoadgameState &ls, int num)
 			/* Read the vehicle type and allocate the right vehicle */
 			switch (ReadByte(ls)) {
 				default: SlErrorCorrupt("Invalid vehicle type");
-				case 0x00 /* VEH_INVALID */: v = nullptr;                                        break;
-				case 0x10 /* VEH_TRAIN   */: v = new (VehicleID(_current_vehicle_id)) Train();           break;
-				case 0x11 /* VEH_ROAD    */: v = new (VehicleID(_current_vehicle_id)) RoadVehicle();     break;
-				case 0x12 /* VEH_SHIP    */: v = new (VehicleID(_current_vehicle_id)) Ship();            break;
-				case 0x13 /* VEH_AIRCRAFT*/: v = new (VehicleID(_current_vehicle_id)) Aircraft();        break;
-				case 0x14 /* VEH_EFFECT  */: v = new (VehicleID(_current_vehicle_id)) EffectVehicle();   break;
-				case 0x15 /* VEH_DISASTER*/: v = new (VehicleID(_current_vehicle_id)) DisasterVehicle(); break;
+				case 0x00 /* VEH_INVALID */: v = nullptr; break;
+				case 0x10 /* VEH_TRAIN */: v = Train::CreateAtIndex(VehicleID(_current_vehicle_id)); break;
+				case 0x11 /* VEH_ROAD */: v = RoadVehicle::CreateAtIndex(VehicleID(_current_vehicle_id)); break;
+				case 0x12 /* VEH_SHIP */: v = Ship::CreateAtIndex(VehicleID(_current_vehicle_id)); break;
+				case 0x13 /* VEH_AIRCRAFT */: v = Aircraft::CreateAtIndex(VehicleID(_current_vehicle_id)); break;
+				case 0x14 /* VEH_EFFECT */: v = EffectVehicle::CreateAtIndex(VehicleID(_current_vehicle_id)); break;
+				case 0x15 /* VEH_DISASTER */: v = DisasterVehicle::CreateAtIndex(VehicleID(_current_vehicle_id)); break;
 			}
 
 			if (!LoadChunk(ls, v, vehicle_chunk)) return false;
@@ -1383,7 +1383,7 @@ bool LoadOldVehicle(LoadgameState &ls, int num)
 		if (_cargo_count != 0 && CargoPacket::CanAllocateItem()) {
 			StationID source =    (_cargo_source == 0xFF) ? StationID::Invalid() : StationID{_cargo_source};
 			TileIndex source_xy = (source != StationID::Invalid()) ? Station::Get(source)->xy : (TileIndex)0;
-			v->cargo.Append(new CargoPacket(_cargo_count, _cargo_periods, source, source_xy, 0));
+			v->cargo.Append(CargoPacket::Create(_cargo_count, _cargo_periods, source, source_xy, 0));
 		}
 	}
 
@@ -1422,7 +1422,7 @@ static const OldChunks sign_chunk[] = {
 
 static bool LoadOldSign(LoadgameState &ls, int num)
 {
-	Sign *si = new (SignID(num)) Sign();
+	Sign *si = Sign::CreateAtIndex(SignID(num));
 	if (!LoadChunk(ls, si, sign_chunk)) return false;
 
 	if (_old_string_id != 0) {
@@ -1486,7 +1486,7 @@ static const OldChunks subsidy_chunk[] = {
 
 static bool LoadOldSubsidy(LoadgameState &ls, int num)
 {
-	Subsidy *s = new (SubsidyID(num)) Subsidy();
+	Subsidy *s = Subsidy::CreateAtIndex(SubsidyID(num));
 	bool ret = LoadChunk(ls, s, subsidy_chunk);
 	if (!IsValidCargoType(s->cargo_type)) delete s;
 	return ret;

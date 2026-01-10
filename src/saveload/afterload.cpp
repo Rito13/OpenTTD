@@ -961,7 +961,7 @@ bool AfterLoadGame()
 							/* From this version on there can be multiple road stops of the
 							 * same type per station. Convert the existing stops to the new
 							 * internal data structure. */
-							RoadStop *rs = new RoadStop(t);
+							RoadStop *rs = RoadStop::Create(t);
 
 							RoadStop **head =
 								IsTruckStop(t) ? &st->truck_stops : &st->bus_stops;
@@ -2156,7 +2156,7 @@ bool AfterLoadGame()
 						SlError(STR_ERROR_TOO_MANY_OBJECTS);
 					}
 
-					Object *o = new Object();
+					Object *o = Object::Create();
 					o->location.tile = (TileIndex)t;
 					o->location.w    = size;
 					o->location.h    = size;
@@ -2228,6 +2228,13 @@ bool AfterLoadGame()
 		}
 	}
 
+	if (IsSavegameVersionBefore(SLV_BUOYS_AT_0_0)) {
+		/* Tile for no orders is now INVALID_TILE instead of 0. */
+		for (Vehicle *v : Vehicle::Iterate()) {
+			if (v->dest_tile == 0) v->SetDestTile(INVALID_TILE);
+		}
+	}
+
 	if (IsSavegameVersionBefore(SLV_121)) {
 		/* Delete small ufos heading for non-existing vehicles */
 		for (DisasterVehicle *v : DisasterVehicle::Iterate()) {
@@ -2251,7 +2258,7 @@ bool AfterLoadGame()
 				 * assert() in Pool::GetNew() happy by calling CanAllocateItem(). */
 				static_assert(CargoPaymentPool::MAX_SIZE == VehiclePool::MAX_SIZE);
 				assert(CargoPayment::CanAllocateItem());
-				if (v->cargo_payment == nullptr) v->cargo_payment = new CargoPayment(v);
+				if (v->cargo_payment == nullptr) v->cargo_payment = CargoPayment::Create(v);
 			}
 		}
 	}

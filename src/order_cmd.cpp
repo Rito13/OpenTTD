@@ -212,7 +212,7 @@ uint16_t Order::MapOldOrder() const
  */
 void InvalidateVehicleOrder(const Vehicle *v, int data)
 {
-	SetWindowDirty(WC_VEHICLE_VIEW, v->index);
+	InvalidateWindowData(WC_VEHICLE_VIEW, v->index);
 
 	if (data != 0) {
 		/* Calls SetDirty() too */
@@ -847,7 +847,7 @@ void InsertOrder(Vehicle *v, Order &&new_o, VehicleOrderID sel_ord)
 {
 	/* Create new order and link in list */
 	if (v->orders == nullptr) {
-		v->orders = new OrderList(std::move(new_o), v);
+		v->orders = OrderList::Create(std::move(new_o), v);
 	} else {
 		v->orders->InsertOrderAt(std::move(new_o), sel_ord);
 	}
@@ -1604,7 +1604,7 @@ CommandCost CmdCloneOrder(DoCommandFlags flags, CloneOptions action, VehicleID v
 				}
 
 				assert(OrderList::CanAllocateItem());
-				dst->orders = new OrderList(std::move(dst_orders), dst);
+				dst->orders = OrderList::Create(std::move(dst_orders), dst);
 
 				InvalidateVehicleOrder(dst, VIWD_REMOVE_ALL_ORDERS);
 
@@ -1761,7 +1761,7 @@ void RemoveOrderFromAllVehicles(OrderType type, DestinationID destination, bool 
 		if ((v->type == VEH_AIRCRAFT && v->current_order.IsType(OT_GOTO_DEPOT) && !hangar ? OT_GOTO_STATION : v->current_order.GetType()) == type &&
 				(!hangar || v->type == VEH_AIRCRAFT) && v->current_order.GetDestination() == destination) {
 			v->current_order.MakeDummy();
-			SetWindowDirty(WC_VEHICLE_VIEW, v->index);
+			InvalidateWindowData(WC_VEHICLE_VIEW, v->index);
 		}
 
 		if (v->orders == nullptr) continue;
@@ -1951,7 +1951,7 @@ bool UpdateOrderDest(Vehicle *v, const Order *order, int conditional_depth, bool
 {
 	if (conditional_depth > v->GetNumOrders()) {
 		v->current_order.Free();
-		v->SetDestTile(TileIndex{});
+		v->SetDestTile(INVALID_TILE);
 		return false;
 	}
 
@@ -1971,7 +1971,7 @@ bool UpdateOrderDest(Vehicle *v, const Order *order, int conditional_depth, bool
 			if (v->current_order.GetDepotActionType().Test(OrderDepotActionFlag::NearestDepot)) {
 				/* If the vehicle can't find its destination, delay its next search.
 				 * In case many vehicles are in this state, use the vehicle index to spread out pathfinder calls. */
-				if (v->dest_tile == 0 && TimerGameEconomy::date_fract != (v->index % Ticks::DAY_TICKS)) break;
+				if (v->dest_tile == INVALID_TILE && TimerGameEconomy::date_fract != (v->index % Ticks::DAY_TICKS)) break;
 
 				/* We need to search for the nearest depot (hangar). */
 				ClosestDepot closest_depot = v->FindClosestDepot();
@@ -2045,7 +2045,7 @@ bool UpdateOrderDest(Vehicle *v, const Order *order, int conditional_depth, bool
 		}
 
 		default:
-			v->SetDestTile(TileIndex{});
+			v->SetDestTile(INVALID_TILE);
 			return false;
 	}
 
@@ -2061,7 +2061,7 @@ bool UpdateOrderDest(Vehicle *v, const Order *order, int conditional_depth, bool
 
 	if (order == nullptr) {
 		v->current_order.Free();
-		v->SetDestTile(TileIndex{});
+		v->SetDestTile(INVALID_TILE);
 		return false;
 	}
 
@@ -2136,12 +2136,12 @@ bool ProcessOrders(Vehicle *v)
 		}
 
 		v->current_order.Free();
-		v->SetDestTile(TileIndex{});
+		v->SetDestTile(INVALID_TILE);
 		return false;
 	}
 
 	/* If it is unchanged, keep it. */
-	if (order->Equals(v->current_order) && (v->type == VEH_AIRCRAFT || v->dest_tile != 0) &&
+	if (order->Equals(v->current_order) && (v->type == VEH_AIRCRAFT || v->dest_tile != INVALID_TILE) &&
 			(v->type != VEH_SHIP || !order->IsType(OT_GOTO_STATION) || Station::Get(order->GetDestination().ToStationID())->ship_station.tile != INVALID_TILE)) {
 		return false;
 	}

@@ -187,7 +187,7 @@ void VehicleServiceInDepot(Vehicle *v)
 		v->reliability = v->GetEngine()->reliability;
 		/* Prevent vehicles from breaking down directly after exiting the depot. */
 		v->breakdown_chance /= 4;
-		if (_settings_game.difficulty.vehicle_breakdowns == 1) v->breakdown_chance = 0; // on reduced breakdown
+		if (_settings_game.difficulty.vehicle_breakdowns == VB_REDUCED) v->breakdown_chance = 0; // on reduced breakdown
 		v = v->Next();
 	} while (v != nullptr && v->HasEngineType());
 }
@@ -222,7 +222,7 @@ bool Vehicle::NeedsServicing() const
 	/* If we're servicing anyway, because we have not disabled servicing when
 	 * there are no breakdowns or we are playing with breakdowns, bail out. */
 	if (!_settings_game.order.no_servicing_if_no_breakdowns ||
-			_settings_game.difficulty.vehicle_breakdowns != 0) {
+			_settings_game.difficulty.vehicle_breakdowns != VB_NONE) {
 		return true;
 	}
 
@@ -364,9 +364,10 @@ void VehicleLengthChanged(const Vehicle *u)
 
 /**
  * Vehicle constructor.
+ * @param index The index within the vehicle pool.
  * @param type Type of the new vehicle.
  */
-Vehicle::Vehicle(VehicleType type)
+Vehicle::Vehicle(VehicleID index, VehicleType type) : VehiclePool::PoolItem<&_vehicle_pool>(index)
 {
 	this->type               = type;
 	this->coord.left         = INVALID_COORD;
@@ -1056,9 +1057,9 @@ void CallVehicleTicks()
 		int z = v->z_pos;
 
 		const Company *c = Company::Get(_current_company);
-		SubtractMoneyFromCompany(CommandCost(EXPENSES_NEW_VEHICLES, (Money)c->settings.engine_renew_money));
+		SubtractMoneyFromCompany(_current_company, CommandCost(EXPENSES_NEW_VEHICLES, (Money)c->settings.engine_renew_money));
 		CommandCost res = Command<CMD_AUTOREPLACE_VEHICLE>::Do(DoCommandFlag::Execute, v->index);
-		SubtractMoneyFromCompany(CommandCost(EXPENSES_NEW_VEHICLES, -(Money)c->settings.engine_renew_money));
+		SubtractMoneyFromCompany(_current_company, CommandCost(EXPENSES_NEW_VEHICLES, -(Money)c->settings.engine_renew_money));
 
 		if (!IsLocalCompany()) continue;
 
@@ -1284,38 +1285,53 @@ static const uint8_t _breakdown_chance[64] = {
 	150, 170, 190, 210, 230, 250, 250, 250,
 };
 
+/**
+ * Periodic check for a vehicle to maybe break down.
+ * @param v The vehicle to consider breaking.
+ */
 void CheckVehicleBreakdown(Vehicle *v)
 {
+	/* Vehicles in the menu don't break down. */
+	if (_game_mode == GM_MENU) return;
+
+	/* If both breakdowns and automatic servicing are disabled, we don't decrease reliability or break down. */
+	if (_settings_game.difficulty.vehicle_breakdowns == VB_NONE && _settings_game.order.no_servicing_if_no_breakdowns) return;
+
+	/* With Reduced breakdowns, vehicles (un)loading at stations don't lose reliability. */
+	if (_settings_game.difficulty.vehicle_breakdowns == VB_REDUCED && v->current_order.IsType(OT_LOADING)) return;
+
+	/* Decrease reliability. */
 	int rel, rel_old;
+	v->reliability = rel = std::max((rel_old = v->reliability) - v->reliability_spd_dec, 0);
+	if ((rel_old >> 8) != (rel >> 8)) SetWindowDirty(WC_VEHICLE_DETAILS, v->index);
 
-	/* decrease reliability */
-	if (!_settings_game.order.no_servicing_if_no_breakdowns ||
-			_settings_game.difficulty.vehicle_breakdowns != 0) {
-		v->reliability = rel = std::max((rel_old = v->reliability) - v->reliability_spd_dec, 0);
-		if ((rel_old >> 8) != (rel >> 8)) SetWindowDirty(WC_VEHICLE_DETAILS, v->index);
-	}
+	/* Some vehicles lose reliability but won't break down. */
+	/* Breakdowns are disabled. */
+	if (_settings_game.difficulty.vehicle_breakdowns == VB_NONE) return;
+	/* The vehicle is already broken down. */
+	if (v->breakdown_ctr != 0) return;
+	/* The vehicle is stopped or going very slow. */
+	if (v->cur_speed < 5) return;
+	/* The vehicle has been manually stopped. */
+	if (v->vehstatus.Test(VehState::Stopped)) return;
 
-	if (v->breakdown_ctr != 0 || v->vehstatus.Test(VehState::Stopped) ||
-			_settings_game.difficulty.vehicle_breakdowns < 1 ||
-			v->cur_speed < 5 || _game_mode == GM_MENU) {
-		return;
-	}
+	/* Time to consider breaking down. */
 
 	uint32_t r = Random();
 
-	/* increase chance of failure */
+	/* Increase chance of failure. */
 	int chance = v->breakdown_chance + 1;
 	if (Chance16I(1, 25, r)) chance += 25;
 	v->breakdown_chance = ClampTo<uint8_t>(chance);
 
-	/* calculate reliability value to use in comparison */
+	/* Calculate reliability value to use in comparison. */
 	rel = v->reliability;
 	if (v->type == VEH_SHIP) rel += 0x6666;
 
-	/* reduced breakdowns? */
-	if (_settings_game.difficulty.vehicle_breakdowns == 1) rel += 0x6666;
+	/* Reduce the chance if the player has chosen the Reduced setting. */
+	if (_settings_game.difficulty.vehicle_breakdowns == VB_REDUCED) rel += 0x6666;
 
-	/* check if to break down */
+	/* Check the random chance and inform the vehicle of the result. */
 	if (_breakdown_chance[ClampTo<uint16_t>(rel) >> 10] <= v->breakdown_chance) {
 		v->breakdown_ctr    = GB(r, 16, 6) + 0x3F;
 		v->breakdown_delay  = GB(r, 24, 7) + 0x80;
@@ -1558,8 +1574,6 @@ void VehicleEnterDepot(Vehicle *v)
 			break;
 		default: NOT_REACHED();
 	}
-	SetWindowDirty(WC_VEHICLE_VIEW, v->index);
-
 	if (v->type != VEH_TRAIN) {
 		/* Trains update the vehicle list when the first unit enters the depot and calls VehicleEnterDepot() when the last unit enters.
 		 * We only increase the number of vehicles when the first one enters, so we will not need to search for more vehicles in the depot */
@@ -1582,8 +1596,6 @@ void VehicleEnterDepot(Vehicle *v)
 	InvalidateWindowData(WC_VEHICLE_VIEW, v->index);
 
 	if (v->current_order.IsType(OT_GOTO_DEPOT)) {
-		SetWindowDirty(WC_VEHICLE_VIEW, v->index);
-
 		const Order *real_order = v->GetOrder(v->cur_real_order_index);
 
 		/* Test whether we are heading for this depot. If not, do nothing.
@@ -2522,7 +2534,7 @@ void Vehicle::LeaveUnbunchingDepot()
 		if (u->vehstatus.Any({VehState::Stopped, VehState::Crashed})) continue;
 
 		u->depot_unbunching_next_departure = next_departure;
-		SetWindowDirty(WC_VEHICLE_VIEW, u->index);
+		InvalidateWindowData(WC_VEHICLE_VIEW, u->index);
 	}
 }
 
@@ -2960,7 +2972,7 @@ void Vehicle::AddToShared(Vehicle *shared_chain)
 	if (shared_chain->orders == nullptr) {
 		assert(shared_chain->previous_shared == nullptr);
 		assert(shared_chain->next_shared == nullptr);
-		this->orders = shared_chain->orders = new OrderList(shared_chain);
+		this->orders = shared_chain->orders = OrderList::Create(shared_chain);
 	}
 
 	this->next_shared     = shared_chain->next_shared;

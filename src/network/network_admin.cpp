@@ -62,9 +62,11 @@ static_assert(lengthof(_admin_update_type_frequencies) == ADMIN_UPDATE_END);
 
 /**
  * Create a new socket for the server side of the admin network.
+ * @param index The index in the admin pool.
  * @param s The socket to connect with.
  */
-ServerNetworkAdminSocketHandler::ServerNetworkAdminSocketHandler(SOCKET s) : NetworkAdminSocketHandler(s)
+ServerNetworkAdminSocketHandler::ServerNetworkAdminSocketHandler(AdminID index, SOCKET s) :
+	NetworkAdminSocketPool::PoolItem<&_networkadminsocket_pool>(index), NetworkAdminSocketHandler(s)
 {
 	this->status = ADMIN_STATUS_INACTIVE;
 	this->connect_time = std::chrono::steady_clock::now();
@@ -115,7 +117,7 @@ ServerNetworkAdminSocketHandler::~ServerNetworkAdminSocketHandler()
  */
 /* static */ void ServerNetworkAdminSocketHandler::AcceptConnection(SOCKET s, const NetworkAddress &address)
 {
-	ServerNetworkAdminSocketHandler *as = new ServerNetworkAdminSocketHandler(s);
+	ServerNetworkAdminSocketHandler *as = ServerNetworkAdminSocketHandler::Create(s);
 	as->address = address; // Save the IP of the client
 }
 

@@ -68,9 +68,13 @@ const uint8_t _engine_offsets[4] = {
 
 static_assert(lengthof(_orig_rail_vehicle_info) + lengthof(_orig_road_vehicle_info) + lengthof(_orig_ship_vehicle_info) + lengthof(_orig_aircraft_vehicle_info) == lengthof(_orig_engine_info));
 
-Engine::Engine(VehicleType type, uint16_t local_id)
+Engine::Engine(EngineID index, VehicleType type, uint16_t local_id) : EnginePool::PoolItem<&_engine_pool>(index)
 {
 	this->type = type;
+
+	/* Called in the context of loading a savegame. The rest comes from the loader. */
+	if (type == VEH_INVALID) return;
+
 	this->grf_prop.local_id = local_id;
 	this->list_position = local_id;
 	this->preview_company = CompanyID::Invalid();
@@ -609,7 +613,7 @@ void SetupEngines()
 		assert(std::size(mapping) >= _engine_counts[type]);
 
 		for (const EngineIDMapping &eid : mapping) {
-			new (eid.engine) Engine(type, eid.internal_id);
+			Engine::CreateAtIndex(eid.engine, type, eid.internal_id);
 		}
 	}
 }

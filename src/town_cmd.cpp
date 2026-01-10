@@ -2139,18 +2139,27 @@ static CommandCost TownCanBePlacedHere(TileIndex tile, bool check_surrounding)
 		/* Half of the tiles in the search must be valid for the town to build upon. */
 		constexpr uint VALID_TILE_GOAL = (SEARCH_DIAMETER * SEARCH_DIAMETER) / 2;
 		uint counter = 0;
+		int town_height = GetTileZ(tile);
 		for (TileIndex t : SpiralTileSequence(tile, SEARCH_DIAMETER)) {
 			if (counter == VALID_TILE_GOAL) break;
 
-			/* The most likely unsuitable tile type is water, test that first. */
-			if (IsTileType(tile, MP_WATER)) continue;
+			switch (GetTileType(t)) {
+				case MP_CLEAR:
+					/* Don't allow rough tiles, as they are likely wetlands. */
+					if (GetClearDensity(t) == CLEAR_ROUGH) continue;
+					break;
 
-			/* Don't allow rough tiles, as they are likely wetlands. */
-			bool clear = IsTileType(t, MP_CLEAR) && GetClearDensity(t) != CLEAR_ROUGH;
-			bool trees = IsTileType(t, MP_TREES) && GetTreeGround(t) != TREE_GROUND_ROUGH;
-			int town_height = GetTileZ(tile);
+				case MP_TREES:
+					/* Don't allow rough trees, as they are likely wetlands. */
+					if (GetTreeGround(t) == TREE_GROUND_ROUGH) continue;
+					break;
+
+				default:
+					continue;
+			}
+
 			bool elevation_similar = (GetTileMaxZ(t) <= town_height + 1) && (GetTileZ(t) >= town_height - 1);
-			if ((clear || trees) && elevation_similar) counter++;
+			if (elevation_similar) counter++;
 		}
 
 		if (counter < VALID_TILE_GOAL) return CommandCost(STR_ERROR_SITE_UNSUITABLE);
@@ -2244,7 +2253,7 @@ std::tuple<CommandCost, Money, TownID> CmdFoundTown(DoCommandFlags flags, TileIn
 		if (random_location) {
 			t = CreateRandomTown(20, townnameparts, size, city, layout);
 		} else {
-			t = new Town(tile);
+			t = Town::Create(tile);
 			DoCreateTown(t, tile, townnameparts, size, city, layout, true);
 		}
 
@@ -2335,7 +2344,7 @@ static TileIndex FindNearestGoodCoastalTownSpot(TileIndex tile, TownLayout layou
 		uint max_dist = 0;
 		for (auto test : SpiralTileSequence(coast, 10)) {
 			if (!IsTileType(test, MP_CLEAR) || !IsTileFlat(test) || !IsTileAlignedToGrid(test, layout)) continue;
-			if (TownCanBePlacedHere(tile, true).Failed()) continue;
+			if (TownCanBePlacedHere(test, true).Failed()) continue;
 
 			uint dist = GetClosestWaterDistance(test, true);
 			if (dist > max_dist) {
@@ -2392,7 +2401,7 @@ static Town *CreateRandomTown(uint attempts, uint32_t townnameparts, TownSize si
 		} else if (TownCanBePlacedHere(tile, true).Failed()) continue;
 
 		/* Allocate a town struct */
-		Town *t = new Town(tile);
+		Town *t = Town::Create(tile);
 
 		DoCreateTown(t, tile, townnameparts, size, city, layout, false);
 
@@ -2989,6 +2998,59 @@ CommandCost CmdPlaceHouse(DoCommandFlags flags, TileIndex tile, HouseID house, b
 	}
 
 	return CommandCost();
+}
+
+/**
+ * Construct multiple houses in an area
+ * @param flags Type of operation.
+ * @param tile End tile of area dragging.
+ * @param start_tile Start tile of area dragging.
+ * @param HouseID The HouseID of the house spec.
+ * @param is_protected Whether the house is protected from the town upgrading it.
+ * @param replace Whether we can replace existing houses.
+ * @param diagonal Whether to use the Diagonal or Orthogonal tile iterator.
+ * @return Empty cost or an error.
+ */
+CommandCost CmdPlaceHouseArea(DoCommandFlags flags, TileIndex tile, TileIndex start_tile, HouseID house, bool is_protected, bool replace, bool diagonal)
+{
+	if (start_tile >= Map::Size()) return CMD_ERROR;
+
+	if (_game_mode != GM_EDITOR && _settings_game.economy.place_houses == PH_FORBIDDEN) return CMD_ERROR;
+
+	if (Town::GetNumItems() == 0) return CommandCost(STR_ERROR_MUST_FOUND_TOWN_FIRST);
+
+	if (static_cast<size_t>(house) >= HouseSpec::Specs().size()) return CMD_ERROR;
+	const HouseSpec *hs = HouseSpec::Get(house);
+	if (!hs->enabled) return CMD_ERROR;
+
+	/* Only allow placing an area of 1x1 houses. */
+	if (!hs->building_flags.Test(BuildingFlag::Size1x1)) return CMD_ERROR;
+
+	/* Use the built object limit to rate limit house placement. */
+	const Company *c = Company::GetIfValid(_current_company);
+	int limit = (c == nullptr ? INT32_MAX : GB(c->build_object_limit, 16, 16));
+
+	CommandCost last_error = CMD_ERROR;
+	bool had_success = false;
+
+	std::unique_ptr<TileIterator> iter = TileIterator::Create(tile, start_tile, diagonal);
+	for (; *iter != INVALID_TILE; ++(*iter)) {
+		TileIndex t = *iter;
+		CommandCost ret = Command<CMD_PLACE_HOUSE>::Do(DoCommandFlags{flags}.Reset(DoCommandFlag::Execute), t, house, is_protected, replace);
+
+		/* If we've reached the limit, stop building (or testing). */
+		if (c != nullptr && limit-- <= 0) break;
+
+		if (ret.Failed()) {
+			last_error = std::move(ret);
+			continue;
+		}
+
+		if (flags.Test(DoCommandFlag::Execute)) Command<CMD_PLACE_HOUSE>::Do(flags, t, house, is_protected, replace);
+		had_success = true;
+	}
+
+	return had_success ? CommandCost{} : last_error;
 }
 
 /**

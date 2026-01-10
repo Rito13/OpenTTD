@@ -253,14 +253,14 @@ struct INDYChunkHandler : ChunkHandler {
 		SlIndustryProduced::ResetOldStructure();
 
 		while ((index = SlIterateArray()) != -1) {
-			Industry *i = new (IndustryID(index)) Industry();
+			Industry *i = Industry::CreateAtIndex(IndustryID(index));
 			SlObject(i, slt);
 
 			/* Before savegame version 161, persistent storages were not stored in a pool. */
 			if (IsSavegameVersionBefore(SLV_161) && !IsSavegameVersionBefore(SLV_76)) {
 				/* Store the old persistent storage. The GRFID will be added later. */
 				assert(PersistentStorage::CanAllocateItem());
-				i->psa = new PersistentStorage(0, GSF_INVALID, TileIndex{});
+				i->psa = PersistentStorage::Create(0, GSF_INVALID, TileIndex{});
 				std::copy(std::begin(_old_ind_persistent_storage.storage), std::end(_old_ind_persistent_storage.storage), std::begin(i->psa->storage));
 			}
 			if (IsSavegameVersionBefore(SLV_EXTEND_INDUSTRY_CARGO_SLOTS)) {

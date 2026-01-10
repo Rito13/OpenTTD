@@ -79,7 +79,7 @@ void MoveBuoysToWaypoints()
 		/* Stations and waypoints are in the same pool, so if a station
 		 * is deleted there must be place for a Waypoint. */
 		assert(Waypoint::CanAllocateItem());
-		Waypoint *wp   = new (index) Waypoint(xy);
+		Waypoint *wp   = Waypoint::CreateAtIndex(index, xy);
 		wp->town       = town;
 		wp->string_id  = train ? STR_SV_STNAME_WAYPOINT : STR_SV_STNAME_BUOY;
 		wp->name       = std::move(name);
@@ -399,7 +399,7 @@ public:
 		if (IsSavegameVersionBefore(SLV_161) && !IsSavegameVersionBefore(SLV_145) && st->facilities.Test(StationFacility::Airport)) {
 			/* Store the old persistent storage. The GRFID will be added later. */
 			assert(PersistentStorage::CanAllocateItem());
-			st->airport.psa = new PersistentStorage(0, GSF_INVALID, TileIndex{});
+			st->airport.psa = PersistentStorage::Create(0, GSF_INVALID, TileIndex{});
 			std::copy(std::begin(_old_st_persistent_storage.storage), std::end(_old_st_persistent_storage.storage), std::begin(st->airport.psa->storage));
 		}
 
@@ -426,7 +426,7 @@ public:
 					assert(CargoPacket::CanAllocateItem());
 
 					/* Don't construct the packet with station here, because that'll fail with old savegames */
-					CargoPacket *cp = new CargoPacket(GB(_waiting_acceptance, 0, 12), _cargo_periods, source, TileIndex{_cargo_source_xy}, _cargo_feeder_share);
+					CargoPacket *cp = CargoPacket::Create(GB(_waiting_acceptance, 0, 12), _cargo_periods, source, TileIndex{_cargo_source_xy}, _cargo_feeder_share);
 					ge.GetOrCreateData().cargo.Append(cp, StationID::Invalid());
 					ge.status.Set(GoodsEntry::State::Rating);
 				}
@@ -512,7 +512,7 @@ struct STNSChunkHandler : ChunkHandler {
 
 		int index;
 		while ((index = SlIterateArray()) != -1) {
-			Station *st = new (StationID(index)) Station();
+			Station *st = Station::CreateAtIndex(StationID(index));
 
 			_waiting_acceptance = 0;
 			SlObject(st, slt);
@@ -714,7 +714,7 @@ struct STNNChunkHandler : ChunkHandler {
 		while ((index = SlIterateArray()) != -1) {
 			bool waypoint = static_cast<StationFacilities>(SlReadByte()).Test(StationFacility::Waypoint);
 
-			BaseStation *bst = waypoint ? (BaseStation *)new (StationID(index)) Waypoint() : new (StationID(index)) Station();
+			BaseStation *bst = waypoint ? (BaseStation *)Waypoint::CreateAtIndex(StationID(index)) : Station::CreateAtIndex(StationID(index));
 			SlObject(bst, slt);
 		}
 	}
@@ -752,7 +752,7 @@ struct ROADChunkHandler : ChunkHandler {
 		int index;
 
 		while ((index = SlIterateArray()) != -1) {
-			RoadStop *rs = new (RoadStopID(index)) RoadStop(INVALID_TILE);
+			RoadStop *rs = RoadStop::CreateAtIndex(RoadStopID(index), INVALID_TILE);
 
 			SlObject(rs, slt);
 		}

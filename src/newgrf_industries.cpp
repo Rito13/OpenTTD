@@ -448,7 +448,7 @@ static uint32_t GetCountAndDistanceOfClosestInstance(const ResolverObject &objec
 		/* Create storage on first modification. */
 		const IndustrySpec *indsp = GetIndustrySpec(this->industry->type);
 		assert(PersistentStorage::CanAllocateItem());
-		this->industry->psa = new PersistentStorage(indsp->grf_prop.grfid, GSF_INDUSTRIES, this->industry->location.tile);
+		this->industry->psa = PersistentStorage::Create(indsp->grf_prop.grfid, GSF_INDUSTRIES, this->industry->location.tile);
 	}
 
 	this->industry->psa->StoreValue(pos, value);
@@ -546,8 +546,7 @@ CommandCost CheckIfCallBackAllowsCreation(TileIndex tile, IndustryType type, siz
 {
 	const IndustrySpec *indspec = GetIndustrySpec(type);
 
-	Industry ind;
-	ind.index = IndustryID::Invalid();
+	Industry ind(IndustryID::Invalid());
 	ind.location.tile = tile;
 	ind.location.w = 0; // important to mark the industry invalid
 	ind.type = type;

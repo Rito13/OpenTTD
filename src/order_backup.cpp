@@ -30,11 +30,22 @@ INSTANTIATE_POOL_METHODS(OrderBackup)
 OrderBackup::~OrderBackup() = default;
 
 /**
+ * Create an order backup for savegame loading.
+ * @param index The index of the order backup pool.
+ */
+OrderBackup::OrderBackup(OrderBackupID index) :
+	OrderBackupPool::PoolItem<&_order_backup_pool>(index)
+{
+}
+
+/**
  * Create an order backup for the given vehicle.
+ * @param index The index of the order backup pool.
  * @param v    The vehicle to make a backup of.
  * @param user The user that is requesting the backup.
  */
-OrderBackup::OrderBackup(const Vehicle *v, uint32_t user) : user(user), tile(v->tile), group(v->group_id)
+OrderBackup::OrderBackup(OrderBackupID index, const Vehicle *v, uint32_t user) :
+	OrderBackupPool::PoolItem<&_order_backup_pool>(index), user(user), tile(v->tile), group(v->group_id)
 {
 	this->CopyConsistPropertiesFrom(v);
 
@@ -57,7 +68,7 @@ void OrderBackup::DoRestore(Vehicle *v)
 	if (this->clone != nullptr) {
 		Command<CMD_CLONE_ORDER>::Do(DoCommandFlag::Execute, CO_SHARE, v->index, this->clone->index);
 	} else if (!this->orders.empty() && OrderList::CanAllocateItem()) {
-		v->orders = new OrderList(std::move(this->orders), v);
+		v->orders = OrderList::Create(std::move(this->orders), v);
 		/* Make sure buoys/oil rigs are updated in the station list. */
 		InvalidateWindowClassesData(WC_STATION_LIST, 0);
 	}
@@ -89,7 +100,7 @@ void OrderBackup::DoRestore(Vehicle *v)
 		if (ob->user == user) delete ob;
 	}
 	if (OrderBackup::CanAllocateItem()) {
-		new OrderBackup(v, user);
+		OrderBackup::Create(v, user);
 	}
 }
 

@@ -269,7 +269,7 @@ CommandCost CmdBuildRoadVehicle(DoCommandFlags flags, TileIndex tile, const Engi
 	if (flags.Test(DoCommandFlag::Execute)) {
 		const RoadVehicleInfo *rvi = &e->VehInfo<RoadVehicleInfo>();
 
-		RoadVehicle *v = new RoadVehicle();
+		RoadVehicle *v = RoadVehicle::Create();
 		*ret = v;
 		v->direction = DiagDirToDir(GetRoadDepotDirection(tile));
 		v->owner = _current_company;
@@ -889,7 +889,6 @@ static Trackdir RoadFindPathToDest(RoadVehicle *v, TileIndex tile, DiagDirection
 {
 #define return_track(x) { best_track = (Trackdir)x; goto found_best_track; }
 
-	TileIndex desttile;
 	Trackdir best_track;
 	bool path_found = true;
 
@@ -957,8 +956,7 @@ static Trackdir RoadFindPathToDest(RoadVehicle *v, TileIndex tile, DiagDirection
 		}
 	}
 
-	desttile = v->dest_tile;
-	if (desttile == 0) {
+	if (v->dest_tile == INVALID_TILE) {
 		/* We've got no destination, pick a random track */
 		return_track(PickRandomBit(trackdirs));
 	}

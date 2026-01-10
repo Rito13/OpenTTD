@@ -87,9 +87,10 @@ struct BaseStation : StationPool::PoolItem<&_station_pool> {
 
 	/**
 	 * Initialize the base station.
+	 * @param index The index of the station within the pool.
 	 * @param tile The location of the station sign
 	 */
-	BaseStation(TileIndex tile) : xy(tile) {}
+	BaseStation(StationID index, TileIndex tile) : StationPool::PoolItem<&_station_pool>(index), xy(tile) {}
 
 	virtual ~BaseStation();
 
@@ -213,10 +214,11 @@ struct SpecializedStation : public BaseStation {
 
 	/**
 	 * Set station type correctly
+	 * @param index The index within the station pool.
 	 * @param tile The base tile of the station.
 	 */
-	inline SpecializedStation(TileIndex tile) :
-			BaseStation(tile)
+	inline SpecializedStation(StationID index, TileIndex tile) :
+			BaseStation(index, tile)
 	{
 		this->facilities = EXPECTED_FACIL;
 	}
@@ -267,6 +269,29 @@ struct SpecializedStation : public BaseStation {
 	static inline T *GetByTile(TileIndex tile)
 	{
 		return GetIfValid(GetStationIndex(tile));
+	}
+
+	/**
+	 * Creates a new T-object in the station pool.
+	 * @param args... The arguments to the constructor.
+	 * @return The created object.
+	 */
+	template <typename... Targs>
+	static inline T *Create(Targs &&... args)
+	{
+		return BaseStation::Create<T>(std::forward<Targs&&>(args)...);
+	}
+
+	/**
+	 * Creates a new T-object in the station pool.
+	 * @param index The index allocate the object at.
+	 * @param args... The arguments to the constructor.
+	 * @return The created object.
+	 */
+	template <typename... Targs>
+	static inline T *CreateAtIndex(StationID index, Targs &&... args)
+	{
+		return BaseStation::CreateAtIndex<T>(index, std::forward<Targs&&>(args)...);
 	}
 
 	/**

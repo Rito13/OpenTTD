@@ -187,6 +187,7 @@ extern CommandCost FindJoiningWaypoint(StationID existing_station, StationID sta
 extern CommandCost CanExpandRailStation(const BaseStation *st, TileArea &new_ta);
 extern CommandCost CalculateRoadStopCost(TileArea tile_area, DoCommandFlags flags, bool is_drive_through, StationType station_type, const RoadStopSpec *roadstopspec, Axis axis, DiagDirection ddir, StationID *est, RoadType rt, Money unit_cost);
 extern CommandCost IsRailStationBridgeAboveOk(TileIndex tile, const StationSpec *spec, StationType type, StationGfx layout);
+extern CommandCost IsBuoyBridgeAboveOk(TileIndex tile);
 
 extern CommandCost RemoveRoadWaypointStop(TileIndex tile, DoCommandFlags flags, int replacement_spec_index);
 
@@ -280,7 +281,7 @@ CommandCost CmdBuildRailWaypoint(DoCommandFlags flags, TileIndex start_tile, Axi
 
 	if (flags.Test(DoCommandFlag::Execute)) {
 		if (wp == nullptr) {
-			wp = new Waypoint(start_tile);
+			wp = Waypoint::Create(start_tile);
 		} else if (!wp->IsInUse()) {
 			/* Move existing (recently deleted) waypoint to the new location */
 			wp->xy = start_tile;
@@ -400,7 +401,7 @@ CommandCost CmdBuildRoadWaypoint(DoCommandFlags flags, TileIndex start_tile, Axi
 
 	if (flags.Test(DoCommandFlag::Execute)) {
 		if (wp == nullptr) {
-			wp = new Waypoint(start_tile);
+			wp = Waypoint::Create(start_tile);
 			SetBit(wp->waypoint_flags, WPF_ROAD);
 		} else if (!wp->IsInUse()) {
 			/* Move existing (recently deleted) waypoint to the new location */
@@ -473,8 +474,8 @@ CommandCost CmdBuildRoadWaypoint(DoCommandFlags flags, TileIndex start_tile, Axi
  */
 CommandCost CmdBuildBuoy(DoCommandFlags flags, TileIndex tile)
 {
-	if (tile == 0 || !HasTileWaterGround(tile)) return CommandCost(STR_ERROR_SITE_UNSUITABLE);
-	if (IsBridgeAbove(tile)) return CommandCost(STR_ERROR_MUST_DEMOLISH_BRIDGE_FIRST);
+	if (!HasTileWaterGround(tile)) return CommandCost(STR_ERROR_SITE_UNSUITABLE);
+	if (CommandCost ret = IsBuoyBridgeAboveOk(tile); ret.Failed()) return ret;
 
 	if (!IsTileFlat(tile)) return CommandCost(STR_ERROR_SITE_UNSUITABLE);
 
@@ -491,7 +492,7 @@ CommandCost CmdBuildBuoy(DoCommandFlags flags, TileIndex tile)
 
 	if (flags.Test(DoCommandFlag::Execute)) {
 		if (wp == nullptr) {
-			wp = new Waypoint(tile);
+			wp = Waypoint::Create(tile);
 		} else {
 			/* Move existing (recently deleted) buoy to the new location */
 			wp->xy = tile;

@@ -331,7 +331,7 @@ public:
 		return 0;
 	}
 
-	Vehicle(VehicleType type = VEH_INVALID);
+	Vehicle(VehicleID index, VehicleType type = VEH_INVALID);
 
 	void PreDestructor();
 	/** We want to 'destruct' the right class. */
@@ -1018,8 +1018,9 @@ struct SpecializedVehicle : public Vehicle {
 
 	/**
 	 * Set vehicle type correctly
+	 * @param index The index into the vehicle pool.
 	 */
-	inline SpecializedVehicle() : Vehicle(Type)
+	inline SpecializedVehicle(VehicleID index) : Vehicle(index, Type)
 	{
 		this->sprite_cache.sprite_seq.count = 1;
 	}
@@ -1124,6 +1125,29 @@ struct SpecializedVehicle : public Vehicle {
 	static inline T *GetIfValid(auto index)
 	{
 		return IsValidID(index) ? Get(index) : nullptr;
+	}
+
+	/**
+	 * Creates a new T-object in the vehicle pool.
+	 * @param args... The arguments to the constructor.
+	 * @return The created object.
+	 */
+	template <typename... Targs>
+	static inline T *Create(Targs &&... args)
+	{
+		return Vehicle::Create<T>(std::forward<Targs&&>(args)...);
+	}
+
+	/**
+	 * Creates a new T-object in the vehicle pool.
+	 * @param index The index allocate the object at.
+	 * @param args... The arguments to the constructor.
+	 * @return The created object.
+	 */
+	template <typename... Targs>
+	static inline T *CreateAtIndex(VehicleID index, Targs &&... args)
+	{
+		return Vehicle::CreateAtIndex<T>(index, std::forward<Targs&&>(args)...);
 	}
 
 	/**

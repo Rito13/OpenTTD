@@ -186,9 +186,11 @@ struct PacketWriter : SaveFilter {
 
 /**
  * Create a new socket for the server side of the game connection.
+ * @param index The index into the client pool.
  * @param s The socket to connect with.
  */
-ServerNetworkGameSocketHandler::ServerNetworkGameSocketHandler(SOCKET s) : NetworkGameSocketHandler(s)
+ServerNetworkGameSocketHandler::ServerNetworkGameSocketHandler(ClientPoolID index, SOCKET s) :
+	NetworkClientSocketPool::PoolItem<&_networkclientsocket_pool>(index), NetworkGameSocketHandler(s)
 {
 	this->client_id = _network_client_id++;
 	this->receive_limit = _settings_client.network.bytes_per_frame_burst;
@@ -914,7 +916,7 @@ NetworkRecvStatus ServerNetworkGameSocketHandler::Receive_CLIENT_IDENTIFY(Packet
 	}
 
 	assert(NetworkClientInfo::CanAllocateItem());
-	NetworkClientInfo *ci = new NetworkClientInfo(this->client_id);
+	NetworkClientInfo *ci = NetworkClientInfo::Create(this->client_id);
 	this->SetInfo(ci);
 	ci->join_date = TimerGameEconomy::date;
 	ci->client_name = std::move(client_name);

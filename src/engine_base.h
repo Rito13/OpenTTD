@@ -77,8 +77,7 @@ private:
 	std::variant<std::monostate, RailVehicleInfo, RoadVehicleInfo, ShipVehicleInfo, AircraftVehicleInfo> vehicle_info{};
 
 public:
-	Engine() {}
-	Engine(VehicleType type, uint16_t local_id);
+	Engine(EngineID index, VehicleType type, uint16_t local_id);
 	bool IsEnabled() const;
 
 	/**
