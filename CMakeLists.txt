@@ -266,23 +266,59 @@ target_precompile_headers(openttd_lib
 )
 set_source_files_properties(src/3rdparty/fmt/format.cc PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
 
-add_subdirectory(${CMAKE_SOURCE_DIR}/bin)
+include(modules)
+modules_supported(MODULES_ARE_SUPPORTED)
+
+set(STRINGS_MODULE_CPP ${CMAKE_BINARY_DIR}/generated/table/Strings.cpp)
+file(WRITE ${STRINGS_MODULE_CPP})
+add_module_library(openttd_modules ${STRINGS_MODULE_CPP} FALLBACK ${STRINGS_MODULE_CPP})
+
+if(${MODULES_ARE_SUPPORTED})
+	if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 12.0)
+			add_compile_options(-std=c++20 -fmodules-ts)
+		else()
+			message( WARNING "Modules support turned off due to too low gcc version." )
+			set(MODULES_ARE_SUPPORTED 0)
+		endif()
+	elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+		add_compile_options(-fmodules -fmodules-cache-path=${CMAKE_BINARY_DIR}/clang.cache/
+			-fmodule-file=Strings=${CMAKE_CURRENT_BINARY_DIR}/Strings.pcm
+		)
+		add_compile_definitions(__cpp_modules)
+	endif()
+	message( NOTICE "		Compiler is ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+endif()
+
+if(${MODULES_ARE_SUPPORTED})
+	add_compile_definitions(MODULES_ARE_SUPPORTED)
+else()
+	message( WARNING "No modules support" )
+endif()
+
 add_subdirectory(${CMAKE_SOURCE_DIR}/src)
 add_subdirectory(${CMAKE_SOURCE_DIR}/media)
 
 add_dependencies(openttd
-    find_version)
+	find_version
+)
+
+target_link_libraries(openttd_modules
+	openttd::languages
+)
 
 target_link_libraries(openttd_lib
-    openttd::languages
+	openttd::languages
+	openttd_modules
     openttd::settings
     openttd::script_api
     Threads::Threads
 )
 
 target_link_libraries(openttd
-    openttd_lib
-    openttd::media
+	openttd_lib
+	openttd_modules
+	openttd::media
     openttd::basesets
 )
 
