@@ -10,9 +10,11 @@
 #ifndef RAIL_MAP_H
 #define RAIL_MAP_H
 
+#include "core/enum_type.hpp"
 #include "rail_type.h"
 #include "depot_type.h"
 #include "signal_func.h"
+#include "tile_type.h"
 #include "track_func.h"
 #include "tile_map.h"
 #include "water_map.h"
@@ -27,6 +29,16 @@ enum class RailTileType : uint8_t {
 };
 
 /**
+ * Get the internall TileExtended structure for train depot.
+ * @return The appropriate structure from TileExtended union.
+ */
+template<>
+[[debug_inline]] inline auto &Tile::GetTileExtendedAs<TileType::Railway, RailTileType::Depot>()
+{
+	return extended_tiles[this->tile.base()].train_depot;
+}
+
+/**
  * Returns the RailTileType (normal with or without signals,
  * waypoint or depot).
  * @param t the tile to get the information from
@@ -36,7 +48,7 @@ enum class RailTileType : uint8_t {
 [[debug_inline]] inline static RailTileType GetRailTileType(Tile t)
 {
 	assert(IsTileType(t, TileType::Railway));
-	return static_cast<RailTileType>(GB(t.m5(), 6, 2));
+	return static_cast<RailTileType>(t.GetTileExtendedAs<TileType::Railway>().rail_tile_type);
 }
 
 /**
@@ -83,7 +95,7 @@ inline bool HasSignals(Tile t)
 inline void SetHasSignals(Tile tile, bool signals)
 {
 	assert(IsPlainRailTile(tile));
-	SB(tile.m5(), 6, 2, to_underlying(signals ? RailTileType::Signals : RailTileType::Normal));
+	tile.GetTileExtendedAs<TileType::Railway>().rail_tile_type = to_underlying(signals ? RailTileType::Signals : RailTileType::Normal);
 }
 
 /**
@@ -114,7 +126,7 @@ inline void SetHasSignals(Tile tile, bool signals)
  */
 inline RailType GetRailType(Tile t)
 {
-	return (RailType)GB(t.m8(), 0, 6);
+	return RailType(t.GetTileExtendedAs<TileType::Railway>().rail_type);
 }
 
 /**
@@ -124,7 +136,7 @@ inline RailType GetRailType(Tile t)
  */
 inline void SetRailType(Tile t, RailType r)
 {
-	SB(t.m8(), 0, 6, r);
+	t.GetTileExtendedAs<TileType::Railway>().rail_type = r;
 }
 
 
@@ -136,7 +148,7 @@ inline void SetRailType(Tile t, RailType r)
 inline TrackBits GetTrackBits(Tile tile)
 {
 	assert(IsPlainRailTile(tile));
-	return (TrackBits)GB(tile.m5(), 0, 6);
+	return TrackBits(tile.GetTileExtendedAs<TileType::Railway>().track_pieces);
 }
 
 /**
@@ -147,7 +159,7 @@ inline TrackBits GetTrackBits(Tile tile)
 inline void SetTrackBits(Tile t, TrackBits b)
 {
 	assert(IsPlainRailTile(t));
-	SB(t.m5(), 0, 6, b);
+	t.GetTileExtendedAs<TileType::Railway>().track_pieces = b;
 }
 
 /**
@@ -170,7 +182,7 @@ inline bool HasTrack(Tile tile, Track track)
  */
 inline DiagDirection GetRailDepotDirection(Tile t)
 {
-	return (DiagDirection)GB(t.m5(), 0, 2);
+	return DiagDirection(t.GetTileExtendedAs<TileType::Railway, RailTileType::Depot>().exit_direction);
 }
 
 /**
@@ -194,10 +206,10 @@ inline Track GetRailDepotTrack(Tile t)
 inline TrackBits GetRailReservationTrackBits(Tile t)
 {
 	assert(IsPlainRailTile(t));
-	uint8_t track_b = GB(t.m2(), 8, 3);
-	Track track = (Track)(track_b - 1);    // map array saves Track+1
-	if (track_b == 0) return TRACK_BIT_NONE;
-	return (TrackBits)(TrackToTrackBits(track) | (HasBit(t.m2(), 11) ? TrackToTrackBits(TrackToOppositeTrack(track)) : 0));
+	auto &extended = t.GetTileExtendedAs<TileType::Railway>();
+	if (extended.pbs_reservation == 0) return TRACK_BIT_NONE;
+	Track track = Track(extended.pbs_reservation - 1); // Map array saves Track+1.
+	return TrackBits(TrackToTrackBits(track) | (extended.is_oposite_reserved ? TrackToTrackBits(TrackToOppositeTrack(track)) : 0));
 }
 
 /**
@@ -211,8 +223,9 @@ inline void SetTrackReservation(Tile t, TrackBits b)
 	assert(IsPlainRailTile(t));
 	assert(!TracksOverlap(b));
 	Track track = RemoveFirstTrack(&b);
-	SB(t.m2(), 8, 3, track == INVALID_TRACK ? 0 : track + 1);
-	AssignBit(t.m2(), 11, b != TRACK_BIT_NONE);
+	auto &extended = t.GetTileExtendedAs<TileType::Railway>();
+	extended.pbs_reservation = track == INVALID_TRACK ? 0 : track + 1;
+	extended.is_oposite_reserved = b != TRACK_BIT_NONE;
 }
 
 /**
@@ -257,7 +270,7 @@ inline void UnreserveTrack(Tile tile, Track t)
 inline bool HasDepotReservation(Tile t)
 {
 	assert(IsRailDepot(t));
-	return HasBit(t.m5(), 4);
+	return t.GetTileExtendedAs<TileType::Railway, RailTileType::Depot>().pbs_reservation;
 }
 
 /**
@@ -269,7 +282,7 @@ inline bool HasDepotReservation(Tile t)
 inline void SetDepotReservation(Tile t, bool b)
 {
 	assert(IsRailDepot(t));
-	AssignBit(t.m5(), 4, b);
+	t.GetTileExtendedAs<TileType::Railway, RailTileType::Depot>().pbs_reservation = b;
 }
 
 /**
@@ -292,16 +305,18 @@ inline bool IsPbsSignal(SignalType s)
 inline SignalType GetSignalType(Tile t, Track track)
 {
 	assert(GetRailTileType(t) == RailTileType::Signals);
-	uint8_t pos = (track == TRACK_LOWER || track == TRACK_RIGHT) ? 4 : 0;
-	return (SignalType)GB(t.m2(), pos, 3);
+	if (track == TRACK_LOWER || track == TRACK_RIGHT) return SignalType(t.GetTileExtendedAs<TileType::Railway>().secondary_signal_type);
+	return SignalType(t.GetTileExtendedAs<TileType::Railway>().primary_signal_type);
 }
 
 inline void SetSignalType(Tile t, Track track, SignalType s)
 {
 	assert(GetRailTileType(t) == RailTileType::Signals);
-	uint8_t pos = (track == TRACK_LOWER || track == TRACK_RIGHT) ? 4 : 0;
-	SB(t.m2(), pos, 3, s);
-	if (track == INVALID_TRACK) SB(t.m2(), 4, 3, s);
+	if (track == TRACK_LOWER || track == TRACK_RIGHT || track == INVALID_TRACK) {
+		t.GetTileExtendedAs<TileType::Railway>().secondary_signal_type = s;
+		if (track != INVALID_TRACK) return;
+	}
+	t.GetTileExtendedAs<TileType::Railway>().primary_signal_type = s;
 }
 
 inline bool IsPresignalEntry(Tile t, Track track)
@@ -322,25 +337,27 @@ inline bool IsOnewaySignal(Tile t, Track track)
 
 inline void CycleSignalSide(Tile t, Track track)
 {
-	uint8_t sig;
-	uint8_t pos = (track == TRACK_LOWER || track == TRACK_RIGHT) ? 4 : 6;
-
-	sig = GB(t.m3(), pos, 2);
+	uint8_t pos = (track == TRACK_LOWER || track == TRACK_RIGHT) ? 2 : 0;
+	auto &base = t.GetTileBaseAs<TileType::Railway>();
+	uint8_t sig = GB(base.signals, pos, 2);
 	if (--sig == 0) sig = IsPbsSignal(GetSignalType(t, track)) ? 2 : 3;
-	SB(t.m3(), pos, 2, sig);
+	uint8_t tmp = base.signals;
+	base.signals = SB(tmp, pos, 2, sig);
 }
 
 inline SignalVariant GetSignalVariant(Tile t, Track track)
 {
-	uint8_t pos = (track == TRACK_LOWER || track == TRACK_RIGHT) ? 7 : 3;
-	return (SignalVariant)GB(t.m2(), pos, 1);
+	if (track == TRACK_LOWER || track == TRACK_RIGHT) return SignalVariant(t.GetTileExtendedAs<TileType::Railway>().secondary_signal_variant);
+	return SignalVariant(t.GetTileExtendedAs<TileType::Railway>().primary_signal_variant);
 }
 
 inline void SetSignalVariant(Tile t, Track track, SignalVariant v)
 {
-	uint8_t pos = (track == TRACK_LOWER || track == TRACK_RIGHT) ? 7 : 3;
-	SB(t.m2(), pos, 1, v);
-	if (track == INVALID_TRACK) SB(t.m2(), 7, 1, v);
+	if (track == TRACK_LOWER || track == TRACK_RIGHT || track == INVALID_TRACK) {
+		t.GetTileExtendedAs<TileType::Railway>().secondary_signal_variant = v;
+		if (track != INVALID_TRACK) return;
+	}
+	t.GetTileExtendedAs<TileType::Railway>().primary_signal_variant = v;
 }
 
 /**
@@ -350,7 +367,7 @@ inline void SetSignalVariant(Tile t, Track track, SignalVariant v)
  */
 inline void SetSignalStates(Tile tile, uint state)
 {
-	SB(tile.m4(), 4, 4, state);
+	tile.GetTileBaseAs<TileType::Railway>().signals_colours = state;
 }
 
 /**
@@ -360,7 +377,7 @@ inline void SetSignalStates(Tile tile, uint state)
  */
 inline uint GetSignalStates(Tile tile)
 {
-	return GB(tile.m4(), 4, 4);
+	return tile.GetTileBaseAs<TileType::Railway>().signals_colours;
 }
 
 /**
@@ -381,7 +398,7 @@ inline SignalState GetSingleSignalState(Tile t, uint8_t signalbit)
  */
 inline void SetPresentSignals(Tile tile, uint signals)
 {
-	SB(tile.m3(), 4, 4, signals);
+	tile.GetTileBaseAs<TileType::Railway>().signals = signals;
 }
 
 /**
@@ -391,7 +408,7 @@ inline void SetPresentSignals(Tile tile, uint signals)
  */
 inline uint GetPresentSignals(Tile tile)
 {
-	return GB(tile.m3(), 4, 4);
+	return tile.GetTileBaseAs<TileType::Railway>().signals;
 }
 
 /**
@@ -501,12 +518,12 @@ enum class RailGroundType : uint8_t {
 
 inline void SetRailGroundType(Tile t, RailGroundType rgt)
 {
-	SB(t.m4(), 0, 4, to_underlying(rgt));
+	t.GetTileBaseAs<TileType::Railway>().ground_type = to_underlying(rgt);
 }
 
 inline RailGroundType GetRailGroundType(Tile t)
 {
-	return static_cast<RailGroundType>(GB(t.m4(), 0, 4));
+	return static_cast<RailGroundType>(t.GetTileBaseAs<TileType::Railway>().ground_type);
 }
 
 inline bool IsSnowRailGround(Tile t)
@@ -518,15 +535,13 @@ inline bool IsSnowRailGround(Tile t)
 inline void MakeRailNormal(Tile t, Owner o, TrackBits b, RailType r)
 {
 	SetTileType(t, TileType::Railway);
+	t.ResetData();
 	SetTileOwner(t, o);
 	SetDockingTile(t, false);
-	t.m2() = 0;
-	t.m3() = 0;
-	t.m4() = 0;
-	t.m5() = to_underlying(RailTileType::Normal) << 6 | b;
-	SB(t.m6(), 2, 6, 0);
-	t.m7() = 0;
-	t.m8() = r;
+	auto &extended = t.GetTileExtendedAs<TileType::Railway>();
+	extended.rail_tile_type = to_underlying(RailTileType::Normal);
+	extended.track_pieces = b;
+	extended.rail_type = r;
 }
 
 /**
@@ -537,7 +552,7 @@ inline void MakeRailNormal(Tile t, Owner o, TrackBits b, RailType r)
 inline void SetRailDepotExitDirection(Tile tile, DiagDirection dir)
 {
 	assert(IsRailDepotTile(tile));
-	SB(tile.m5(), 0, 2, dir);
+	tile.GetTileExtendedAs<TileType::Railway, RailTileType::Depot>().exit_direction = dir;
 }
 
 /**
@@ -551,15 +566,14 @@ inline void SetRailDepotExitDirection(Tile tile, DiagDirection dir)
 inline void MakeRailDepot(Tile tile, Owner owner, DepotID depot_id, DiagDirection dir, RailType rail_type)
 {
 	SetTileType(tile, TileType::Railway);
+	tile.ResetData();
 	SetTileOwner(tile, owner);
 	SetDockingTile(tile, false);
-	tile.m2() = depot_id.base();
-	tile.m3() = 0;
-	tile.m4() = 0;
-	tile.m5() = to_underlying(RailTileType::Depot) << 6 | dir;
-	SB(tile.m6(), 2, 6, 0);
-	tile.m7() = 0;
-	tile.m8() = rail_type;
+	auto &extended = tile.GetTileExtendedAs<TileType::Railway, RailTileType::Depot>();
+	extended.index = depot_id.base();
+	extended.rail_tile_type = to_underlying(RailTileType::Depot);
+	extended.exit_direction = dir;
+	extended.rail_type = rail_type;
 }
 
 #endif /* RAIL_MAP_H */

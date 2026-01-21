@@ -14,6 +14,7 @@
 #include "tile_type.h"
 #include "map_type.h"
 #include "direction_func.h"
+#include <cstdint>
 
 /**
  * Wrapper class to abstract away the way the tiles are stored. It is
@@ -46,6 +47,16 @@ private:
 	public:
 		uint8_t hedge_SE : 3 = 0; ///< Type of hedge on SE border.
 		uint8_t hedge_SW : 3 = 0; ///< Type of hedge on SW border.
+	};
+
+	/** Storage for TileType::Railway tile base. */
+	struct RailwayTileBase : TileBaseCommon {
+	private:
+		[[maybe_unused]] uint8_t bit_offset : 4 = 0; ///< Unused. @note Prevents save conversion.
+	public:
+		uint8_t signals : 4 = 0; ///< Which signals are present.
+		uint8_t ground_type : 4 = 0; ///< What is under the railway.
+		uint8_t signals_colours : 4 = 0; ///< The states of the signals.
 	};
 
 	/** Storage for TileType::Trees tile base. */
@@ -118,6 +129,7 @@ private:
 		uint32_t base; ///< Bare access to all bits, useful for saving, loading and constructing map array.
 		TileBaseCommon common; ///< Common storage for all tile bases.
 		ClearTileBase clear; ///< Storage for tiles with: grass, snow, sand etc.
+		RailwayTileBase railway; ///< Storage for tiles with rails.
 		TreesTileBase trees; ///< Storage for tiles with trees.
 		StationTileBase station; ///< Storage for tiles with station except road stops and road waypoints.
 		RoadStationTileBase road_station; ///< Storage for tiles with road stop or road waypoint.
@@ -139,6 +151,8 @@ private:
 		uint8_t water_class : 2 = 0; ///< The type of water that is on a tile.
 		uint8_t ship_docking : 1 = 0; ///< Ship docking tile status.
 	};
+
+	static_assert(sizeof(TileExtendedCommon) == 1);
 
 	/** Common tile extended for all animated tiles. */
 	struct TileExtendedAnimatedCommon : TileExtendedCommon {
@@ -162,6 +176,49 @@ private:
 	public:
 		uint8_t hedge_NW : 3 = 0; ///< Type of hedge on NW border.
 	};
+
+	/** Storage for TileType::Railway non depot tile extended. */
+	struct NonDepotRailwayTileExtended {
+		uint8_t track_pieces : 6 = 0; ///< Which tracks are present.
+		uint8_t rail_tile_type : 2 = 0; ///< Whether it has signals, is rail depot.
+		uint8_t primary_signal_type : 3 = 0; ///< The type of primary signal.
+		uint8_t primary_signal_variant : 1 = 0; ///< The variant of primary signal.
+		uint8_t secondary_signal_type : 3 = 0; ///< The type of secondary signal.
+		uint8_t secondary_signal_variant : 1 = 0; ///< The variant of secondary signal.
+		uint8_t pbs_reservation : 3 = 0; ///< Which track is reserved.
+		uint8_t is_oposite_reserved : 1 = 0; ///< Whether the track in oposite direction is also reserved.
+	};
+
+	/** Storage for only TileType::Railway depot tile extended. */
+	struct OnlyDepotRailwayTileExtended : TileExtendedCommon {
+		uint8_t exit_direction : 2 = 0; ///< The direction trains are facing when exiting the depot.
+	private:
+		[[maybe_unused]] uint8_t bit_offset_1 : 2 = 0; ///< Unused. @note Prevents save conversion.
+	public:
+		uint8_t pbs_reservation : 1 = 0; ///< Is depot entrance reserved by any train.
+	private:
+		[[maybe_unused]] uint8_t bit_offset_2 : 1 = 0; ///< Unused. @note Prevents save conversion.
+	public:
+		uint8_t rail_tile_type : 2 = 0; ///< Whether it has signals, is rail depot.
+		uint16_t index = 0; ///< Depot index on the poll.
+	};
+
+	/** Common storage for TileType::Railway tile extended. */
+	struct CommonRailwayTileExtended {
+	private:
+		[[maybe_unused]] uint16_t bit_offset_2 : 2 = 0; ///< Unused. @note These bits are reserved for animated tile state.
+		[[maybe_unused]] uint16_t bit_offset_3 : 14 = 0; ///< Unused. @note Prevents save conversion.
+	public:
+		uint8_t rail_type : 6 = 0; ///< What kind of rails is this railway.
+	};
+
+	/** Storage for TileType::Railway tile extended. */
+	struct RailwayTileExtended : TileExtendedCommon, NonDepotRailwayTileExtended, CommonRailwayTileExtended {};
+	static_assert(sizeof(RailwayTileExtended) == 8);
+
+	/** Storage for train depot tile extended. */
+	struct TrainDepotTileExtended : OnlyDepotRailwayTileExtended, CommonRailwayTileExtended {};
+	static_assert(sizeof(TrainDepotTileExtended) == 8);
 
 	/** Storage for TileType::Trees tile extended. */
 	struct TreesTileExtended : TileExtendedCommon {
@@ -297,6 +354,8 @@ private:
 		uint64_t base; ///< Bare access to all bits, useful for saving, loading and constructing map array.
 		TileExtendedAnimatedCommon common; ///< Common storage for all tile extends.
 		ClearTileExtended clear; ///< Storage for tiles with: grass, snow, sand etc.
+		RailwayTileExtended railway; ///< Storage for tiles with rails.
+		TrainDepotTileExtended train_depot; ///< Storage for tiles with train depots.
 		TreesTileExtended trees; ///< Storage for tiles with trees.
 		StationTileExtended station; ///< Storage for tiles with station except road stops and road waypoints.
 		RoadStationTileExtended road_station; ///< Storage for tiles with road stop or road waypoint.
@@ -392,6 +451,8 @@ public:
 			return base_tiles[this->tile.base()].common;
 		} else if constexpr (Type == TileType::Clear) {
 			return base_tiles[this->tile.base()].clear;
+		} else if constexpr (Type == TileType::Railway) {
+			return base_tiles[this->tile.base()].railway;
 		} else if constexpr (Type == TileType::Trees) {
 			return base_tiles[this->tile.base()].trees;
 		} else if constexpr (Type == TileType::Station) {
@@ -420,6 +481,8 @@ public:
 			return extended_tiles[this->tile.base()].common;
 		} else if constexpr (Type == TileType::Clear) {
 			return extended_tiles[this->tile.base()].clear;
+		} else if constexpr (Type == TileType::Railway) {
+			return extended_tiles[this->tile.base()].railway;
 		} else if constexpr (Type == TileType::Trees) {
 			return extended_tiles[this->tile.base()].trees;
 		} else if constexpr (Type == TileType::Station) {
