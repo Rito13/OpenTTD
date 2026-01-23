@@ -14,6 +14,7 @@
 #include "tile_type.h"
 #include "map_type.h"
 #include "direction_func.h"
+#include <cstdint>
 
 /**
  * Wrapper class to abstract away the way the tiles are stored. It is
@@ -25,31 +26,351 @@
 class Tile {
 private:
 	friend struct Map;
+
+	/** Common storage for all tile bases. */
+	struct TileBaseCommon {
+		uint8_t tropic_zone : 2 = 0; ///< Only meaningful in tropic climate. It contains the definition of the available zones.
+		uint8_t bridge_above : 2 = 0; ///< Presence and direction of bridge above.
+		uint8_t type : 4 = 0; ///< The type of the base tile. @note Max 4 base tile types are allowed.
+		uint8_t height = 0; ///< The height of the northern corner.
+	};
+
+	static_assert(sizeof(TileBaseCommon) == 2);
+
+	/** Storage for TileType::Clear tile base. */
+	struct ClearTileBase : TileBaseCommon {
+		uint8_t field_type : 4 = 0; ///< Field production stage.
+		uint8_t snow_presence : 1 = 0; ///< If the tile is covered with snow.
+		uint8_t hedge_NE : 3 = 0; ///< Type of hedge on NE border.
+	private:
+		[[maybe_unused]] uint8_t bit_offset : 2 = 0; ///< Unused. @note Prevents save conversion.
+	public:
+		uint8_t hedge_SE : 3 = 0; ///< Type of hedge on SE border.
+		uint8_t hedge_SW : 3 = 0; ///< Type of hedge on SW border.
+	};
+
+	/** Storage for TileType::Railway tile base. */
+	struct RailwayTileBase : TileBaseCommon {
+	private:
+		[[maybe_unused]] uint8_t bit_offset : 4 = 0; ///< Unused. @note Prevents save conversion.
+	public:
+		uint8_t signals : 4 = 0; ///< Which signals are present.
+		uint8_t ground_type : 4 = 0; ///< What is under the railway.
+		uint8_t signals_colours : 4 = 0; ///< The states of the signals.
+	};
+
+	/** Storage for TileType::Trees tile base. */
+	struct TreesTileBase : TileBaseCommon {
+		uint8_t tree_type = 0; ///< The type of trees.
+	};
+
+	/** Storage for TileType::Station tile base. */
+	struct StationTileBase : TileBaseCommon {
+		uint8_t is_blocked : 1 = 0; ///< Rail station / waypoint is blocked.
+		uint8_t wire_allowed : 1 = 0; ///< Rail station / waypoint may have catenary wires.
+		uint8_t pylons_allowed : 1 = 0; ///< Rail station / waypoint may have catenary pylons.
+	private:
+		[[maybe_unused]] uint8_t bit_offset : 1 = 0; ///< Unused. @note Prevents save conversion.
+	public:
+		uint8_t random_bits : 4 = 0; ///< Persistent random data for railway stations/waypoints and airports.
+		uint8_t specification_id = 0; ///< Custom station id; 0 means standard graphics.
+	};
+
+	/** Storage for road stops and road waypoints tile base. */
+	struct RoadStationTileBase : TileBaseCommon {
+	private:
+		[[maybe_unused]] uint8_t bit_offset : 2 = 0; ///< Unused. @note Prevents save conversion.
+	public:
+		uint8_t ground_type : 2 = 0; ///< What is under the road waypoint.
+		uint8_t tram_owner : 4 = 0; ///< The owner of the tram track.
+		uint8_t road_type : 6 = 0; ///< The type of road.
+	};
+
+	/** Storage for TileType::Water tile base. */
+	struct WaterTileBase : TileBaseCommon {
+		uint8_t flood : 1 = 0; ///< Non-flooding state.
+		/* 7 bit offset is auto added by the compiler, because random_bits can't fit into those 7 bits. */
+		uint8_t random_bits = 0; ///< Canal/river random bits.
+	};
+
+	/** Storage for TileType::Industry tile base. */
+	struct IndustryTileBase : TileBaseCommon {
+		uint8_t random_bits = 0; ///< NewGRF random bits.
+		uint8_t animation_loop = 0; ///< The state of the animation loop.
+	};
+
+	/** Storage for TileType::TunnelBridge tile base. */
+	struct TunnelBridgeTileBase : TileBaseCommon {
+	private:
+		[[maybe_unused]] uint8_t bit_offset : 4 = 0; ///< Unused. @note Prevents save conversion.
+	public:
+		uint8_t tram_owner : 4 = 0; ///< The owner of the tram track.
+		uint8_t road_type : 6 = 0; ///< The type of road.
+	};
+
+	/** Storage for TileType::Object tile base. */
+	struct ObjectTileBase : TileBaseCommon {
+		uint8_t random_bits = 0; ///< NewGRF random bits.
+	};
+
+	/** Data that is stored per tile in old save games. Also used OldTileExtended for this. */
+	struct OldTileBase {
+		uint8_t type = 0; ///< The type (bits 4..7), bridges (2..3), rainforest/desert (0..1).
+		uint8_t height = 0; ///< The height of the northern corner.
+		uint8_t m3 = 0; ///< General purpose
+		uint8_t m4 = 0; ///< General purpose
+	};
+
 	/**
 	 * Data that is stored per tile. Also used TileExtended for this.
 	 * Look at docs/landscape.html for the exact meaning of the members.
 	 */
-	struct TileBase {
-		uint8_t type = 0; ///< The type (bits 4..7), bridges (2..3), rainforest/desert (0..1)
-		uint8_t height = 0; ///< The height of the northern corner.
-		uint16_t m2 = 0; ///< Primarily used for indices to towns, industries and stations
-		uint8_t m1 = 0; ///< Primarily used for ownership information
-		uint8_t m3 = 0; ///< General purpose
-		uint8_t m4 = 0; ///< General purpose
-		uint8_t m5 = 0; ///< General purpose
+	union TileBase {
+		uint32_t base; ///< Bare access to all bits, useful for saving, loading and constructing map array.
+		TileBaseCommon common; ///< Common storage for all tile bases.
+		ClearTileBase clear; ///< Storage for tiles with: grass, snow, sand etc.
+		RailwayTileBase railway; ///< Storage for tiles with rails.
+		TreesTileBase trees; ///< Storage for tiles with trees.
+		StationTileBase station; ///< Storage for tiles with station except road stops and road waypoints.
+		RoadStationTileBase road_station; ///< Storage for tiles with road stop or road waypoint.
+		WaterTileBase water; ///< Storage for tiles with: canal, river, sea, shore etc.
+		IndustryTileBase industry; ///< Storage for tiles with parts of industries.
+		TunnelBridgeTileBase tunnel_bridge; ///< Storage for tiles with tunnel exit or bridge head.
+		ObjectTileBase object; ///< Storage for tiles with object e.g. transmitters, lighthouses, owned land.
+		OldTileBase old; ///< Used to preserve compatibility with older save games.
+
+		/** Construct empty tile base storage. */
+		TileBase() { this->base = 0; }
 	};
 
-	static_assert(sizeof(TileBase) == 8);
+	static_assert(sizeof(TileBase) == 4);
+
+	/** Common storage for all tile extends. */
+	struct TileExtendedCommon {
+		uint8_t owner : 5 = 0; ///< Owner of the tile, if tile has more than one owner, it is one of them.
+		uint8_t water_class : 2 = 0; ///< The type of water that is on a tile.
+		uint8_t ship_docking : 1 = 0; ///< Ship docking tile status.
+	};
+
+	static_assert(sizeof(TileExtendedCommon) == 1);
+
+	/** Common tile extended for all animated tiles. */
+	struct TileExtendedAnimatedCommon : TileExtendedCommon {
+		friend class Tile;
+	private:
+		/** Unused. Needs to be splited into two parts, because some compilers (like MSVC) can't fill bits from uint32_t with other types. @note Prevents save conversion. */
+		[[maybe_unused]] uint8_t bit_offset_1 = 0;
+		[[maybe_unused]] uint16_t bit_offset_2 = 0; ///< Unused. @see bit_offset_1
+	public:
+		uint8_t animation_state : 2 = 0; ///< Animated tile state.
+	};
+
+	/** Storage for TileType::Clear tile extended. */
+	struct ClearTileExtended : TileExtendedCommon {
+		uint8_t density : 2 = 0; ///< The density of a non-field clear tile.
+		uint8_t ground : 3 = 0; ///< The type of ground.
+		uint8_t update : 3 = 0; ///< The counter used to advance to the next clear density/field type.
+		uint16_t farm_index = 0; ///< Farm index on industries poll.
+	private:
+		[[maybe_unused]] uint8_t bit_offset : 2 = 0; ///< Unused. @note These bits are reserved for animated tile state.
+	public:
+		uint8_t hedge_NW : 3 = 0; ///< Type of hedge on NW border.
+	};
+
+	/** Storage for TileType::Railway non depot tile extended. */
+	struct NonDepotRailwayTileExtended {
+		uint8_t track_pieces : 6 = 0; ///< Which tracks are present.
+		uint8_t rail_tile_type : 2 = 0; ///< Whether it has signals, is rail depot.
+		uint8_t primary_signal_type : 3 = 0; ///< The type of primary signal.
+		uint8_t primary_signal_variant : 1 = 0; ///< The variant of primary signal.
+		uint8_t secondary_signal_type : 3 = 0; ///< The type of secondary signal.
+		uint8_t secondary_signal_variant : 1 = 0; ///< The variant of secondary signal.
+		uint8_t pbs_reservation : 3 = 0; ///< Which track is reserved.
+		uint8_t is_oposite_reserved : 1 = 0; ///< Whether the track in oposite direction is also reserved.
+	};
+
+	/** Storage for only TileType::Railway depot tile extended. */
+	struct OnlyDepotRailwayTileExtended : TileExtendedCommon {
+		uint8_t exit_direction : 2 = 0; ///< The direction trains are facing when exiting the depot.
+	private:
+		[[maybe_unused]] uint8_t bit_offset_1 : 2 = 0; ///< Unused. @note Prevents save conversion.
+	public:
+		uint8_t pbs_reservation : 1 = 0; ///< Is depot entrance reserved by any train.
+	private:
+		[[maybe_unused]] uint8_t bit_offset_2 : 1 = 0; ///< Unused. @note Prevents save conversion.
+	public:
+		uint8_t rail_tile_type : 2 = 0; ///< Whether it has signals, is rail depot.
+		uint16_t index = 0; ///< Depot index on the poll.
+	};
+
+	/** Common storage for TileType::Railway tile extended. */
+	struct CommonRailwayTileExtended {
+	private:
+		[[maybe_unused]] uint16_t bit_offset_2 : 2 = 0; ///< Unused. @note These bits are reserved for animated tile state.
+		[[maybe_unused]] uint16_t bit_offset_3 : 14 = 0; ///< Unused. @note Prevents save conversion.
+	public:
+		uint8_t rail_type : 6 = 0; ///< What kind of rails is this railway.
+	};
+
+	/** Storage for TileType::Railway tile extended. */
+	struct RailwayTileExtended : TileExtendedCommon, NonDepotRailwayTileExtended, CommonRailwayTileExtended {};
+	static_assert(sizeof(RailwayTileExtended) == 8);
+
+	/** Storage for train depot tile extended. */
+	struct TrainDepotTileExtended : OnlyDepotRailwayTileExtended, CommonRailwayTileExtended {};
+	static_assert(sizeof(TrainDepotTileExtended) == 8);
+
+	/** Storage for TileType::Trees tile extended. */
+	struct TreesTileExtended : TileExtendedCommon {
+		uint8_t growth : 3 = 0; ///< The trees growth status.
+	private:
+		[[maybe_unused]] uint8_t bit_offset_1 : 3 = 0; ///< Unused. @note Prevents save conversion.
+	public:
+		uint8_t quantity : 2 = 0; ///< The number of trees minus one.
+	private:
+		[[maybe_unused]] uint16_t bit_offset_2 : 4 = 0; ///< Unused, previously tree counter. @note Prevents save conversion.
+	public:
+		uint16_t density : 2 = 0; ///< The density of the ground under trees.
+		uint16_t ground : 3 = 0; ///< The ground under trees.
+	};
+
+	/** Common storage for TileType::Station tile extended. */
+	struct StationTileExtendedCommon : TileExtendedCommon {
+		uint8_t graphics = 0; ///< Graphics index.
+		uint16_t index = 0; ///< Station index on the poll.
+	};
+
+	/** Also common storage for TileType::Station tile extended like @see StationTileExtendedCommon. Needs to be separeted because of MSVC */
+	struct TileExtendedStationSpecificPart {
+		uint8_t animation_state : 2 = 0; ///< Animated tile state.
+		uint8_t pbs_reservation : 1 = 0; ///< The pbs reservation state for railway.
+		uint8_t station_type : 4 = 0; ///< The type of station.
+	};
+
+	/** Storage for TileType::Station tile extended. */
+	struct StationTileExtended : StationTileExtendedCommon, TileExtendedStationSpecificPart {
+		uint8_t animation_frame = 0; ///< The frame of animation.
+		uint8_t rail_type : 6 = 0; ///< The track type for railway.
+	};
+
+	/** Storage for road stops and road waypoints tile extended. */
+	struct RoadStationTileExtended : StationTileExtendedCommon, TileExtendedStationSpecificPart {
+		uint8_t road_owner : 5 = 0; ///< The owner of the road.
+		/* 3 bit offset is auto added by the compiler, because specification_id can't fit into those 3 bits. */
+		uint16_t specification_id : 6 = 0; ///< Custom station id; 0 means standard graphics.
+		uint16_t tram_type : 6 = 0; ///< The type of tram track.
+	private:
+		[[maybe_unused]] uint16_t bit_offset : 3 = 0; ///< Unused. @note Prevents save conversion.
+	public:
+		uint16_t snow_desert_presence : 1 = 0; ///< If set it is surrounded by snow or sand depending on the biome.
+	};
+
+	/** Storage for TileType::Water tile extended. */
+	struct WaterTileExtended : TileExtendedCommon {
+		uint8_t lock_direction : 2 = 0; ///< In which direction the raised part is facing. Used only for locks.
+		uint8_t lock_part : 2 = 0; ///< Which part of the lock is it. Used only for locks.
+		uint8_t water_type : 4 = 0; ///< Specify what kind of water is this tile of.
+	};
+
+	/** Storage for ship depot tile extended. */
+	struct ShipDepotTileExtended : TileExtendedCommon {
+		uint8_t part : 1 = 0; ///< Which part of the depot is it.
+		uint8_t axis : 1 = 0; ///< Whether the depot follows NE-SW or NW-SE direction.
+	private:
+		[[maybe_unused]] uint8_t bit_offset : 2 = 0; ///< Unused. @note Prevents save conversion.
+	public:
+		uint8_t water_type : 4 = 0; ///< Specify what kind of water is this tile of. If it is not WaterTileType::Depot, then something went wrong.
+		uint16_t index = 0; ///< Depot index on the poll.
+	};
+
+	/**
+	 * Storage for TileType::Industry tile extended.
+	 * @note Does not inherit from TileExtendedCommon, but contains water_class from it.
+	 */
+	struct IndustryTileExtended {
+		uint16_t construction_stage : 2 = 0; ///< Stage of construction, incremented when the construction counter wraps around the meaning is different for some animated tiles which are never under construction.
+		uint16_t construction_counter : 2 = 0; ///< For buildings under construction incremented on every periodic tile processing.
+		uint16_t completed : 1 = 0; ///< Whether the industry is completed or under construction.
+		uint16_t water_class : 2 = 0; ///< The type of water that is below industry. WaterClass::Invalid used for industry tiles on land.
+		uint16_t graphics : 9 = 0; ///< Which sprite should be drawn for this industry tile.
+		uint16_t index = 0; ///< Industry index on the poll.
+		uint8_t animation_state : 2 = 0; ///< Animated tile state.
+	private:
+		[[maybe_unused]] uint8_t bit_offset_1 : 1 = 0; ///< Unused. @note Prevents save conversion.
+	public:
+		uint8_t random_triggers : 3 = 0; ///< NewGRF random triggers.
+	private:
+		[[maybe_unused]] uint8_t bit_offset_2 : 2 = 0; ///< Unused. @note Prevents save conversion.
+	public:
+		uint8_t animation_frame = 0; ///< The frame of animation.
+	};
+
+	/** Storage for TileType::TunnelBridge tile extended. */
+	struct TunnelBridgeTileExtended : TileExtendedCommon {
+		uint8_t direction : 2 = 0; ///< The direction onto the bridge / out of the tunnel.
+		uint8_t transport_type : 2 = 0; ///< What kind of vehicles can enter the bridge / tunnel.
+		uint8_t pbs_reservation : 1 = 0; ///< The pbs reservation state for railway.
+	private:
+		[[maybe_unused]] uint8_t bit_offset_1 : 2 = 0; ///< Unused. @note Prevents save conversion.
+	public:
+		uint8_t is_bridge : 1 = 0; ///< Whether it is a bridge or a tunnel.
+	private:
+		[[maybe_unused]] uint16_t bit_offset_2 = 0; ///< Unused. @note Prevents save conversion.
+		[[maybe_unused]] uint8_t bit_offset_3 : 2 = 0; ///< Unused. @note These bits are reserved for animated tile state.
+	public:
+		uint8_t bridge_type : 4 = 0; ///< The type of bridge. Unused for tunnels.
+		/* 2 bit offset is auto added by the compiler, because road_owner can't fit into those 2 bits. */
+		uint8_t road_owner : 5 = 0; ///< The owner of the road.
+		uint8_t snow_desert_presence : 1 = 0; ///< If set it is surrounded by snow or sand depending on the biome.
+		/* 2 bit offset is auto added by the compiler, because road_owner can't fit into those 2 bits. */
+		uint16_t rail_type : 6 = 0; ///< The track type for railway.
+		uint16_t tram_type : 6 = 0; ///< The type of tram track.
+	};
+
+	/** Storage for TileType::Object tile extended. */
+	struct ObjectTileExtended : TileExtendedCommon {
+		uint8_t index_high_bits = 0; ///< High bits of object index on the poll.
+		uint16_t index_low_bits = 0; ///< Low bits of object index on the poll.
+		uint8_t animation_state : 2 = 0; ///< Animated tile state.
+		/* 6 bit offset is auto added by the compiler, because animation_counter can't fit into those 6 bits. */
+		uint8_t animation_counter = 0; ///< The state of the animation.
+	};
+
+	/** Data that is stored per tile in old save games. Also used OldTileBase for this. */
+	struct OldTileExtended {
+		uint8_t m1 = 0; ///< Primarily used for ownership information
+		uint8_t m5 = 0; ///< General purpose
+		uint16_t m2 = 0; ///< Primarily used for indices to towns, industries and stations
+		uint8_t m6 = 0; ///< General purpose
+		uint8_t m7 = 0; ///< Primarily used for newgrf support
+		uint16_t m8 = 0; ///< General purpose
+	};
 
 	/**
 	 * Data that is stored per tile. Also used TileBase for this.
 	 * Look at docs/landscape.html for the exact meaning of the members.
 	 */
-	struct TileExtended {
-		uint8_t m6 = 0; ///< General purpose
-		uint8_t m7 = 0; ///< Primarily used for newgrf support
-		uint16_t m8 = 0; ///< General purpose
+	union TileExtended {
+		uint64_t base; ///< Bare access to all bits, useful for saving, loading and constructing map array.
+		TileExtendedAnimatedCommon common; ///< Common storage for all tile extends.
+		ClearTileExtended clear; ///< Storage for tiles with: grass, snow, sand etc.
+		RailwayTileExtended railway; ///< Storage for tiles with rails.
+		TrainDepotTileExtended train_depot; ///< Storage for tiles with train depots.
+		TreesTileExtended trees; ///< Storage for tiles with trees.
+		StationTileExtended station; ///< Storage for tiles with station except road stops and road waypoints.
+		RoadStationTileExtended road_station; ///< Storage for tiles with road stop or road waypoint.
+		WaterTileExtended water; ///< Storage for tiles with water except ship depot.
+		ShipDepotTileExtended ship_depot; ///< Storage for ship depot.
+		IndustryTileExtended industry; ///< Storage for tiles with parts of industries.
+		TunnelBridgeTileExtended tunnel_bridge; ///< Storage for tiles with tunnel exits or bridge heads.
+		ObjectTileExtended object; ///< Storage for tiles with object e.g. transmitters, lighthouses, owned land.
+		OldTileExtended old; ///< Used to preserve compatibility with older save games.
+
+		/** Construct empty tile extended storage. */
+		TileExtended() { this->base = 0; }
 	};
+
+	static_assert(sizeof(TileExtended) == 8);
 
 	static std::unique_ptr<TileBase[]> base_tiles; ///< Pointer to the tile-array.
 	static std::unique_ptr<TileExtended[]> extended_tiles; ///< Pointer to the extended tile-array.
@@ -79,6 +400,20 @@ public:
 	 */
 	[[debug_inline]] inline constexpr operator uint() const { return this->tile.base(); }
 
+	/** Clears all bits that are not shared between all TileTypes. */
+	[[debug_inline]] inline void ResetData()
+	{
+		TileBase &base = base_tiles[this->tile.base()];
+		TileBaseCommon base_common = base.common;
+		base.base = 0;
+		base.common = base_common;
+
+		TileExtended &extended = extended_tiles[this->tile.base()];
+		uint8_t animation_state = extended.common.animation_state;
+		extended.base = 0;
+		extended.common.animation_state = animation_state;
+	}
+
 	/**
 	 * The type (bits 4..7), bridges (2..3), rainforest/desert (0..1)
 	 *
@@ -88,7 +423,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &type()
 	{
-		return base_tiles[this->tile.base()].type;
+		return base_tiles[this->tile.base()].old.type;
 	}
 
 	/**
@@ -100,7 +435,67 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &height()
 	{
-		return base_tiles[this->tile.base()].height;
+		return base_tiles[this->tile.base()].common.height;
+	}
+
+	/**
+	 * Get the internall TileBase structure for appropriate TileType.
+	 * @tparam Type The TileType to get the structure for.
+	 * @tparam SubType The sub type (e.g. TransportType) to get the structure for.
+	 * @return The appropriate structure from TileBase union.
+	 */
+	template<TileType Type = TileType::Invalid, auto SubType = -1>
+	[[debug_inline]] inline auto &GetTileBaseAs()
+	{
+		if constexpr (Type == TileType::Invalid) {
+			return base_tiles[this->tile.base()].common;
+		} else if constexpr (Type == TileType::Clear) {
+			return base_tiles[this->tile.base()].clear;
+		} else if constexpr (Type == TileType::Railway) {
+			return base_tiles[this->tile.base()].railway;
+		} else if constexpr (Type == TileType::Trees) {
+			return base_tiles[this->tile.base()].trees;
+		} else if constexpr (Type == TileType::Station) {
+			return base_tiles[this->tile.base()].station;
+		} else if constexpr (Type == TileType::Water) {
+			return base_tiles[this->tile.base()].water;
+		} else if constexpr (Type == TileType::Industry) {
+			return base_tiles[this->tile.base()].industry;
+		} else if constexpr (Type == TileType::TunnelBridge) {
+			return base_tiles[this->tile.base()].tunnel_bridge;
+		} else if constexpr (Type == TileType::Object) {
+			return base_tiles[this->tile.base()].object;
+		}
+	}
+
+	/**
+	 * Get the internall TileExtended structure for appropriate TileType.
+	 * @tparam Type The TileType to get the structure for.
+	 * @tparam SubType The sub type (e.g. WaterTileType) to get the structure for.
+	 * @return The appropriate structure from TileExtended union.
+	 */
+	template<TileType Type = TileType::Invalid, auto SubType = -1>
+	[[debug_inline]] inline auto &GetTileExtendedAs()
+	{
+		if constexpr (Type == TileType::Invalid) {
+			return extended_tiles[this->tile.base()].common;
+		} else if constexpr (Type == TileType::Clear) {
+			return extended_tiles[this->tile.base()].clear;
+		} else if constexpr (Type == TileType::Railway) {
+			return extended_tiles[this->tile.base()].railway;
+		} else if constexpr (Type == TileType::Trees) {
+			return extended_tiles[this->tile.base()].trees;
+		} else if constexpr (Type == TileType::Station) {
+			return extended_tiles[this->tile.base()].station;
+		} else if constexpr (Type == TileType::Water) {
+			return extended_tiles[this->tile.base()].water;
+		} else if constexpr (Type == TileType::Industry) {
+			return extended_tiles[this->tile.base()].industry;
+		} else if constexpr (Type == TileType::TunnelBridge) {
+			return extended_tiles[this->tile.base()].tunnel_bridge;
+		} else if constexpr (Type == TileType::Object) {
+			return extended_tiles[this->tile.base()].object;
+		}
 	}
 
 	/**
@@ -112,7 +507,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &m1()
 	{
-		return base_tiles[this->tile.base()].m1;
+		return extended_tiles[this->tile.base()].old.m1;
 	}
 
 	/**
@@ -124,7 +519,7 @@ public:
 	 */
 	[[debug_inline]] inline uint16_t &m2()
 	{
-		return base_tiles[this->tile.base()].m2;
+		return extended_tiles[this->tile.base()].old.m2;
 	}
 
 	/**
@@ -136,7 +531,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &m3()
 	{
-		return base_tiles[this->tile.base()].m3;
+		return base_tiles[this->tile.base()].old.m3;
 	}
 
 	/**
@@ -148,7 +543,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &m4()
 	{
-		return base_tiles[this->tile.base()].m4;
+		return base_tiles[this->tile.base()].old.m4;
 	}
 
 	/**
@@ -160,7 +555,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &m5()
 	{
-		return base_tiles[this->tile.base()].m5;
+		return extended_tiles[this->tile.base()].old.m5;
 	}
 
 	/**
@@ -172,7 +567,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &m6()
 	{
-		return extended_tiles[this->tile.base()].m6;
+		return extended_tiles[this->tile.base()].old.m6;
 	}
 
 	/**
@@ -184,7 +579,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &m7()
 	{
-		return extended_tiles[this->tile.base()].m7;
+		return extended_tiles[this->tile.base()].old.m7;
 	}
 
 	/**
@@ -196,8 +591,10 @@ public:
 	 */
 	[[debug_inline]] inline uint16_t &m8()
 	{
-		return extended_tiles[this->tile.base()].m8;
+		return extended_tiles[this->tile.base()].old.m8;
 	}
+
+	void RunUnitTest();
 };
 
 /**
@@ -293,7 +690,7 @@ public:
 	}
 
 	/**
-	 * Gets the maximum X coordinate within the map, including MP_VOID
+	 * Gets the maximum X coordinate within the map, including TileType::Void
 	 * @return the maximum X coordinate
 	 */
 	[[debug_inline]] inline static uint MaxX()
@@ -302,7 +699,7 @@ public:
 	}
 
 	/**
-	 * Gets the maximum Y coordinate within the map, including MP_VOID
+	 * Gets the maximum Y coordinate within the map, including TileType::Void
 	 * @return the maximum Y coordinate
 	 */
 	static inline uint MaxY()

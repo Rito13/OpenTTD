@@ -82,12 +82,12 @@ enum class TreeGrowthStage : uint8_t {
  *
  * @param t The tile to get the treetype from
  * @return The treetype of the given tile with trees
- * @pre Tile t must be of type MP_TREES
+ * @pre Tile t must be of type TileType::Trees
  */
 inline TreeType GetTreeType(Tile t)
 {
-	assert(IsTileType(t, MP_TREES));
-	return (TreeType)t.m3();
+	assert(IsTileType(t, TileType::Trees));
+	return TreeType(t.GetTileBaseAs<TileType::Trees>().tree_type);
 }
 
 /**
@@ -97,12 +97,12 @@ inline TreeType GetTreeType(Tile t)
  *
  * @param t The tile to get the groundtype from
  * @return The groundtype of the tile
- * @pre Tile must be of type MP_TREES
+ * @pre Tile must be of type TileType::Trees
  */
 inline TreeGround GetTreeGround(Tile t)
 {
-	assert(IsTileType(t, MP_TREES));
-	return (TreeGround)GB(t.m2(), 6, 3);
+	assert(IsTileType(t, TileType::Trees));
+	return TreeGround(t.GetTileExtendedAs<TileType::Trees>().ground);
 }
 
 /**
@@ -121,13 +121,13 @@ inline TreeGround GetTreeGround(Tile t)
  * "get the tree density of a tile" but "get the density of a tile which got trees".
  *
  * @param t The tile to get the 'density'
- * @pre Tile must be of type MP_TREES
+ * @pre Tile must be of type TileType::Trees
  * @see GetTreeCount
  */
 inline uint GetTreeDensity(Tile t)
 {
-	assert(IsTileType(t, MP_TREES));
-	return GB(t.m2(), 4, 2);
+	assert(IsTileType(t, TileType::Trees));
+	return t.GetTileExtendedAs<TileType::Trees>().density;
 }
 
 /**
@@ -139,13 +139,14 @@ inline uint GetTreeDensity(Tile t)
  * @param t The tile to set the density and ground type
  * @param g The ground type to save
  * @param d The density to save with
- * @pre Tile must be of type MP_TREES
+ * @pre Tile must be of type TileType::Trees
  */
 inline void SetTreeGroundDensity(Tile t, TreeGround g, uint d)
 {
-	assert(IsTileType(t, MP_TREES)); // XXX incomplete
-	SB(t.m2(), 4, 2, d);
-	SB(t.m2(), 6, 3, g);
+	assert(IsTileType(t, TileType::Trees)); // XXX incomplete
+	auto &extended = t.GetTileExtendedAs<TileType::Trees>();
+	extended.density = d;
+	extended.ground = g;
 	SetWaterClass(t, g == TREE_GROUND_SHORE ? WaterClass::Sea : WaterClass::Invalid);
 }
 
@@ -154,16 +155,16 @@ inline void SetTreeGroundDensity(Tile t, TreeGround g, uint d)
  *
  * This function returns the number of trees of a tile (1-4).
  * The tile must be contains at least one tree or be more specific: it must be
- * of type MP_TREES.
+ * of type TileType::Trees.
  *
  * @param t The index to get the number of trees
  * @return The number of trees (1-4)
- * @pre Tile must be of type MP_TREES
+ * @pre Tile must be of type TileType::Trees
  */
 inline uint GetTreeCount(Tile t)
 {
-	assert(IsTileType(t, MP_TREES));
-	return GB(t.m5(), 6, 2) + 1;
+	assert(IsTileType(t, TileType::Trees));
+	return t.GetTileExtendedAs<TileType::Trees>().quantity + 1;
 }
 
 /**
@@ -175,12 +176,12 @@ inline uint GetTreeCount(Tile t)
  *
  * @param t The tile to change the tree amount
  * @param c The value to add (or reduce) on the tree-count value
- * @pre Tile must be of type MP_TREES
+ * @pre Tile must be of type TileType::Trees
  */
 inline void AddTreeCount(Tile t, int c)
 {
-	assert(IsTileType(t, MP_TREES)); // XXX incomplete
-	t.m5() += c << 6;
+	assert(IsTileType(t, TileType::Trees)); // XXX incomplete
+	t.GetTileExtendedAs<TileType::Trees>().quantity += c ;
 }
 
 /**
@@ -190,12 +191,12 @@ inline void AddTreeCount(Tile t, int c)
  *
  * @param t The tile to get the tree growth stage
  * @return The tree growth stage
- * @pre Tile must be of type MP_TREES
+ * @pre Tile must be of type TileType::Trees
  */
 inline TreeGrowthStage GetTreeGrowth(Tile t)
 {
-	assert(IsTileType(t, MP_TREES));
-	return static_cast<TreeGrowthStage>(GB(t.m5(), 0, 3));
+	assert(IsTileType(t, TileType::Trees));
+	return static_cast<TreeGrowthStage>(t.GetTileExtendedAs<TileType::Trees>().growth);
 }
 
 /**
@@ -205,12 +206,12 @@ inline TreeGrowthStage GetTreeGrowth(Tile t)
  *
  * @param t The tile to add the value on
  * @param a The value to add on the tree growth stage
- * @pre Tile must be of type MP_TREES
+ * @pre Tile must be of type TileType::Trees
  */
 inline void AddTreeGrowth(Tile t, int a)
 {
-	assert(IsTileType(t, MP_TREES)); // XXX incomplete
-	t.m5() += a;
+	assert(IsTileType(t, TileType::Trees)); // XXX incomplete
+	t.GetTileExtendedAs<TileType::Trees>().growth += a;
 }
 
 /**
@@ -221,12 +222,12 @@ inline void AddTreeGrowth(Tile t, int a)
  *
  * @param t The tile to change the tree growth stage
  * @param g The new value
- * @pre Tile must be of type MP_TREES
+ * @pre Tile must be of type TileType::Trees
  */
 inline void SetTreeGrowth(Tile t, TreeGrowthStage g)
 {
-	assert(IsTileType(t, MP_TREES)); // XXX incomplete
-	SB(t.m5(), 0, 3, to_underlying(g));
+	assert(IsTileType(t, TileType::Trees)); // XXX incomplete
+	t.GetTileExtendedAs<TileType::Trees>().growth = to_underlying(g);
 }
 
 /**
@@ -243,16 +244,16 @@ inline void SetTreeGrowth(Tile t, TreeGrowthStage g)
  */
 inline void MakeTree(Tile t, TreeType type, uint count, TreeGrowthStage growth, TreeGround ground, uint density)
 {
-	SetTileType(t, MP_TREES);
+	SetTileType(t, TileType::Trees);
+	t.ResetData();
 	SetTileOwner(t, OWNER_NONE);
 	SetWaterClass(t, ground == TREE_GROUND_SHORE ? WaterClass::Sea : WaterClass::Invalid);
-	t.m2() = ground << 6 | density << 4 | 0;
-	t.m3() = type;
-	t.m4() = 0 << 5 | 0 << 2;
-	t.m5() = count << 6 | to_underlying(growth);
-	SB(t.m6(), 2, 6, 0);
-	t.m7() = 0;
-	t.m8() = 0;
+	t.GetTileBaseAs<TileType::Trees>().tree_type = type;
+	auto &extended = t.GetTileExtendedAs<TileType::Trees>();
+	extended.ground = ground;
+	extended.density = density;
+	extended.quantity = count;
+	extended.growth = to_underlying(growth);
 }
 
 #endif /* TREE_MAP_H */
