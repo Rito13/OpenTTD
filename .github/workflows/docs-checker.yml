@@ -90,11 +90,11 @@ jobs:
     - name: Compare doxygen warnings and errors
       run: |
         unset FAIL
+        echo "Source"
+        diff doxygen_warnings.base doxygen_warnings.PR
+        echo "AI"
+        diff doxygen_AI_warnings.base doxygen_AI_warnings.PR
+        echo "GS"
+        diff -C 5 doxygen_GS_warnings.base doxygen_GS_warnings.PR
 
-        diff doxygen_warnings.base doxygen_warnings.PR | grep '^>' && FAIL=1
-        diff doxygen_AI_warnings.base doxygen_AI_warnings.PR | grep '^>' && FAIL=1
-        diff doxygen_GS_warnings.base doxygen_GS_warnings.PR | grep '^>' && FAIL=1
-
-        if [ $FAIL ]; then
             exit 1;
-        fi
