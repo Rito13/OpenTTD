@@ -62,8 +62,10 @@ jobs:
 
     - name: Build docs for base branch
       run: |
+        cp .github/sort_doxygen_warnings.py ../tmp.py
         git checkout HEAD^
         mkdir build
+        cp ../tmp.py .github/sort_doxygen_warnings.py
 
         echo "::group::CMake"
         cmake -S . -B build -DOPTION_DOCS_ONLY=ON -DOPTION_LINE_IN_DOXYGEN_WARNINGS=OFF -DOPTION_DOXYGEN_GS_WARN_FILE="Warnings.GS" -DOPTION_DOXYGEN_AI_WARN_FILE="Warnings.AI" -DOPTION_DOXYGEN_WARN_FILE="Warnings.source"
