@@ -1,0 +1,33 @@
+name: Install latest Doxygen
+
+runs:
+  using: composite
+  steps:
+  - name: Install dependencies
+    run: |
+      mkdir doxygen
+      cd doxygen
+
+      echo "::group::Downloading"
+      curl -s https://api.github.com/repos/doxygen/doxygen/releases/latest \
+        | grep ".*linux.*\.tar\.gz" \
+        | cut -d \" -f 4 \
+        | sed -n '2p' \
+        | wget -O doxygen.tar.gz -qi -
+      echo "::endgroup::"
+
+      echo "::group::Unpacking"
+      tar -xzf doxygen.tar.gz
+      rm doxygen.tar.gz
+      echo "::endgroup::"
+
+      echo "::group::Installing"
+      for FILE in *; do cd $FILE ; done
+      sudo make install
+      echo "::endgroup::"
+
+      cd ../..
+      rm -r doxygen
+    shell: bash
+    env:
+      DEBIAN_FRONTEND: noninteractive
