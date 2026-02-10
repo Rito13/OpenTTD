@@ -166,6 +166,14 @@ struct MapSpriteGroupHandler {
 	virtual void MapSpecific(uint16_t local_id, uint8_t cid, const SpriteGroup *group) = 0;
 
 	/**
+	 * Map a SpriteGroup to specific 'cargo type' of a specification.
+	 * @param local_id The NewGRF-local id to map to.
+	 * @param class_id The 'cargo class bits' to map for.
+	 * @param group The SpriteGroup to link to the specification.
+	 */
+	virtual void MapSpecificClass(uint16_t local_id, uint16_t class_id, const SpriteGroup *group) = 0;
+
+	/**
 	 * Map default/fallback SpriteGroup to a specification.
 	 * @param local_id The NewGRF-local id to map to.
 	 * @param group The SpriteGroup to link to the specification.
@@ -188,6 +196,11 @@ struct PurchaseDefaultMapSpriteGroupHandler : MapSpriteGroupHandler {
 		} else {
 			spec->grf_prop.SetSpriteGroup(StandardSpriteGroup::Purchase, group);
 		}
+	}
+
+	void MapSpecificClass(uint16_t, uint16_t class_id, const SpriteGroup *) override
+	{
+		GrfMsg(1, "MapSpriteGroup: Invalid cargo class bitnum {}, skipping.", class_id);
 	}
 
 	void MapDefault(uint16_t local_id, const SpriteGroup *group) override
@@ -217,6 +230,22 @@ struct CargoTypeMapSpriteGroupHandler : MapSpriteGroupHandler {
 		}
 	}
 
+	void MapSpecificClass(uint16_t local_id, uint16_t class_id, const SpriteGroup *group) override
+	{
+		if (T *spec = GetSpec<T>(_cur_gps.grffile, local_id); spec == nullptr) {
+			GrfMsg(1, "MapSpriteGroup: {} undefined, skipping", local_id);
+		} else {
+			auto cargo_specs = CargoSpec::Iterate();
+			for (auto i = cargo_specs.begin(); i != cargo_specs.end(); ++i) {
+				CargoSpec *cs = *i;
+				if (!cs->IsValid()) continue;
+				if ((cs->classes.base() & class_id) != class_id) continue; // Check if specified cargo classes are present.
+				if (spec->grf_prop.GetFirstSpriteGroupOf({cs->bitnum}) != nullptr) continue; // Skip if already has cargo specific spritegroup.
+				spec->grf_prop.SetSpriteGroup(cs->bitnum, group);
+			}
+		}
+	}
+
 	void MapDefault(uint16_t local_id, const SpriteGroup *group) override
 	{
 		if (T *spec = GetSpec<T>(_cur_gps.grffile, local_id); spec == nullptr) {
@@ -234,6 +263,7 @@ struct CargoTypeMapSpriteGroupHandler : MapSpriteGroupHandler {
 
 struct CanalMapSpriteGroupHandler : MapSpriteGroupHandler {
 	void MapSpecific(uint16_t, uint8_t, const SpriteGroup *) override {}
+	void MapSpecificClass(uint16_t, uint16_t, const SpriteGroup *) override {}
 
 	void MapDefault(uint16_t local_id, const SpriteGroup *group) override
 	{
@@ -260,6 +290,7 @@ struct IndustryTileMapSpriteGroupHandler : PurchaseDefaultMapSpriteGroupHandler<
 
 struct CargoMapSpriteGroupHandler : MapSpriteGroupHandler {
 	void MapSpecific(uint16_t, uint8_t, const SpriteGroup *) override {}
+	void MapSpecificClass(uint16_t, uint16_t, const SpriteGroup *) override {}
 
 	void MapDefault(uint16_t local_id, const SpriteGroup *group) override
 	{
@@ -291,6 +322,11 @@ struct RailTypeMapSpriteGroupHandler : MapSpriteGroupHandler {
 		rti.group[cid] = group;
 	}
 
+	void MapSpecificClass(uint16_t, uint16_t class_id, const SpriteGroup *) override
+	{
+		GrfMsg(1, "RailTypeMapSpriteGroup: Invalid cargo class bitnum {}, skipping.", class_id);
+	}
+
 	void MapDefault(uint16_t, const SpriteGroup *) override {}
 };
 
@@ -308,6 +344,11 @@ struct RoadTypeMapSpriteGroupHandler : MapSpriteGroupHandler {
 		RoadTypeInfo &rti = _roadtypes[roadtype];
 		rti.grffile[cid] = _cur_gps.grffile;
 		rti.group[cid] = group;
+	}
+
+	void MapSpecificClass(uint16_t, uint16_t class_id, const SpriteGroup *) override
+	{
+		GrfMsg(1, "RoadTypeMapSpriteGroup: Invalid cargo class bitnum {}, skipping.", class_id);
 	}
 
 	void MapDefault(uint16_t, const SpriteGroup *) override {}
@@ -336,6 +377,11 @@ struct BadgeMapSpriteGroupHandler : MapSpriteGroupHandler {
 		}
 	}
 
+	void MapSpecificClass(uint16_t, uint16_t class_id, const SpriteGroup *) override
+	{
+		GrfMsg(1, "BadgeMapSpriteGroup: Invalid cargo class bitnum {}, skipping.", class_id);
+	}
+
 	void MapDefault(uint16_t local_id, const SpriteGroup *group) override
 	{
 		auto found = _cur_gps.grffile->badge_map.find(local_id);
@@ -361,12 +407,25 @@ static void MapSpriteGroup(ByteReader &buf, uint8_t idcount, MapSpriteGroupHandl
 
 	/* Handle specific mappings. */
 	uint8_t cidcount = buf.ReadByte();
+	uint8_t classs_id_count = 0;
+	if (cidcount == 0xFF) {
+		cidcount = buf.ReadByte();
+		classs_id_count = buf.ReadByte();
+	}
 	for (uint c = 0; c != cidcount; ++c) {
 		uint8_t cid = buf.ReadByte();
 		uint16_t groupid = buf.ReadWord();
 		if (!IsValidGroupID(groupid, "MapSpriteGroup")) continue;
 		for (uint16_t local_id : local_ids) {
 			handler.MapSpecific(local_id, cid, _cur_gps.spritegroups[groupid]);
+		}
+	}
+	for (uint c = 0; c != classs_id_count; ++c) {
+		uint16_t class_id = buf.ReadByte();
+		uint16_t groupid = buf.ReadWord();
+		if (!IsValidGroupID(groupid, "MapSpriteGroup")) continue;
+		for (uint16_t local_id : local_ids) {
+			handler.MapSpecificClass(local_id, class_id, _cur_gps.spritegroups[groupid]);
 		}
 	}
 
