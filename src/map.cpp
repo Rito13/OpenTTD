@@ -26,8 +26,8 @@
 
 /* static */ uint Map::initial_land_count; ///< Initial number of land tiles on the map.
 
-/* static */ std::unique_ptr<Tile::TileBase[]> Tile::base_tiles; ///< Base tiles of the map
-/* static */ std::unique_ptr<std::vector<Tile::TileExtended>[]> Tile::extended_tiles; ///< Extended tiles of the map
+/* static */ std::unique_ptr<Tile::TileStorage[]> Tile::base_tiles; ///< Base tiles of the map
+/* static */ std::unique_ptr<std::vector<Tile::TileStorage>[]> Tile::extended_tiles; ///< Extended tiles of the map
 
 /**
  * (Re)allocates a map with the given dimension
@@ -54,10 +54,10 @@
 	Map::size = size_x * size_y;
 	Map::tile_mask = Map::size - 1;
 
-	Tile::base_tiles = std::make_unique<Tile::TileBase[]>(Map::size);
+	Tile::base_tiles = std::make_unique<Tile::TileStorage[]>(Map::size);
 
 	size_t num_chunks = (Map::size - 1) / INDEXES_PER_SUB_TILES_CHUNK + 1;
-	Tile::extended_tiles = std::make_unique<std::vector<Tile::TileExtended>[]>(num_chunks);
+	Tile::extended_tiles = std::make_unique<std::vector<Tile::TileStorage>[]>(num_chunks);
 	for (size_t i = 0; i < num_chunks; ++i) {
 		Tile::extended_tiles[i].resize(INDEXES_PER_SUB_TILES_CHUNK);
 	}

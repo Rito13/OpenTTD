@@ -11,6 +11,7 @@
 #define TILE_TYPE_H
 
 #include "core/strong_typedef_type.hpp"
+#include "core/enum_type.hpp"
 
 static constexpr uint TILE_SIZE           = 16;                    ///< Tile size in world coordinates.
 static constexpr uint TILE_UNIT_MASK      = TILE_SIZE - 1;         ///< For masking in/out the inner-tile world coordinate units.
@@ -57,11 +58,14 @@ enum class TileType : uint8_t {
 	Industry, ///< Part of an industry.
 	TunnelBridge, ///< Tunnel entry/exit and bridge heads.
 	Object, ///< Contains objects such as transmitters and owned land.
+	OldStorage, ///< Used when loading pre new map save.
 	End, ///< End marker.
 	MaxSize = 1U << TILE_TYPE_BITS, ///< The maximum possible number of tile types to be stored in map.
+	Invalid = TileType::MaxSize - 1, ///< The tile does not exist.
 };
 
 static_assert(TileType::End <= TileType::MaxSize);
+using TileTypes = EnumBitSet<TileType, uint16_t>; ///< Storage for multiple tile types.
 
 /**
  * Additional infos of a tile on a tropic game.
