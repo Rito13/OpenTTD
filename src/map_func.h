@@ -10,6 +10,8 @@
 #ifndef MAP_FUNC_H
 #define MAP_FUNC_H
 
+#include "core/bitmath_func.hpp"
+#include "core/enum_type.hpp"
 #include "core/math_func.hpp"
 #include "tile_type.h"
 #include "map_type.h"
@@ -26,36 +28,26 @@ class Tile {
 private:
 	friend struct Map;
 	/**
-	 * Data that is stored per tile. Also used TileExtended for this.
+	 * Data that is stored per tile.
 	 * Look at docs/landscape.html for the exact meaning of the members.
 	 */
-	struct TileBase {
-		uint8_t type = 0; ///< The type (bits 4..7), bridges (2..3), rainforest/desert (0..1)
-		uint8_t height = 0; ///< The height of the northern corner.
-		uint8_t offset = 0; ///< The offset in sub tiles array. @important Runtime only.
-		uint8_t m1 = 0; ///< Primarily used for ownership information.
-		uint16_t m2 = 0; ///< Primarily used for indices to towns, industries and stations.
-		uint8_t m3 = 0; ///< General purpose
-		uint8_t m4 = 0; ///< General purpose
+	struct TileStorage {
+		uint16_t part2; ///< m2 for all tiles.
+		uint16_t part6; ///< m8 for sub tiles and type for base tiles.
+		uint8_t part1; ///< m1 for all tiles.
+		uint8_t part3; ///< m3 for all tiles.
+		uint8_t part4; ///< m7 for sub tiles and height for base tiles.
+		uint8_t part5; ///< m5 for sub tiles and offset for base tiles. @important Offset is runtime only.
 	};
 
-	static_assert(sizeof(TileBase) == 8);
+	static_assert(sizeof(TileStorage) == 8);
 
-	/**
-	 * Data that is stored per tile. Also used TileBase for this.
-	 * Look at docs/landscape.html for the exact meaning of the members.
-	 */
-	struct TileExtended {
-		uint8_t m5 = 0; ///< General purpose.
-		uint8_t m6 = 0; ///< General purpose
-		uint8_t m7 = 0; ///< Primarily used for newgrf support
-		uint16_t m8 = 0; ///< General purpose
-	};
+	static constexpr uint16_t ONLY_ROAD_AND_RAIL = to_underlying(TileType::Road) | (to_underlying(TileType::Railway) << TILE_TYPE_BITS) | (to_underlying(TileType::Invalid) << (TILE_TYPE_BITS * 2)) | (to_underlying(TileType::Invalid) << (TILE_TYPE_BITS * 3));
+	static constexpr auto BASE_TILES = TileTypes{TileType::Clear, TileType::Water, TileType::Trees, TileType::Void};
+	static constexpr uint16_t SUB_TILES_COUNT_MASK = 0x7; ///< Specifies where in the type part is stored sub tiles quantity. @note Used instead of %GB for performance reason.
 
-	static_assert(sizeof(TileExtended) == 6);
-
-	static std::unique_ptr<TileBase[]> base_tiles; ///< Pointer to the tile-array.
-	static std::unique_ptr<std::vector<TileExtended>[]> extended_tiles; ///< Pointer to the extended tile-array.
+	static std::unique_ptr<TileStorage[]> base_tiles; ///< Pointer to the tile-array.
+	static std::unique_ptr<std::vector<TileStorage>[]> extended_tiles; ///< Pointer to the extended tile-array.
 
 	TileIndex tile; ///< The tile to access the map data for.
 
@@ -92,7 +84,18 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &type()
 	{
-		return base_tiles[this->tile.base()].type;
+		return base_tiles[this->tile.base()].part3;
+	}
+
+	/**
+	 * The types of sub tiles.
+	 *
+	 * Look at docs/landscape.html for the exact meaning of the data.
+	 * @return reference to the uint16_t holding the data.
+	 */
+	[[debug_inline]] inline uint16_t &sub_tiles_types()
+	{
+		return base_tiles[this->tile.base()].part6;
 	}
 
 	/**
@@ -103,7 +106,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &height()
 	{
-		return base_tiles[this->tile.base()].height;
+		return base_tiles[this->tile.base()].part4;
 	}
 
 	/**
@@ -112,120 +115,208 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &offset()
 	{
-		return base_tiles[this->tile.base()].offset;
+		return base_tiles[this->tile.base()].part5;
 	}
 
 	/**
 	 * Get how many sub tiles does this tile has.
 	 * @return The number of available sub tiles.
 	 */
-	uint8_t GetNumberOfSubTiles()
+	[[debug_inline]] inline uint8_t GetNumberOfSubTiles()
 	{
-		return 1;
+		return 1; // Temporarly there is one sub tile.
+		return this->type() & Tile::SUB_TILES_COUNT_MASK;
 	}
+
+	/**
+	 * Get the reference to tile storage based on given %TileType.
+	 * @tparam tile_type The type of sub tile to get data for.
+	 * @return Reference to the sub tile's storage.
+	 */
+	template <TileType tile_type> [[debug_inline]] inline Tile::TileStorage &GetTileStorage();
 
 	/**
 	 * Primarily used for ownership information
 	 *
 	 * Look at docs/landscape.html for the exact meaning of the data.
+	 * @tparam tile_type For which type of tile access the memory piece.
 	 * @return reference to the byte holding the data.
 	 */
+	template <TileType tile_type = TileType::OldStorage>
 	[[debug_inline]] inline uint8_t &m1()
 	{
-		return base_tiles[this->tile.base()].m1;
+		return this->GetTileStorage<tile_type>().part1;
 	}
 
 	/**
 	 * Primarily used for indices to towns, industries and stations
 	 *
 	 * Look at docs/landscape.html for the exact meaning of the data.
+	 * @tparam tile_type For which type of tile access the memory piece.
 	 * @return reference to the uint16_t holding the data.
 	 */
+	template <TileType tile_type = TileType::OldStorage>
 	[[debug_inline]] inline uint16_t &m2()
 	{
-		return base_tiles[this->tile.base()].m2;
+		return this->GetTileStorage<tile_type>().part2;
 	}
 
 	/**
 	 * General purpose
 	 *
 	 * Look at docs/landscape.html for the exact meaning of the data.
+	 * @tparam tile_type For which type of tile access the memory piece.
 	 * @return reference to the byte holding the data.
 	 */
+	template <TileType tile_type = TileType::OldStorage>
 	[[debug_inline]] inline uint8_t &m3()
 	{
-		return base_tiles[this->tile.base()].m3;
+		static_assert(!Tile::BASE_TILES.Test(tile_type));
+		return this->GetTileStorage<tile_type>().part3;
 	}
 
 	/**
-	 * General purpose
-	 *
-	 * Look at docs/landscape.html for the exact meaning of the data.
+	 * Used when loading old saves. @see afterload.cpp.
 	 * @return reference to the byte holding the data.
 	 */
 	[[debug_inline]] inline uint8_t &m4()
 	{
-		return base_tiles[this->tile.base()].m4;
+		return base_tiles[this->tile.base()].part1; // Temporarly use m1 for it.
 	}
 
 	/**
 	 * General purpose
 	 *
 	 * Look at docs/landscape.html for the exact meaning of the data.
+	 * @tparam tile_type For which type of tile access the memory piece.
 	 * @return reference to the byte holding the data.
 	 */
+	template <TileType tile_type = TileType::OldStorage>
 	[[debug_inline]] inline uint8_t &m5()
 	{
-		return extended_tiles[this->tile.base() / INDEXES_PER_SUB_TILES_CHUNK][this->offset()].m5;
+		static_assert(!Tile::BASE_TILES.Test(tile_type));
+		return this->GetTileStorage<tile_type>().part5;
 	}
 
 	/**
-	 * General purpose
-	 *
-	 * Look at docs/landscape.html for the exact meaning of the data.
+	 * Used when loading old saves. @see afterload.cpp.
 	 * @return reference to the byte holding the data.
 	 */
 	[[debug_inline]] inline uint8_t &m6()
 	{
-		return extended_tiles[this->tile.base() / INDEXES_PER_SUB_TILES_CHUNK][this->offset()].m6;
+		return base_tiles[this->tile.base()].part3; // Temporarly use m3, because m2 is uint16_t and not uint8_t.
 	}
 
 	/**
 	 * Primarily used for newgrf support
 	 *
 	 * Look at docs/landscape.html for the exact meaning of the data.
+	 * @tparam tile_type For which type of tile access the memory piece.
 	 * @return reference to the byte holding the data.
 	 */
+	template <TileType tile_type = TileType::OldStorage>
 	[[debug_inline]] inline uint8_t &m7()
 	{
-		return extended_tiles[this->tile.base() / INDEXES_PER_SUB_TILES_CHUNK][this->offset()].m7;
+		static_assert(!Tile::BASE_TILES.Test(tile_type));
+		return this->GetTileStorage<tile_type>().part4;
 	}
 
 	/**
 	 * General purpose
 	 *
 	 * Look at docs/landscape.html for the exact meaning of the data.
+	 * @tparam tile_type For which type of tile access the memory piece.
 	 * @return reference to the uint16_t holding the data.
 	 */
+	template <TileType tile_type = TileType::OldStorage>
 	[[debug_inline]] inline uint16_t &m8()
 	{
-		return extended_tiles[this->tile.base() / INDEXES_PER_SUB_TILES_CHUNK][this->offset()].m8;
+		static_assert(!Tile::BASE_TILES.Test(tile_type));
+		return this->GetTileStorage<tile_type>().part6;
+	}
+
+	/**
+	 * Set the %TileType of one of the sub tiles.
+	 * @param sub_tile The numeric index of sub tile to set the type of. It is in range 0..(MAX_SUB_TILES_QUANTITY - 1).
+	 * @param new_type The new %TileType to set.
+	 */
+	void SetSubTileType(uint8_t sub_tile, TileType new_type)
+	{
+		SB(this->sub_tiles_types(), sub_tile * TILE_TYPE_BITS, TILE_TYPE_BITS, to_underlying(new_type));
+	}
+
+	/**
+	 * Get the %TileType of one of the sub tiles.
+	 * @param sub_tile The numeric index of sub tile to get the type of. It is in range 0..(MAX_SUB_TILES_QUANTITY - 1).
+	 * @return The %TileType of given sub tile.
+	 */
+	TileType GetSubTileType(uint8_t sub_tile)
+	{
+		return TileType(GB(this->sub_tiles_types(), sub_tile * TILE_TYPE_BITS, TILE_TYPE_BITS));
+	}
+
+	/**
+	 * Get what sub tiles this tile has.
+	 * @return Bit mask, where if n-th bit is set, then sub tile of TileType == n is available.
+	 */
+	inline TileTypes GetSubtiles()
+	{
+		return {this->GetSubTileType(0), this->GetSubTileType(1), this->GetSubTileType(2), this->GetSubTileType(3)};
 	}
 
 	/**
 	 * Creates new sub tile in the sub tiles array for this tile index.
+	 * @tparam tile_type Of what type is the new sub tile.
 	 */
+	template <TileType tile_type>
 	void AddSubTile()
 	{
+		assert(!TileTypes{this->GetSubtiles()}.Test(tile_type));
+
 		auto chunk = this->tile.base() / INDEXES_PER_SUB_TILES_CHUNK;
 		uint8_t new_offset = 0;
+
+		auto finalize = [this, new_offset](const std::vector<Tile::TileStorage> &old_storage, std::vector<Tile::TileStorage> new_storage) {
+			if constexpr (tile_type == TileType::Railway) {
+				if (this->GetNumberOfSubTiles() == 1 && this->GetSubtiles().Test(TileType::Road)) {
+					new_storage[new_offset] = old_storage[this->offset()]; // Copy the road.
+					new_storage[new_offset + 1] = Tile::TileStorage{}; // Clear the new tile.
+					this->sub_tiles_types() = Tile::ONLY_ROAD_AND_RAIL;
+				} else {
+					for (int j = this->GetNumberOfSubTiles() - 1; j >= 0; --j) {
+						new_storage[new_offset + 1 + j] = old_storage[this->offset() + j];
+						this->SetSubTileType(j + 1, this->GetSubTileType(j));
+					}
+					new_storage[new_offset] = Tile::TileStorage{}; // Clear the new tile.
+					this->SetSubTileType(0, tile_type);
+				}
+			} else if constexpr (tile_type == TileType::Road) {
+				int end = 0;
+				if (this->GetNumberOfSubTiles() >= 2) {
+					end = 1;
+					new_storage[new_offset] = old_storage[this->offset()]; // Copy the first sub tile.
+				}
+				new_storage[new_offset + end] = Tile::TileStorage{}; // Clear the new tile.
+				for (int j = this->GetNumberOfSubTiles() - 1; j >= end; --j) {
+					new_storage[new_offset + 1 + j] = old_storage[this->offset() + j];
+					this->SetSubTileType(j + 1, this->GetSubTileType(j));
+				}
+				this->SetSubTileType(end, tile_type);
+			} else {
+				for (int j = 0; j < this->GetNumberOfSubTiles(); ++j) {
+					new_storage[new_offset + j] = old_storage[this->offset() + j];
+				}
+				this->SetSubTileType(this->GetNumberOfSubTiles(), tile_type);
+			}
+		};
+
 		if (extended_tiles[chunk].size() > MAX_SUB_TILES_OFFSET) {
 			/* No space for new sub tile, clear unused parts. */
 			size_t available_sub_tiles = 0;
 			for (TileIndex i{chunk * INDEXES_PER_SUB_TILES_CHUNK}; i < (chunk + 1) * INDEXES_PER_SUB_TILES_CHUNK; ++i) {
 				available_sub_tiles += Tile(i).GetNumberOfSubTiles();
 			}
-			std::vector<Tile::TileExtended> new_state(available_sub_tiles + 1);
+			std::vector<Tile::TileStorage> new_state(available_sub_tiles + 1);
 			for (TileIndex i{chunk * INDEXES_PER_SUB_TILES_CHUNK}; i < (chunk + 1) * INDEXES_PER_SUB_TILES_CHUNK; ++i) {
 				if (i == this->tile) continue;
 				Tile t = Tile(i);
@@ -235,29 +326,86 @@ public:
 				t.offset() = new_offset;
 				new_offset += t.GetNumberOfSubTiles();
 			}
-			for (int j = 0; j < this->GetNumberOfSubTiles(); ++j) {
-				new_state[new_offset + j] = extended_tiles[chunk][this->offset() + j];
-			}
+			finalize(extended_tiles[chunk], new_state);
 			new_state.swap(extended_tiles[chunk]);
 		} else {
 			new_offset = extended_tiles[chunk].size();
 			extended_tiles[chunk].resize(new_offset + this->GetNumberOfSubTiles() + 1);
-			for (int j = 0; j < this->GetNumberOfSubTiles(); ++j) {
-				extended_tiles[chunk][new_offset + j] = extended_tiles[chunk][this->offset() + j];
-			}
+			finalize(extended_tiles[chunk], extended_tiles[chunk]);
 		}
-		extended_tiles[chunk][new_offset + this->GetNumberOfSubTiles()] = Tile::TileExtended{}; // Clear new sub tile.
+
 		this->offset() = new_offset;
+		this->type() = (this->type() & ~Tile::SUB_TILES_COUNT_MASK) | (this->type() & Tile::SUB_TILES_COUNT_MASK + 1);
 	}
 
 	/**
 	 * Removes sub tile in the sub tiles array for this tile index.
+	 * @tparam tile_type Specifies which sub tile to remove.
 	 */
+	template <TileType tile_type>
 	void RemoveSubTile()
 	{
-		/* Because GetNumberOfSubTiles always returns 1 and AddSubTile handes the removal in sub tiles array, we don't need to do anything here. */
+		assert(TileTypes{this->GetSubtiles()}.Test(tile_type));
+
+		if constexpr (tile_type == TileType::Railway) {
+			auto chunk = this->tile.base() / INDEXES_PER_SUB_TILES_CHUNK;
+			if (this->sub_tiles_types() != Tile::ONLY_ROAD_AND_RAIL) {
+				for (int i = 1; i < this->GetNumberOfSubTiles(); ++i) {
+					extended_tiles[chunk][this->offset() + i - 1] = extended_tiles[chunk][this->offset() + i];
+					this->SetSubTileType(i - 1, this->GetSubTileType(i));
+				}
+			}
+		} else if constexpr (tile_type == TileType::Road) {
+			auto chunk = this->tile.base() / INDEXES_PER_SUB_TILES_CHUNK;
+			auto last_sub_tile_index = this->GetNumberOfSubTiles() - 1;
+			extended_tiles[chunk][this->offset() + last_sub_tile_index - 1] = extended_tiles[chunk][this->offset() + last_sub_tile_index];
+			this->SetSubTileType(last_sub_tile_index - 1, this->GetSubTileType(last_sub_tile_index));
+		}
+
+		this->SetSubTileType(this->GetNumberOfSubTiles() - 1, TileType::Invalid);
+		this->type() = (this->type() & ~Tile::SUB_TILES_COUNT_MASK) | (this->type() & Tile::SUB_TILES_COUNT_MASK - 1);
 	}
 };
+
+template <TileType tile_type>
+[[debug_inline]] inline Tile::TileStorage &Tile::GetTileStorage()
+{
+	static_assert(!Tile::BASE_TILES.Test(tile_type));
+	/* Return the last sub tile. */
+	return extended_tiles[this->tile.base() / INDEXES_PER_SUB_TILES_CHUNK][this->offset() + this->GetNumberOfSubTiles() - 1];
+}
+
+template <> [[debug_inline]] inline Tile::TileStorage &Tile::GetTileStorage<TileType::Railway>()
+{
+	/* Return second sub tile iff has only rail and road sub tiles. Return first sub tile otherwise. */
+	return Tile::extended_tiles[this->tile.base() / INDEXES_PER_SUB_TILES_CHUNK][this->offset() + size_t(this->sub_tiles_types() == Tile::ONLY_ROAD_AND_RAIL)];
+}
+
+template <> [[debug_inline]] inline Tile::TileStorage &Tile::GetTileStorage<TileType::Road>()
+{
+	/* Return first sub tile if has two or less sub tiles and second otherwise. */
+	return Tile::extended_tiles[this->tile.base() / INDEXES_PER_SUB_TILES_CHUNK][this->offset() + size_t(this->GetNumberOfSubTiles() > 2)];
+}
+
+template <> [[debug_inline]] inline Tile::TileStorage &Tile::GetTileStorage<TileType::Clear>()
+{
+	return base_tiles[this->tile.base()];
+}
+
+template <> [[debug_inline]] inline Tile::TileStorage &Tile::GetTileStorage<TileType::Water>()
+{
+	return base_tiles[this->tile.base()];
+}
+
+template <> [[debug_inline]] inline Tile::TileStorage &Tile::GetTileStorage<TileType::Trees>()
+{
+	return base_tiles[this->tile.base()];
+}
+
+template <> [[debug_inline]] inline Tile::TileStorage &Tile::GetTileStorage<TileType::Void>()
+{
+	return base_tiles[this->tile.base()];
+}
 
 /**
  * Size related data of the map.
