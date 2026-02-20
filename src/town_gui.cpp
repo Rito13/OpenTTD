@@ -717,16 +717,18 @@ static constexpr std::initializer_list<NWidgetPart> _nested_town_directory_widge
 /** Town directory window class. */
 struct TownDirectoryWindow : public Window {
 private:
-	/* Runtime saved values */
+	/** Runtime saved values. */
 	static Listing last_sorting;
 
-	/* Constants for sorting towns */
+	/** @name Constants for sorting towns.
+	 * @{ */
 	static inline const StringID sorter_names[] = {
 		STR_SORT_BY_NAME,
 		STR_SORT_BY_POPULATION,
 		STR_SORT_BY_RATING,
 	};
 	static const std::initializer_list<GUITownList::SortFunction * const> sorter_funcs;
+	/** @} */
 
 	StringFilter string_filter{}; ///< Filter for towns
 	QueryString townname_editbox; ///< Filter editbox
@@ -1478,8 +1480,7 @@ public:
 	static inline int sel_type; ///< Currently selected HouseID.
 	static inline int sel_view; ///< Currently selected 'view'. This is not controllable as its based on random data.
 
-	/* Houses do not have classes like NewGRFClass. We'll make up fake classes based on town zone
-	 * availability instead. */
+	/** Houses do not have classes like NewGRFClass. We'll make up fake classes based on town zone availability instead. */
 	static inline const std::array<StringID, NUM_HOUSE_ZONES> zone_names = {
 		STR_HOUSE_PICKER_CLASS_ZONE1,
 		STR_HOUSE_PICKER_CLASS_ZONE2,

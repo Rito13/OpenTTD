@@ -25,9 +25,11 @@
 
 #include "safeguards.h"
 
-/* Variables to display file lists */
+/** @{
+ * Variables to display file lists. */
 static std::string *_fios_path = nullptr;
 SortingBits _savegame_sort_order = SORT_BY_DATE | SORT_DESCENDING;
+/** @} */
 
 /* OS-specific functions are taken from their respective files (win32/unix .c) */
 extern bool FiosIsRoot(const std::string &path);

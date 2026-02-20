@@ -276,7 +276,8 @@ protected:
 		ALL_CARGOTYPES,
 	};
 
-	/* Constants for sorting stations */
+	/** @name Constants for sorting stations.
+	 * @{ */
 	static inline const StringID sorter_names[] = {
 		STR_SORT_BY_NAME,
 		STR_SORT_BY_FACILITY,
@@ -286,6 +287,7 @@ protected:
 		STR_SORT_BY_RATING_MIN,
 	};
 	static const std::initializer_list<GUIStationList::SortFunction * const> sorter_funcs;
+	/** @} */
 
 	FilterState filter{};
 	GUIStationList stations{filter.cargoes};

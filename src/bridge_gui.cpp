@@ -74,15 +74,18 @@ private:
 	/* Runtime saved values */
 	static Listing last_sorting; ///< Last setting of the sort.
 
-	/* Constants for sorting the bridges */
+	/** @name Constants for sorting the bridges.
+	 * @{ */
 	static inline const StringID sorter_names[] = {
 		STR_SORT_BY_NUMBER,
 		STR_SORT_BY_COST,
 		STR_SORT_BY_MAX_SPEED,
 	};
 	static const std::initializer_list<GUIBridgeList::SortFunction * const> sorter_funcs;
+	/** @} */
 
-	/* Internal variables */
+	/** @name Internal variables.
+	 * @{ */
 	TileIndex start_tile = INVALID_TILE;
 	TileIndex end_tile = INVALID_TILE;
 	TransportType transport_type = INVALID_TRANSPORT;
@@ -90,6 +93,7 @@ private:
 	GUIBridgeList bridges{};
 	int icon_width = 0; ///< Scaled width of the the bridge icon sprite.
 	Scrollbar *vscroll = nullptr;
+	/** @} */
 
 	/** Sort the bridges by their index. @copydoc GUIList::Sorter */
 	static bool BridgeIndexSorter(const BuildBridgeData &a, const BuildBridgeData &b)
