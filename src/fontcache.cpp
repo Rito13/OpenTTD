@@ -103,7 +103,7 @@ int GetCharacterHeight(FontSize size)
 	}
 }
 
-/* Check if a glyph should be rendered with anti-aliasing. */
+/** Check if a glyph should be rendered with anti-aliasing. */
 bool GetFontAAState()
 {
 	/* AA is only supported for 32 bpp */

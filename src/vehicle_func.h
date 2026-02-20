@@ -261,7 +261,7 @@ extern const StringID _veh_autoreplace_msg_table[];
 extern const StringID _veh_refit_msg_table[];
 extern const StringID _send_to_depot_msg_table[];
 
-/* Functions to find the right command for certain vehicle type */
+/** Functions to find the right command for certain vehicle type. */
 inline StringID GetCmdBuildVehMsg(VehicleType type)
 {
 	return _veh_build_msg_table[type];

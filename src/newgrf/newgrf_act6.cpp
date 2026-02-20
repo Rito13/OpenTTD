@@ -17,7 +17,7 @@
 std::map<GRFLocation, std::pair<SpriteID, uint16_t>> _grm_sprites;
 GRFLineToSpriteOverride _grf_line_to_action6_sprite_override;
 
-/* Action 0x06 */
+/** Action 0x06. */
 static void CfgApply(ByteReader &buf)
 {
 	/* <06> <param-num> <param-size> <offset> ... <FF>

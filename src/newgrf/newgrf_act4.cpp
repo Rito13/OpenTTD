@@ -27,7 +27,7 @@
 
 #include "../safeguards.h"
 
-/* Action 0x04 */
+/** Action 0x04. */
 static void FeatureNewName(ByteReader &buf)
 {
 	/* <04> <veh-type> <language-id> <num-veh> <offset> <data...>

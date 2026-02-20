@@ -170,7 +170,7 @@ void EmitSingleChar(StringBuilder &builder, std::string_view param, char32_t val
 	builder.PutUtf8(value);
 }
 
-/* The plural specifier looks like
+/** The plural specifier looks like
  * {NUM} {PLURAL <ARG#> passenger passengers} then it picks either passenger/passengers depending on the count in NUM */
 static std::pair<std::optional<size_t>, std::optional<size_t>> ParseRelNum(StringConsumer &consumer)
 {
@@ -185,7 +185,7 @@ static std::pair<std::optional<size_t>, std::optional<size_t>> ParseRelNum(Strin
 	return {v, offset};
 }
 
-/* Parse out the next word, or nullptr */
+/** Parse out the next word, or nullptr. */
 std::optional<std::string_view> ParseWord(StringConsumer &consumer)
 {
 	consumer.SkipUntilCharNotIn(StringConsumer::WHITESPACE_NO_NEWLINE);
@@ -202,7 +202,7 @@ std::optional<std::string_view> ParseWord(StringConsumer &consumer)
 	}
 }
 
-/* This is encoded like
+/** This is encoded like
  *  CommandByte <ARG#> <NUM> {Length of each string} {each string} */
 static void EmitWordList(StringBuilder &builder, const std::vector<std::string> &words)
 {
@@ -325,7 +325,7 @@ static uint8_t ResolveCaseName(std::string_view str)
 	return case_idx + 1;
 }
 
-/* returns cmd == nullptr on eof */
+/** Returns cmd == nullptr on eof. */
 static ParsedCommandString ParseCommandString(StringConsumer &consumer)
 {
 	ParsedCommandString result;

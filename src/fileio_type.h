@@ -163,7 +163,7 @@ private:
 	FileHandle(FILE *f) : f(f) { assert(this->f != nullptr); }
 };
 
-/* Ensure has_value() is used consistently. */
+/** Ensure has_value() is used consistently. */
 template <> constexpr std::optional<FileHandle>::operator bool() const noexcept = delete;
 
 #endif /* FILEIO_TYPE_H */

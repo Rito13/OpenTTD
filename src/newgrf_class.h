@@ -48,7 +48,7 @@ public:
 	uint32_t global_id; ///< Global ID for class, e.g. 'DFLT', 'WAYP', etc.
 	StringID name;    ///< Name of this class.
 
-	/* Public constructor as emplace_back needs access. */
+	/** Public constructor as emplace_back needs access. */
 	NewGRFClass(uint32_t global_id, StringID name) : global_id(global_id), name(name) { }
 
 	/**

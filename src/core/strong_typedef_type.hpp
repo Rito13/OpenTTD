@@ -139,7 +139,7 @@ namespace StrongType {
 		constexpr Typedef &operator =(const Typedef &rhs) { this->value = rhs.value; return *this; }
 		constexpr Typedef &operator =(Typedef &&rhs) { this->value = std::move(rhs.value); return *this; }
 
-		/* Only allow conversion to BaseType via method. */
+		/** Only allow conversion to BaseType via method. */
 		constexpr TBaseType base() const noexcept { return this->value; }
 
 		/* Only allow TProperties classes access to the internal value. Everyone else needs to call .base(). */

@@ -90,7 +90,7 @@ std::span<const Action5Type> GetAction5Types()
 	return _action5_types;
 }
 
-/* Action 0x05 */
+/** Action 0x05. */
 static void GraphicsNew(ByteReader &buf)
 {
 	/* <05> <graphics-type> <num-sprites> <other data...>
@@ -179,7 +179,7 @@ static void GraphicsNew(ByteReader &buf)
 	_cur_gps.skip_sprites = skip_num;
 }
 
-/* Action 0x05 (SKIP) */
+/** Action 0x05 (SKIP). */
 static void SkipAct5(ByteReader &buf)
 {
 	/* Ignore type byte */

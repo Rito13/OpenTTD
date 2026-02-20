@@ -282,7 +282,7 @@ bool DrawNewAirportTile(TileInfo *ti, Station *st, const AirportTileSpec *airts)
 	return true;
 }
 
-/* Simple wrapper for GetAirportTileCallback to keep the animation unified. */
+/** Simple wrapper for GetAirportTileCallback to keep the animation unified. */
 static uint16_t GetSimpleAirportTileCallback(CallbackID callback, uint32_t param1, uint32_t param2, const AirportTileSpec *ats, Station *st, TileIndex tile, int)
 {
 	return GetAirportTileCallback(callback, param1, param2, ats, st, tile);

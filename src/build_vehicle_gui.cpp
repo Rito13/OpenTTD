@@ -507,7 +507,7 @@ static int DrawCargoCapacityInfo(int left, int right, int y, TestedEngineDetails
 	return y;
 }
 
-/* Draw rail wagon specific details */
+/** Draw rail wagon specific details. */
 static int DrawRailWagonPurchaseInfo(int left, int right, int y, EngineID engine_number, const RailVehicleInfo *rvi, TestedEngineDetails &te)
 {
 	const Engine *e = Engine::Get(engine_number);
@@ -544,7 +544,7 @@ static int DrawRailWagonPurchaseInfo(int left, int right, int y, EngineID engine
 	return y;
 }
 
-/* Draw locomotive specific details */
+/** Draw locomotive specific details. */
 static int DrawRailEnginePurchaseInfo(int left, int right, int y, EngineID engine_number, const RailVehicleInfo *rvi, TestedEngineDetails &te)
 {
 	const Engine *e = Engine::Get(engine_number);
@@ -601,7 +601,7 @@ static int DrawRailEnginePurchaseInfo(int left, int right, int y, EngineID engin
 	return y;
 }
 
-/* Draw road vehicle specific details */
+/** Draw road vehicle specific details. */
 static int DrawRoadVehPurchaseInfo(int left, int right, int y, EngineID engine_number, TestedEngineDetails &te)
 {
 	const Engine *e = Engine::Get(engine_number);
@@ -644,7 +644,7 @@ static int DrawRoadVehPurchaseInfo(int left, int right, int y, EngineID engine_n
 	return y;
 }
 
-/* Draw ship specific details */
+/** Draw ship specific details. */
 static int DrawShipPurchaseInfo(int left, int right, int y, EngineID engine_number, bool refittable, TestedEngineDetails &te)
 {
 	const Engine *e = Engine::Get(engine_number);
@@ -1415,7 +1415,7 @@ struct BuildVehicleWindow : Window {
 		return this->string_filter.GetState();
 	}
 
-	/* Figure out what train EngineIDs to put in the list */
+	/** Figure out what train EngineIDs to put in the list. */
 	void GenerateBuildTrainList(GUIEngineList &list)
 	{
 		FlatSet<EngineID> variants;

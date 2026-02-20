@@ -291,7 +291,7 @@ static const SpriteGroup *GetCallbackResultGroup(uint16_t value)
 	return group;
 }
 
-/* Helper function to either create a callback or link to a previously
+/** Helper function to either create a callback or link to a previously
  * defined spritegroup. */
 static const SpriteGroup *GetGroupFromGroupID(uint8_t setid, uint8_t type, uint16_t groupid)
 {
@@ -333,7 +333,7 @@ static const SpriteGroup *CreateGroupFromGroupID(GrfSpecFeature feature, uint8_t
 	return ResultSpriteGroup::Create(spriteset_start, num_sprites);
 }
 
-/* Action 0x02 */
+/** Action 0x02. */
 static void NewSpriteGroup(ByteReader &buf)
 {
 	/* <02> <feature> <set-id> <type/num-entries> <feature-specific-data...>

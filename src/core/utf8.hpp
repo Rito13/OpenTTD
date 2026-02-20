@@ -16,7 +16,7 @@
 [[nodiscard]] std::pair<char[4], size_t> EncodeUtf8(char32_t c);
 [[nodiscard]] std::pair<size_t, char32_t> DecodeUtf8(std::string_view buf);
 
-/* Check if the given character is part of a UTF8 sequence */
+/** Check if the given character is part of a UTF8 sequence. */
 inline bool IsUtf8Part(char c)
 {
 	return GB(c, 6, 2) == 2;

@@ -1224,7 +1224,7 @@ uint16_t GetVehicleCallbackParent(CallbackID callback, uint32_t param1, uint32_t
 }
 
 
-/* Callback 36 handlers */
+/** Callback 36 handlers. */
 int GetVehicleProperty(const Vehicle *v, PropertyID property, int orig_value, bool is_signed)
 {
 	return GetEngineProperty(v->engine_type, property, orig_value, v, is_signed);

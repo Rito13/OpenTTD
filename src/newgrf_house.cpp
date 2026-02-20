@@ -551,7 +551,7 @@ void DrawNewHouseTileInGUI(int x, int y, const HouseSpec *spec, HouseID house_id
 	DrawNewGRFTileSeqInGUI(x, y, &dts, stage, palette);
 }
 
-/* Simple wrapper for GetHouseCallback to keep the animation unified. */
+/** Simple wrapper for GetHouseCallback to keep the animation unified. */
 static uint16_t GetSimpleHouseCallback(CallbackID callback, uint32_t param1, uint32_t param2, const HouseSpec *spec, Town *town, TileIndex tile, CargoTypes extra_data)
 {
 	return GetHouseCallback(callback, param1, param2, spec - HouseSpec::Get(0), town, tile, {}, false, 0, extra_data);

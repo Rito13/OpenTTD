@@ -73,7 +73,7 @@ static const uint GEN_HASHY_BITS = 6;
 static const uint GEN_HASHX_BUCKET_BITS = 7;
 static const uint GEN_HASHY_BUCKET_BITS = 6;
 
-/* Compute hash for vehicle coord */
+/** Compute hash for vehicle coord. */
 static inline uint GetViewportHashX(int x)
 {
 	return GB(x, GEN_HASHX_BUCKET_BITS + ZOOM_BASE_SHIFT, GEN_HASHX_BITS);

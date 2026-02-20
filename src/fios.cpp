@@ -29,12 +29,12 @@
 static std::string *_fios_path = nullptr;
 SortingBits _savegame_sort_order = SORT_BY_DATE | SORT_DESCENDING;
 
-/* OS-specific functions are taken from their respective files (win32/unix .c) */
+/** OS-specific functions are taken from their respective files (win32/unix .c). */
 extern bool FiosIsRoot(const std::string &path);
 extern bool FiosIsHiddenFile(const std::filesystem::path &path);
 extern void FiosGetDrives(FileList &file_list);
 
-/* get the name of an oldstyle savegame */
+/** Get the name of an oldstyle savegame. */
 extern std::string GetOldSaveGameName(std::string_view file);
 
 /**

@@ -428,7 +428,7 @@ protected:
 	FontSize text_size = FS_NORMAL; ///< Size of text within widget.
 	StringAlignment align = SA_CENTER; ///< Alignment of text/image within widget.
 
-	/* This function constructs the widgets, so it should be able to write the variables. */
+	/** This function constructs the widgets, so it should be able to write the variables. */
 	friend void ApplyNWidgetPartAttribute(const struct NWidgetPart &nwid, NWidgetBase *dest);
 };
 
@@ -1145,7 +1145,7 @@ struct NWidgetPart {
 		constexpr NWidgetPartUnion(NWidgetPartAspect aspect) : aspect(aspect) {}
 	} u;
 
-	/* Constructors for each NWidgetPart data type. */
+	/** Constructors for each NWidgetPart data type. */
 	explicit constexpr NWidgetPart(WidgetType type) : type(type), u() {}
 	constexpr NWidgetPart(WidgetType type, Point xy) : type(type), u(xy) {}
 	constexpr NWidgetPart(WidgetType type, NWidgetPartDataTip data_tip) : type(type), u(data_tip) {}

@@ -67,7 +67,7 @@ static void LoadGRFSound(size_t offs, SoundEntry *sound)
 	}
 }
 
-/* Action 0x11 */
+/** Action 0x11. */
 static void GRFSound(ByteReader &buf)
 {
 	/* <11> <num>
@@ -160,7 +160,7 @@ static void GRFSound(ByteReader &buf)
 	}
 }
 
-/* Action 0x11 (SKIP) */
+/** Action 0x11 (SKIP). */
 static void SkipAct11(ByteReader &buf)
 {
 	/* <11> <num>

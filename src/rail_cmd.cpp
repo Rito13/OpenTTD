@@ -407,7 +407,7 @@ static CommandCost CheckRailSlope(Slope tileh, TrackBits rail_bits, TrackBits ex
 	return CommandCost(EXPENSES_CONSTRUCTION, f_new != f_old ? _price[Price::BuildFoundation] : (Money)0);
 }
 
-/* Validate functions for rail building */
+/** Validate functions for rail building. */
 static inline bool ValParamTrackOrientation(Track track)
 {
 	return IsValidTrack(track);

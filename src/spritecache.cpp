@@ -124,7 +124,7 @@ bool SkipSpriteData(SpriteFile &file, uint8_t type, uint16_t num)
 	return true;
 }
 
-/* Check if the given Sprite ID exists */
+/** Check if the given Sprite ID exists. */
 bool SpriteExists(SpriteID id)
 {
 	if (id >= _spritecache.size()) return false;

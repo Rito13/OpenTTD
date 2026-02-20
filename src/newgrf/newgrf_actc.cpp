@@ -15,7 +15,7 @@
 
 #include "../safeguards.h"
 
-/* Action 0x0C */
+/** Action 0x0C. */
 static void GRFComment(ByteReader &buf)
 {
 	/* <0C> [<ignored...>]

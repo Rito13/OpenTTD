@@ -15,7 +15,7 @@
 
 #include "../safeguards.h"
 
-/* Action 0x01 */
+/** Action 0x01. */
 static void NewSpriteSet(ByteReader &buf)
 {
 	/* Basic format:    <01> <feature> <num-sets> <num-ent>
@@ -62,7 +62,7 @@ static void NewSpriteSet(ByteReader &buf)
 	}
 }
 
-/* Action 0x01 (SKIP) */
+/** Action 0x01 (SKIP). */
 static void SkipAct1(ByteReader &buf)
 {
 	buf.ReadByte();

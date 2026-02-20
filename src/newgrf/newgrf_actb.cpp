@@ -16,7 +16,7 @@
 
 #include "../safeguards.h"
 
-/* Action 0x0B */
+/** Action 0x0B. */
 static void GRFLoadError(ByteReader &buf)
 {
 	/* <0B> <severity> <language-id> <message-id> [<message...> 00] [<data...>] 00 [<parnum>]

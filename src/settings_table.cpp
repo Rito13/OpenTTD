@@ -667,7 +667,7 @@ static void ChangeMinutesPerYear(int32_t new_value)
 	}
 }
 
-/* Get the valid range of the "minutes per calendar year" setting. */
+/** Get the valid range of the "minutes per calendar year" setting. */
 static std::tuple<int32_t, uint32_t> GetMinutesPerYearRange(const IntSettingDesc &)
 {
 	/* Allow a non-default value only if using Wallclock timekeeping units. */

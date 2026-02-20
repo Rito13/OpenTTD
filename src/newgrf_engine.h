@@ -96,7 +96,7 @@ uint16_t GetVehicleCallback(CallbackID callback, uint32_t param1, uint32_t param
 uint16_t GetVehicleCallbackParent(CallbackID callback, uint32_t param1, uint32_t param2, EngineID engine, const Vehicle *v, const Vehicle *parent, std::span<int32_t> regs100 = {});
 bool UsesWagonOverride(const Vehicle *v);
 
-/* Handler to Evaluate callback 36. If the callback fails (i.e. most of the
+/** Handler to Evaluate callback 36. If the callback fails (i.e. most of the
  * time) orig_value is returned */
 int GetVehicleProperty(const Vehicle *v, PropertyID property, int orig_value, bool is_signed = false);
 int GetEngineProperty(EngineID engine, PropertyID property, int orig_value, const Vehicle *v = nullptr, bool is_signed = false);

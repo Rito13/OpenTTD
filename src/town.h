@@ -340,8 +340,7 @@ void MakeDefaultName(T *obj)
 	obj->town_cn = (uint16_t)next; // set index...
 }
 
-/*
- * Converts original town ticks counters to plain game ticks. Note that
+/** * Converts original town ticks counters to plain game ticks. Note that
  * tick 0 is a valid tick so actual amount is one more than the counter value.
  */
 inline uint16_t TownTicksToGameTicks(uint16_t ticks)

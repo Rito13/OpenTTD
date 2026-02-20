@@ -17,7 +17,7 @@
 
 #include "../safeguards.h"
 
-/* Action 0x08 (GLS_FILESCAN) */
+/** Action 0x08 (GLS_FILESCAN). */
 static void ScanInfo(ByteReader &buf)
 {
 	uint8_t grf_version = buf.ReadByte();
@@ -45,7 +45,7 @@ static void ScanInfo(ByteReader &buf)
 	_cur_gps.skip_sprites = -1;
 }
 
-/* Action 0x08 */
+/** Action 0x08. */
 static void GRFInfo(ByteReader &buf)
 {
 	/* <08> <version> <grf-id> <name> <info>

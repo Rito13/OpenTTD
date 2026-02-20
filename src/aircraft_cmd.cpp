@@ -1819,7 +1819,7 @@ static void AirportGoToNextPosition(Aircraft *v)
 	AirportMove(v, apc); // move aircraft to next position
 }
 
-/* gets pos from vehicle and next orders */
+/** Gets pos from vehicle and next orders. */
 static bool AirportMove(Aircraft *v, const AirportFTAClass *apc)
 {
 	/* error handling */

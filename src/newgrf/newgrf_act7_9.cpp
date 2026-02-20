@@ -157,7 +157,7 @@ uint32_t GetParamVal(uint8_t param, uint32_t *cond_val)
 	}
 }
 
-/* Action 0x07
+/** Action 0x07
  * Action 0x09 */
 static void SkipIf(ByteReader &buf)
 {

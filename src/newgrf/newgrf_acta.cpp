@@ -32,7 +32,7 @@ static bool IsGRMReservedSprite(SpriteID first_sprite, uint16_t num_sprites)
 	return false;
 }
 
-/* Action 0x0A */
+/** Action 0x0A. */
 static void SpriteReplace(ByteReader &buf)
 {
 	/* <0A> <num-sets> <set1> [<set2> ...]
@@ -79,7 +79,7 @@ static void SpriteReplace(ByteReader &buf)
 	}
 }
 
-/* Action 0x0A (SKIP) */
+/** Action 0x0A (SKIP). */
 static void SkipActA(ByteReader &buf)
 {
 	uint8_t num_sets = buf.ReadByte();

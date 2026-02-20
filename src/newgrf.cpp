@@ -1249,7 +1249,7 @@ struct InvokeGrfActionHandler {
 	}
 };
 
-/* Here we perform initial decoding of some special sprites (as are they
+/** Here we perform initial decoding of some special sprites (as are they
  * described at http://www.ttdpatch.net/src/newgrf.txt, but this is only a very
  * partial implementation yet).
  * XXX: We consider GRF files trusted. It would be trivial to exploit OTTD by

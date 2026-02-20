@@ -227,7 +227,7 @@ uint8_t NetworkSpectatorCount()
 }
 
 
-/* This puts a text-message to the console, or in the future, the chat-box,
+/** This puts a text-message to the console, or in the future, the chat-box,
  *  (to keep it all a bit more general)
  * If 'self_send' is true, this is the client who is sending the message */
 void NetworkTextMessage(NetworkAction action, TextColour colour, bool self_send, std::string_view name, std::string_view str, StringParameter &&data)
@@ -280,7 +280,7 @@ void NetworkTextMessage(NetworkAction action, TextColour colour, bool self_send,
 	NetworkAddChatMessage(colour, _settings_client.gui.network_chat_timeout, message);
 }
 
-/* Calculate the frame-lag of a client */
+/** Calculate the frame-lag of a client. */
 uint NetworkCalculateLag(const NetworkClientSocket *cs)
 {
 	int lag = cs->last_frame_server - cs->last_frame;
@@ -294,7 +294,7 @@ uint NetworkCalculateLag(const NetworkClientSocket *cs)
 }
 
 
-/* There was a non-recoverable error, drop back to the main menu with a nice
+/** There was a non-recoverable error, drop back to the main menu with a nice
  *  error */
 void ShowNetworkError(StringID error_string)
 {
@@ -625,7 +625,7 @@ void NetworkClose(bool close_admins)
 	InitializeNetworkPools(close_admins);
 }
 
-/* Initializes the network (cleans sockets and stuff) */
+/** Initializes the network (cleans sockets and stuff). */
 static void NetworkInitialize(bool close_admins = true)
 {
 	InitializeNetworkPools(close_admins);

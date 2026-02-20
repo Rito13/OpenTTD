@@ -40,7 +40,7 @@ void ResetGRM()
 	_grm_cargoes.fill(0);
 }
 
-/* Action 0x0D (GLS_SAFETYSCAN) */
+/** Action 0x0D (GLS_SAFETYSCAN). */
 static void SafeParamSet(ByteReader &buf)
 {
 	uint8_t target = buf.ReadByte();

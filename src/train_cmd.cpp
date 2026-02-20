@@ -2727,7 +2727,7 @@ public:
 	}
 };
 
-/* choose a track */
+/** Choose a track. */
 static Track ChooseTrainTrack(Train *v, TileIndex tile, DiagDirection enterdir, TrackBits tracks, bool force_res, bool *got_reservation, bool mark_stuck)
 {
 	Track best_track = INVALID_TRACK;
@@ -3064,7 +3064,7 @@ static void TrainEnterStation(Train *v, StationID station)
 	TriggerStationAnimation(st, v->tile, StationAnimationTrigger::VehicleArrives);
 }
 
-/* Check if the vehicle is compatible with the specified tile */
+/** Check if the vehicle is compatible with the specified tile. */
 static inline bool CheckCompatibleRail(const Train *v, TileIndex tile)
 {
 	return IsTileOwner(tile, v->owner) &&

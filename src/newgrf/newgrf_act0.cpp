@@ -168,7 +168,7 @@ struct InvokeGrfChangeInfoHandler {
 	}
 };
 
-/* Action 0x00 */
+/** Action 0x00. */
 static void FeatureChangeInfo(ByteReader &buf)
 {
 	/* <00> <feature> <num-props> <num-info> <id> (<property <new-info>)...
@@ -214,7 +214,7 @@ static void FeatureChangeInfo(ByteReader &buf)
 	}
 }
 
-/* Action 0x00 (GLS_SAFETYSCAN) */
+/** Action 0x00 (GLS_SAFETYSCAN). */
 static void SafeChangeInfo(ByteReader &buf)
 {
 	GrfSpecFeature feature{buf.ReadByte()};
@@ -248,7 +248,7 @@ static void SafeChangeInfo(ByteReader &buf)
 	GRFUnsafe(buf);
 }
 
-/* Action 0x00 (GLS_RESERVE) */
+/** Action 0x00 (GLS_RESERVE). */
 static void ReserveChangeInfo(ByteReader &buf)
 {
 	GrfSpecFeature feature{buf.ReadByte()};

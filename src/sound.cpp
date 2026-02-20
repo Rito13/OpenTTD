@@ -94,7 +94,7 @@ void InitializeSound()
 }
 
 
-/* Low level sound player */
+/** Low level sound player. */
 static void StartSound(SoundID sound_id, float pan, uint volume)
 {
 	if (volume == 0) return;

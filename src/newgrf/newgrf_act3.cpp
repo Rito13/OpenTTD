@@ -383,7 +383,7 @@ static void MapSpriteGroup(ByteReader &buf, uint8_t idcount, MapSpriteGroupHandl
 	}
 }
 
-/* Action 0x03 */
+/** Action 0x03. */
 static void FeatureMapSpriteGroup(ByteReader &buf)
 {
 	/* <03> <feature> <n-id> <ids>... <num-cid> [<cargo-type> <cid>]... <def-cid>

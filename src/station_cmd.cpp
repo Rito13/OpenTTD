@@ -4332,7 +4332,7 @@ void IncreaseStats(Station *st, const Vehicle *front, StationID next_station_id,
 	}
 }
 
-/* called for every station each tick */
+/** Called for every station each tick. */
 static void StationHandleSmallTick(BaseStation *st)
 {
 	if (st->facilities.Test(StationFacility::Waypoint) || !st->IsInUse()) return;

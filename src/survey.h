@@ -27,7 +27,7 @@ void SurveyOpenTTD(nlohmann::json &survey);
 void SurveySettings(nlohmann::json &survey, bool skip_if_default);
 void SurveyTimers(nlohmann::json &survey);
 
-/* Defined in os/<os>/survey_<os>.cpp. */
+/** Defined in os/<os>/survey_<os>.cpp. */
 void SurveyOS(nlohmann::json &json);
 
 #endif /* SURVEY_H */

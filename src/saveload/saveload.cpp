@@ -2911,7 +2911,7 @@ static std::pair<const SaveLoadFormat &, uint8_t> GetSavegameFormat(std::string_
 	return {def, def.default_compression};
 }
 
-/* actual loader/saver function */
+/** Actual loader/saver function. */
 void InitializeGame(uint size_x, uint size_y, bool reset_date, bool reset_settings);
 extern bool AfterLoadGame();
 extern bool LoadOldSaveGame(std::string_view file);

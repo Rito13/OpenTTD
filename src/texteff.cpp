@@ -38,7 +38,7 @@ struct TextEffect : public ViewportSign {
 
 static std::vector<TextEffect> _text_effects; ///< Text effects are stored there
 
-/* Text Effects */
+/** Text Effects. */
 TextEffectID AddTextEffect(EncodedString &&msg, int center, int y, uint8_t duration, TextEffectMode mode)
 {
 	if (_game_mode == GM_MENU) return INVALID_TE_ID;

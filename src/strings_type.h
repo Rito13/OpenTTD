@@ -110,7 +110,7 @@ public:
 private:
 	std::string string; ///< The encoded string.
 
-	/* An EncodedString can only be created by GetEncodedStringWithArgs(). */
+	/** An EncodedString can only be created by GetEncodedStringWithArgs(). */
 	explicit EncodedString(std::string &&string) : string(std::move(string)) {}
 
 	friend EncodedString GetEncodedStringWithArgs(StringID str, std::span<const StringParameter> params);

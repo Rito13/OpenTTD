@@ -1252,7 +1252,7 @@ static void GraphicsSetSaveConfig(IniFile &ini)
 	}
 }
 
-/* Save a GRF configuration to the given group name */
+/** Save a GRF configuration to the given group name. */
 static void GRFSaveConfig(IniFile &ini, std::string_view grpname, const GRFConfigList &list)
 {
 	IniGroup &group = ini.GetOrCreateGroup(grpname);
@@ -1265,7 +1265,7 @@ static void GRFSaveConfig(IniFile &ini, std::string_view grpname, const GRFConfi
 	}
 }
 
-/* Common handler for saving/loading variables to the configuration file */
+/** Common handler for saving/loading variables to the configuration file. */
 static void HandleSettingDescs(IniFile &generic_ini, IniFile &private_ini, IniFile &secrets_ini, SettingDescProc *proc, SettingDescProcList *proc_list, bool only_startup = false)
 {
 	proc(generic_ini, _misc_settings, "misc", nullptr, only_startup);
@@ -1928,7 +1928,7 @@ void StringSettingDesc::ChangeValue(const void *object, std::string &&newval) co
 	if (_save_config) SaveToConfig();
 }
 
-/* Those 2 functions need to be here, else we have to make some stuff non-static
+/** Those 2 functions need to be here, else we have to make some stuff non-static
  * and besides, it is also better to keep stuff like this at the same place */
 void IConsoleSetSetting(std::string_view name, std::string_view value, bool force_newgame)
 {

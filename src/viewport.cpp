@@ -439,7 +439,7 @@ Point TranslateXYToTileCoord(const Viewport &vp, int x, int y, bool clamp_to_map
 			ScaleByZoom(y - vp.top, vp.zoom) + vp.virtual_top, clamp_to_map);
 }
 
-/* When used for zooming, check area below current coordinates (x,y)
+/** When used for zooming, check area below current coordinates (x,y)
  * and return the tile of the zoomed out/in position (zoom_x, zoom_y)
  * when you just want the tile, make x = zoom_x and y = zoom_y */
 static Point GetTileFromScreenXY(int x, int y, int zoom_x, int zoom_y)
