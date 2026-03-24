@@ -202,9 +202,9 @@ public:
 	 * Used when loading old saves. @see afterload.cpp.
 	 * @return reference to the byte holding the data.
 	 */
-	[[debug_inline]] inline uint8_t &m6()
+	[[debug_inline]] inline uint16_t &m6()
 	{
-		return base_tiles[this->tile.base()].part3; // Temporarly use m3, because m2 is uint16_t and not uint8_t.
+		return base_tiles[this->tile.base()].part2; // Temporarly use m3, because m2 is uint16_t and not uint8_t.
 	}
 
 	/**
