@@ -100,10 +100,13 @@ static constexpr auto _callback_tuple = std::make_tuple(
 #	pragma GCC diagnostic ignored "-Wcast-function-type"
 #endif
 
-/* Helpers to generate the callback table from the callback list. */
+inline constexpr size_t _callback_tuple_size = std::tuple_size_v<decltype(_callback_tuple)>; ///< Quantity of of all possible callbacks.
 
-inline constexpr size_t _callback_tuple_size = std::tuple_size_v<decltype(_callback_tuple)>;
-
+/**
+ * Helper function to generate the callback table from the callback list.
+ * @param 
+ * @return Type-erased table of callbacks.
+ */
 template <size_t... i>
 inline auto MakeCallbackTable(std::index_sequence<i...>) noexcept
 {
@@ -431,6 +434,11 @@ static inline void SetClientIds(Ttuple &values, ClientID client_id, std::index_s
 	((SetClientIdHelper(std::get<Tindices>(values), client_id)), ...);
 }
 
+/**
+ * Replace client id in the command parameters.
+ * @param cp Command packet to modify.
+ * @param client_id The new client id.
+ */
 template <Commands Tcmd>
 static void NetworkReplaceCommandClientId(CommandPacket &cp, ClientID client_id)
 {

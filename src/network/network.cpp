@@ -212,7 +212,6 @@ bool NetworkAuthorizedKeys::Remove(std::string_view key)
 	return true;
 }
 
-
 /**
  * Get the number of clients that are playing as a spectator.
  * @return The number of spectator clients.
@@ -230,7 +229,6 @@ uint8_t NetworkSpectatorCount()
 
 	return count;
 }
-
 
 /**
  * Writes a text-message to the console and the chat box.
