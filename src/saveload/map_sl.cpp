@@ -207,7 +207,7 @@ struct MAPTChunkHandler : ChunkHandler {
 		RawMapIterator i = RawMapIterator::begin();
 		while (size > 0) {
 			buf.resize(std::min(size, buf.size()));
-			for (auto b : buf) b = (*i++).type();
+			for (auto &b : buf) b = (*i++).type();
 			SlCopy<VarFileType::U8>(buf);
 			size -= buf.size();
 		}
