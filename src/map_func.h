@@ -89,7 +89,7 @@ private:
 
 	static std::vector<std::vector<TileBase>> base_tiles; ///< Map array organized as an array of tile lines.
 	static std::vector<std::vector<TileExtended>> extended_tiles; ///< Extended map array organized as an array of tile lines.
-	static std::vector<uint16_t> offsets; ///< Mapping of TileIndex to offset in tile line.
+	static std::vector<MapOffsetType> offsets; ///< Mapping of TileIndex to offset in tile line.
 
 public:
 	static void Allocate(uint size_x, uint size_y);
@@ -215,7 +215,7 @@ public:
 	 * @param index The index into map array to get offset for.
 	 * @return The offset in map array chunk.
 	 */
-	static inline uint16_t GetOffsetForIndex(TileIndex index)
+	static inline MapOffsetType GetOffsetForIndex(TileIndex index)
 	{
 		return Map::offsets[index.base()];
 	}
@@ -271,8 +271,8 @@ public:
 	Tile(TileIndex::BaseType tile_index)
 	{
 		if (tile_index < Map::Size()) {
-			this->tile = &Map::base_tiles[TileY(TileIndex{tile_index})][Map::offsets[tile_index]];
-			this->tile_extended = &Map::extended_tiles[TileY(TileIndex{tile_index})][Map::offsets[tile_index]];
+			this->tile = &Map::base_tiles[tile_index >> LOG_2_OF_TILE_INDEXES_PER_CHUNK][Map::offsets[tile_index]];
+			this->tile_extended = &Map::extended_tiles[tile_index >> LOG_2_OF_TILE_INDEXES_PER_CHUNK][Map::offsets[tile_index]];
 		} else {
 			this->tile = nullptr;
 			this->tile_extended = nullptr;
