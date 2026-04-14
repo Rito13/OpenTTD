@@ -3575,7 +3575,11 @@ void StationPickerDrawSprite(int x, int y, StationType st, RailType railtype, Ro
 	DrawRailTileSeqInGUI(x, y, t, (st == StationType::RailWaypoint || st == StationType::RoadWaypoint) ? 0 : total_offset, 0, pal);
 }
 
-
+/**
+ * Store pieces of information regarding road stop on given tile.
+ * @param tile Tile being queried that is part of a road stop.
+ * @param[out] td Storage pointer for returned road stop description.
+ */
 static void FillTileDescRoadStop(TileIndex tile, TileDesc &td)
 {
 	RoadType road_rt = GetRoadTypeRoad(tile);
@@ -3614,6 +3618,11 @@ static void FillTileDescRoadStop(TileIndex tile, TileDesc &td)
 	}
 }
 
+/**
+ * Store pieces of information regarding rail station on given tile.
+ * @param tile Tile being queried that is part of a rail station.
+ * @param[out] td Storage pointer for returned rail station description.
+ */
 void FillTileDescRailStation(TileIndex tile, TileDesc &td)
 {
 	const StationSpec *spec = GetStationSpec(tile);
@@ -3633,6 +3642,11 @@ void FillTileDescRailStation(TileIndex tile, TileDesc &td)
 	td.railtype = rti->strings.name;
 }
 
+/**
+ * Store pieces of information regarding airport on given tile.
+ * @param tile Tile being queried that is part of an airport.
+ * @param[out] td Storage pointer for returned airport description.
+ */
 void FillTileDescAirport(TileIndex tile, TileDesc &td)
 {
 	const AirportSpec *as = Station::GetByTile(tile)->airport.GetSpec();

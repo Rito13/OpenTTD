@@ -53,11 +53,20 @@ static CommandCost ClearTile_Clear(TileIndex tile, DoCommandFlags flags)
 	return price;
 }
 
-void DrawClearLandTile(const TileInfo *ti, uint8_t set)
+/**
+ * Draws clear land of the tile.
+ * @copydetails DrawTileProc
+ * @param density How dense is the grass on that tile.
+ */
+void DrawClearLandTile(const TileInfo *ti, uint8_t density)
 {
-	DrawGroundSprite(SPR_FLAT_BARE_LAND + SlopeToSpriteOffset(ti->tileh) + set * 19, PAL_NONE);
+	DrawGroundSprite(SPR_FLAT_BARE_LAND + SlopeToSpriteOffset(ti->tileh) + density * 19, PAL_NONE);
 }
 
+/**
+ * Draws hilly land of the tile.
+ * @copydetails DrawTileProc
+ */
 void DrawHillyLandTile(const TileInfo *ti)
 {
 	if (ti->tileh != SLOPE_FLAT) {
@@ -67,6 +76,10 @@ void DrawHillyLandTile(const TileInfo *ti)
 	}
 }
 
+/**
+ * Draws fences for fields of the tile.
+ * @copydetails DrawTileProc
+ */
 static void DrawClearLandFence(const TileInfo *ti)
 {
 	/* combine fences into one sprite object */

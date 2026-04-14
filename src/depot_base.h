@@ -28,6 +28,12 @@ struct Depot : DepotPool::PoolItem<&_depot_pool> {
 	Depot(DepotID index, TileIndex xy = INVALID_TILE) : DepotPool::PoolItem<&_depot_pool>(index), xy(xy), build_date(TimerGameCalendar::date) {}
 	~Depot();
 
+	/**
+	 * Get the depot of the given tile.
+	 * @param tile The tile to get the depot from.
+	 * @pre IsRailDepotTile(t) || IsRoadDepotTile(t) || IsShipDepotTile(t)
+	 * @return The depot.
+	 */
 	static inline Depot *GetByTile(TileIndex tile)
 	{
 		return Depot::Get(GetDepotIndex(tile));

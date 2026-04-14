@@ -888,7 +888,11 @@ bool DrawStationTile(int x, int y, RailType railtype, Axis axis, StationClassID 
 	return true;
 }
 
-
+/**
+ * Get specification of station built on given tile.
+ * @param t The tile that station is built on.
+ * @return Specification of that station.
+ */
 const StationSpec *GetStationSpec(TileIndex t)
 {
 	if (!IsCustomStationSpecIndex(t)) return nullptr;

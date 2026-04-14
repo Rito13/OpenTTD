@@ -2091,6 +2091,12 @@ static inline void DrawTrackSprite(SpriteID sprite, PaletteID pal, const TileInf
 	DrawGroundSprite(sprite, pal, nullptr, 0, (ti->tileh.Any(s)) ? -8 : 0);
 }
 
+/**
+ * Draws track bits overlay for given tile.
+ * @copydetails DrawTileProc
+ * @param track The track bits to draw.
+ * @param rti Info about the rail type to draw.
+ */
 static void DrawTrackBitsOverlay(TileInfo *ti, TrackBits track, const RailTypeInfo *rti)
 {
 	RailGroundType rgt = GetRailGroundType(ti->tile);
