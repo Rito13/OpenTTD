@@ -103,6 +103,10 @@ public:
 		}
 	}
 
+	/**
+	 * Create new "Land Area Information" window.
+	 * @param tile The tile that this window will provide information of.
+	 */
 	LandInfoWindow(Tile tile) : Window(_land_info_desc), tile(tile)
 	{
 		this->InitNested();

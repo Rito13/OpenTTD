@@ -550,6 +550,10 @@ static bool TransportIndustryGoods(TileIndex tile)
 	return moved_cargo;
 }
 
+/**
+ * Animate tile with sugar sieve on it.
+ * @copydetails AnimateTileProc
+ */
 static void AnimateSugarSieve(TileIndex tile)
 {
 	uint8_t m = GetAnimationFrame(tile) + 1;
@@ -570,6 +574,10 @@ static void AnimateSugarSieve(TileIndex tile)
 	MarkTileDirtyByTile(tile);
 }
 
+/**
+ * Animate tile with toffee quarry on it.
+ * @copydetails AnimateTileProc
+ */
 static void AnimateToffeeQuarry(TileIndex tile)
 {
 	uint8_t m = GetAnimationFrame(tile);
@@ -587,6 +595,10 @@ static void AnimateToffeeQuarry(TileIndex tile)
 	MarkTileDirtyByTile(tile);
 }
 
+/**
+ * Animate tile with bubble catcher on it.
+ * @copydetails AnimateTileProc
+ */
 static void AnimateBubbleCatcher(TileIndex tile)
 {
 	uint8_t m = GetAnimationFrame(tile);
@@ -600,6 +612,10 @@ static void AnimateBubbleCatcher(TileIndex tile)
 	MarkTileDirtyByTile(tile);
 }
 
+/**
+ * Animate power plant sparks on given tile.
+ * @copydetails AnimateTileProc
+ */
 static void AnimatePowerPlantSparks(TileIndex tile)
 {
 	uint8_t m = GetAnimationFrame(tile);
@@ -612,6 +628,10 @@ static void AnimatePowerPlantSparks(TileIndex tile)
 	MarkTileDirtyByTile(tile);
 }
 
+/**
+ * Animate tile with toy factory on it.
+ * @copydetails AnimateTileProc
+ */
 static void AnimateToyFactory(TileIndex tile)
 {
 	uint8_t m = GetAnimationFrame(tile) + 1;
@@ -636,6 +656,12 @@ static void AnimateToyFactory(TileIndex tile)
 	MarkTileDirtyByTile(tile);
 }
 
+/**
+ * Animate tile with plastic fountain on it.
+ * @param gfx Currently shown industry graphics of given tile.
+ * @copydetails AnimateTileProc
+ * @see GetIndustryGfx
+ */
 static void AnimatePlasticFountain(TileIndex tile, IndustryGfx gfx)
 {
 	gfx = (gfx < GFX_PLASTIC_FOUNTAIN_ANIMATED_8) ? gfx + 1 : GFX_PLASTIC_FOUNTAIN_ANIMATED_1;
@@ -643,6 +669,12 @@ static void AnimatePlasticFountain(TileIndex tile, IndustryGfx gfx)
 	MarkTileDirtyByTile(tile);
 }
 
+/**
+ * Animate tile with oil well on it.
+ * @param gfx Currently shown industry graphics of given tile.
+ * @copydetails AnimateTileProc
+ * @see GetIndustryGfx
+ */
 static void AnimateOilWell(TileIndex tile, IndustryGfx gfx)
 {
 	bool b = Chance16(1, 7);
@@ -658,6 +690,10 @@ static void AnimateOilWell(TileIndex tile, IndustryGfx gfx)
 	MarkTileDirtyByTile(tile);
 }
 
+/**
+ * Animate tile with mine tower on it.
+ * @copydetails AnimateTileProc
+ */
 static void AnimateMineTower(TileIndex tile)
 {
 	int state = TimerGameTick::counter & 0x7FF;

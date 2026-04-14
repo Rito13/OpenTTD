@@ -17,9 +17,25 @@
 #include "newgrf_callbacks.h"
 #include "tile_map.h"
 
+/**
+ * Helper class for a unified approach to accesing animation frame.
+ * @tparam Tobj Object related to the animated tile.
+ */
 template <typename Tobj>
 struct TileAnimationFrameAnimationHelper {
+	/**
+	 * Gets the animation frame for given tile.
+	 * @param tile The tile to get the animation frame for.
+	 * @return Current animation frame.
+	 */
 	static uint8_t Get(Tobj *, TileIndex tile) { return GetAnimationFrame(tile); }
+
+	/**
+	 * Modifies the animation frame of given tile.
+	 * @param tile The tile to modify the animation frame of.
+	 * @param frame New value of animation frame.
+	 * @return \c true iff the animation frame has been changed.
+	 */
 	static bool Set(Tobj *, TileIndex tile, uint8_t frame)
 	{
 		uint8_t prev_frame = GetAnimationFrame(tile);

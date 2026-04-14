@@ -297,6 +297,10 @@ struct AirportTileAnimationBase : public AnimationBase<AirportTileAnimationBase,
 	static constexpr AirportTileCallbackMask cbm_animation_next_frame = AirportTileCallbackMask::AnimationNextFrame;
 };
 
+/**
+ * Animate tile that is part of an airport.
+ * @copydetails AnimateTileProc
+ */
 void AnimateAirportTile(TileIndex tile)
 {
 	const AirportTileSpec *ats = AirportTileSpec::GetByTile(tile);

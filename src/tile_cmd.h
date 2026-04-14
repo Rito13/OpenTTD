@@ -98,7 +98,7 @@ using AddAcceptedCargoProc = void(TileIndex tile, CargoArray &acceptance, CargoT
 /**
  * Tile callback function signature for obtaining a tile description
  * @param tile Tile being queried
- * @param td   Storage pointer for returned tile description
+ * @param[out] td Storage pointer for returned tile description.
  * @see GetTileDesc
  */
 using GetTileDescProc = void(TileIndex tile, TileDesc &td);
