@@ -74,7 +74,7 @@ inline DestinationID GetDepotDestinationIndex(Tile t)
 
 /**
  * Get the type of vehicles that can use a depot
- * @param t The tile
+ * @param t The tile with a depot.
  * @pre IsDepotTile(t)
  * @return the type of vehicles that can use the depot
  */
