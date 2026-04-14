@@ -533,6 +533,10 @@ void DrawFoundation(TileInfo *ti, Foundation f)
 	}
 }
 
+/**
+ * Clear whole storage of given tile and make it bare ground.
+ * @param tile The tile to clear.
+ */
 void DoClearSquare(TileIndex tile)
 {
 	/* If the tile can have animation and we clear it, delete it from the animated tile list. */

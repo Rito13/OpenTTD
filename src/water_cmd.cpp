@@ -947,6 +947,10 @@ static void DrawRiverWater(const TileInfo *ti)
 	DrawWaterEdges(false, edges_offset, ti->tile);
 }
 
+/**
+ * Draws shore on a given tile.
+ * @param tileh The slope of the tile to draw.
+ */
 void DrawShoreTile(Slope tileh)
 {
 	/* Converts the enum Slope into an offset based on SPR_SHORE_BASE.
