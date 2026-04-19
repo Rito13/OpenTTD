@@ -58,7 +58,7 @@ inline void MakeRoadTunnel(Tile t, Owner o, DiagDirection d, RoadType road_rt, R
 	t.m5() = TRANSPORT_ROAD << 2 | to_underlying(d);
 	SB(t.m6(), 2, 6, 0);
 	t.m7() = 0;
-	t.m8() = 0;
+	t.ClearM8();
 	SetRoadOwner(t, RoadTramType::Road, o);
 	if (o != OWNER_TOWN) SetRoadOwner(t, RoadTramType::Tram, o);
 	SetRoadTypes(t, road_rt, tram_rt);
@@ -81,7 +81,7 @@ inline void MakeRailTunnel(Tile t, Owner o, DiagDirection d, RailType r)
 	t.m5() = TRANSPORT_RAIL << 2 | to_underlying(d);
 	SB(t.m6(), 2, 6, 0);
 	t.m7() = 0;
-	t.m8() = 0;
+	t.ClearM8();
 	SetRailType(t, r);
 }
 

@@ -50,6 +50,8 @@ using MapOffsetType = uint8_t; ///< Type used for Map::offset.
 static constexpr uint LOG_2_OF_TILE_INDEXES_PER_CHUNK = sizeof(MapOffsetType) * 8 - LOG_2_OF_TILES_PER_TILE_INDEX; ///< TILE_INDEXES_PER_CHUNK is a power of two. This is the power to wich 2 has to be raised.
 static constexpr uint TILE_INDEXES_PER_CHUNK = 1U << LOG_2_OF_TILE_INDEXES_PER_CHUNK; ///< How many tile indexes fit into one chunk of map array.
 
+static constexpr uint8_t M8_ASSOCIATED_TILE_BIT = 14; ///< Which bit from m8 is used to store associated tile flag.
+
 /** Argument for CmdLevelLand describing what to do. */
 enum LevelMode : uint8_t {
 	LM_LEVEL, ///< Level the land.

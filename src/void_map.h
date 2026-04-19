@@ -31,7 +31,7 @@ inline void MakeVoid(TileIndex tile)
 	t.m5() = 0;
 	t.m6() = 0;
 	t.m7() = 0;
-	t.m8() = 0;
+	t.ClearM8();
 }
 
 #endif /* VOID_MAP_H */
