@@ -399,7 +399,7 @@ inline void MakeShore(Tile t, bool rocks = false)
 	SetWaterTileType(t, rocks ? WaterTileType::CoastRocks : WaterTileType::Coast);
 	SB(t.m6(), 2, 6, 0);
 	t.m7() = 0;
-	t.m8() = 0;
+	t.ClearM8();
 }
 
 /**
@@ -423,7 +423,7 @@ inline void MakeWater(Tile t, Owner o, WaterClass wc, uint8_t random_bits, bool 
 	SetWaterTileType(t, rocks ? WaterTileType::ClearRocks : WaterTileType::Clear);
 	SB(t.m6(), 2, 6, 0);
 	t.m7() = 0;
-	t.m8() = 0;
+	t.ClearM8();
 }
 
 /**
@@ -480,7 +480,7 @@ inline void MakeShipDepot(Tile t, Owner o, DepotID did, DepotPart part, Axis a, 
 	SetWaterTileType(t, WaterTileType::Depot);
 	SB(t.m6(), 2, 6, 0);
 	t.m7() = 0;
-	t.m8() = 0;
+	t.ClearM8();
 }
 
 /**
@@ -505,7 +505,7 @@ inline void MakeLockTile(Tile t, Owner o, LockPart part, DiagDirection dir, Wate
 	SetWaterTileType(t, WaterTileType::Lock);
 	SB(t.m6(), 2, 6, 0);
 	t.m7() = 0;
-	t.m8() = 0;
+	t.ClearM8();
 }
 
 /**
