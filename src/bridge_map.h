@@ -137,7 +137,7 @@ inline void MakeBridgeRamp(Tile t, Owner o, BridgeType bridgetype, DiagDirection
 	SB(t.m6(), 2, 4, bridgetype);
 	SB(t.m6(), 6, 2, 0);
 	t.m7() = 0;
-	t.m8() = 0;
+	t.ClearM8();
 }
 
 /**
