@@ -72,6 +72,7 @@
 #include <type_traits>
 #include <variant>
 #include <vector>
+#include <ranges>
 
 using namespace std::literals::string_view_literals;
 

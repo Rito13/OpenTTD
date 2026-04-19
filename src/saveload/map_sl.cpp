@@ -150,36 +150,54 @@ struct MAPSChunkHandler : ChunkHandler {
 	}
 };
 
-struct MAPRChunkHandler : ChunkHandler {
-	MAPRChunkHandler() : ChunkHandler("MAPR", ChunkType::Riff) {}
+static constexpr uint MAP_SL_BUF_SIZE = MIN_MAP_SIZE * MIN_MAP_SIZE; ///< Buffer size for saving/loading the map array. Sized to the smallest map.
+
+/**
+ * m8 handler that fills up #Map::offsets and resizes map array chunks based on value in #M8_ASSOCIATED_TILE_BIT.
+ * @note To work properly it has to be loaded before other map save chunks but after #MAPSChunkHandler. Therefore it must be also saved in that order.
+ */
+struct M8ORChunkHandler : ChunkHandler {
+	M8ORChunkHandler() : ChunkHandler("M8OR", ChunkType::Riff) {} ///< Creates new instance.
 
 	void Load() const override
 	{
-		std::vector<uint> buf(Map::SizeY());
-
-		/* Resize each map line to the final length. */
-		SlCopy(buf.data(), Map::SizeY(), VarTypes::U32);
-		for (uint i = 0; i < Map::SizeY(); i++) Map::base_tiles[i].resize(buf[i]);
-
-		/* Load offset table. */
-		SlCopy(Map::offsets.data(), Map::Size(), VarTypes::U16);
+		auto offsets_iter = Map::offsets.begin();
+		auto extended_chunk = Map::extended_tiles.begin();
+		for (auto base_chunk = Map::base_tiles.begin(); base_chunk != Map::base_tiles.end() && extended_chunk != Map::extended_tiles.end(); ++base_chunk, ++extended_chunk) {
+			base_chunk->clear();
+			extended_chunk->clear();
+			base_chunk->reserve(TILE_INDEXES_PER_CHUNK * TILES_PER_TILE_INDEX);
+			extended_chunk->reserve(TILE_INDEXES_PER_CHUNK * TILES_PER_TILE_INDEX);
+			MapOffsetType offset = 0;
+			for (TileIndex index = {}; index.base() < TILE_INDEXES_PER_CHUNK && offsets_iter != Map::offsets.end(); ++index, ++offsets_iter) {
+				(*offsets_iter) = offset;
+				do {
+					base_chunk->emplace_back();
+					extended_chunk->emplace_back();
+					SlCopy(&extended_chunk->back().m8, 1, VarTypes::U16);
+					++offset;
+				} while (HasBit(extended_chunk->back().m8, M8_ASSOCIATED_TILE_BIT));
+			}
+			base_chunk->shrink_to_fit();
+			extended_chunk->shrink_to_fit();
+		}
 	}
 
 	void Save() const override
 	{
-		SlSetLength(SlVarSize(VarMemType::U32) * Map::SizeY() + SlVarSize(VarMemType::U16) * Map::Size());
+		std::array<uint16_t, MAP_SL_BUF_SIZE> buf;
+		size_t size = Map::GetTotalTileCount();
 
-		/* Save length of each map line. */
-		std::vector<uint> buf(Map::SizeY());
-		for (uint i = 0; i < Map::SizeY(); i++) buf[i] = static_cast<uint>(Map::base_tiles[i].size());
-		SlCopy(buf.data(), Map::SizeY(), VarTypes::U32);
-
-		/* Save offset table. */
-		SlCopy(Map::offsets.data(), Map::Size(), VarTypes::U16);
+		SlSetLength(size * sizeof(uint16_t));
+		RawMapIterator i = RawMapIterator::begin();
+		while (size > 0) {
+			size_t chunk = std::min(size, buf.size());
+			for (auto &b : buf) b = (*i++).m8();
+			SlCopy(buf.data(), chunk, VarTypes::U16);
+			size -= chunk;
+		}
 	}
 };
-
-static constexpr uint MAP_SL_BUF_SIZE = MIN_MAP_SIZE * MIN_MAP_SIZE; ///< Buffer size for saving/loading the map array. Sized to the smallest map.
 
 struct MAPTChunkHandler : ChunkHandler {
 	MAPTChunkHandler() : ChunkHandler("MAPT", ChunkType::Riff) {}
@@ -496,7 +514,7 @@ struct MAP7ChunkHandler : ChunkHandler {
 };
 
 struct MAP8ChunkHandler : ChunkHandler {
-	MAP8ChunkHandler() : ChunkHandler("MAP8", ChunkType::Riff) {}
+	MAP8ChunkHandler() : ChunkHandler("MAP8", ChunkType::ReadOnly) {}
 
 	void Load() const override
 	{
@@ -511,25 +529,10 @@ struct MAP8ChunkHandler : ChunkHandler {
 			size -= chunk;
 		}
 	}
-
-	void Save() const override
-	{
-		std::array<uint16_t, MAP_SL_BUF_SIZE> buf;
-		size_t size = Map::GetTotalTileCount();
-
-		SlSetLength(size * sizeof(uint16_t));
-		RawMapIterator i = RawMapIterator::begin();
-		while (size > 0) {
-			size_t chunk = std::min(size, buf.size());
-			for (auto &b : buf) b = (*i++).m8();
-			SlCopy(buf.data(), chunk, VarTypes::U16);
-			size -= chunk;
-		}
-	}
 };
 
 static const MAPSChunkHandler MAPS;
-static const MAPRChunkHandler MAPR;
+static const M8ORChunkHandler M8OR; ///< @copydoc M8ORChunkHandler
 static const MAPTChunkHandler MAPT;
 static const MAPHChunkHandler MAPH;
 static const MAPOChunkHandler MAPO;
@@ -542,7 +545,7 @@ static const MAP7ChunkHandler MAP7;
 static const MAP8ChunkHandler MAP8;
 static const ChunkHandlerRef map_chunk_handlers[] = {
 	MAPS,
-	MAPR,
+	M8OR,
 	MAPT,
 	MAPH,
 	MAPO,
