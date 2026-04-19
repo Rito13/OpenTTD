@@ -25,6 +25,7 @@ private:
 	friend class Tile;
 	friend struct MAPRChunkHandler;
 	friend struct RawMapIterator;
+	friend struct M8ORChunkHandler;
 
 	/**
 	 * Data that is stored per tile. Also used TileExtended for this.
@@ -402,6 +403,12 @@ public:
 	[[debug_inline]] inline uint16_t &m8()
 	{
 		return this->tile_extended->m8;
+	}
+
+	/** Clear m8 part of the storage. Preserves the state of the associated tile flag. */
+	inline void ClearM8()
+	{
+		this->m8() &= 1U << M8_ASSOCIATED_TILE_BIT; // Clear everything except the associated tile flag.
 	}
 
 	/**

@@ -288,7 +288,7 @@ inline void MakeIndustry(Tile t, IndustryID index, IndustryGfx gfx, uint8_t rand
 	SetWaterClass(t, wc);
 	SB(t.m6(), 6, 2, 0);
 	t.m7() = 0;
-	t.m8() = 0;
+	t.ClearM8();
 }
 
 #endif /* INDUSTRY_MAP_H */

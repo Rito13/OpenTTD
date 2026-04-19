@@ -261,7 +261,7 @@ inline void MakeClear(Tile t, ClearGround g, uint density)
 	SetClearGroundDensity(t, g, density); // Sets m5
 	t.m6() = 0;
 	t.m7() = 0;
-	t.m8() = 0;
+	t.ClearM8();
 }
 
 
@@ -282,7 +282,7 @@ inline void MakeField(Tile t, uint field_type, IndustryID industry)
 	SetClearGroundDensity(t, ClearGround::Fields, 3);
 	SB(t.m6(), 2, 6, 0);
 	t.m7() = 0;
-	t.m8() = 0;
+	t.ClearM8();
 }
 
 /**
