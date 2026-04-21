@@ -94,7 +94,7 @@
  * @pre IsTileType(t, TileType::Station)
  * @return true if and only if the tile is a hangar.
  */
-bool IsHangar(Tile t)
+bool IsHangar(const Tile &t)
 {
 	assert(IsTileType(t, TileType::Station));
 
@@ -1422,7 +1422,7 @@ static StationSpec::TileFlags GetStationTileFlags(StationGfx gfx, const StationS
  * @param tile Tile to set flags on.
  * @param statspec Statspec of the tile.
  */
-void SetRailStationTileFlags(Tile tile, const StationSpec *statspec)
+void SetRailStationTileFlags(const Tile &tile, const StationSpec *statspec)
 {
 	const auto flags = GetStationTileFlags(GetStationGfx(tile), statspec);
 	SetStationTileBlocked(tile, flags.Test(StationSpec::TileFlag::Blocked));
@@ -3580,7 +3580,7 @@ void StationPickerDrawSprite(int x, int y, StationType st, RailType railtype, Ro
  * @param tile Tile being queried that is part of a road stop.
  * @param[out] td Storage pointer for returned road stop description.
  */
-static void FillTileDescRoadStop(Tile tile, TileDesc &td)
+static void FillTileDescRoadStop(const Tile &tile, TileDesc &td)
 {
 	RoadType road_rt = GetRoadTypeRoad(tile);
 	RoadType tram_rt = GetRoadTypeTram(tile);
@@ -3623,7 +3623,7 @@ static void FillTileDescRoadStop(Tile tile, TileDesc &td)
  * @param tile Tile being queried that is part of a rail station.
  * @param[out] td Storage pointer for returned rail station description.
  */
-void FillTileDescRailStation(Tile tile, TileDesc &td)
+void FillTileDescRailStation(const Tile &tile, TileDesc &td)
 {
 	const StationSpec *spec = GetStationSpec(tile);
 
@@ -3647,7 +3647,7 @@ void FillTileDescRailStation(Tile tile, TileDesc &td)
  * @param tile Tile being queried that is part of an airport.
  * @param[out] td Storage pointer for returned airport description.
  */
-void FillTileDescAirport(Tile tile, TileDesc &td)
+void FillTileDescAirport(const Tile &tile, TileDesc &td)
 {
 	const AirportSpec *as = Station::GetByTile(tile)->airport.GetSpec();
 	td.airport_class = AirportClass::Get(as->class_index)->name;
@@ -3666,7 +3666,7 @@ void FillTileDescAirport(Tile tile, TileDesc &td)
 }
 
 /** @copydoc GetTileDescProc */
-static void GetTileDesc_Station([[maybe_unused]] TileIndex index, Tile tile, TileDesc &td)
+static void GetTileDesc_Station([[maybe_unused]] TileIndex index, const Tile &tile, TileDesc &td)
 {
 	td.owner[0] = GetTileOwner(tile);
 	td.build_date = BaseStation::GetByTile(tile)->build_date;

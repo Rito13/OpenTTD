@@ -2849,7 +2849,7 @@ static bool ClickTile_Rail(TileIndex tile)
 }
 
 /** @copydoc GetTileDescProc */
-static void GetTileDesc_Rail([[maybe_unused]] TileIndex index, Tile tile, TileDesc &td)
+static void GetTileDesc_Rail([[maybe_unused]] TileIndex index, const Tile &tile, TileDesc &td)
 {
 	const RailTypeInfo *rti = GetRailTypeInfo(GetRailType(tile));
 	td.rail_speed = rti->max_speed;

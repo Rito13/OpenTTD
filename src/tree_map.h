@@ -84,7 +84,7 @@ enum class TreeGrowthStage : uint8_t {
  * @return The treetype of the given tile with trees
  * @pre Tile t must be of type TileType::Trees
  */
-inline TreeType GetTreeType(Tile t)
+inline TreeType GetTreeType(const Tile &t)
 {
 	assert(IsTileType(t, TileType::Trees));
 	return (TreeType)t.m3();
@@ -99,7 +99,7 @@ inline TreeType GetTreeType(Tile t)
  * @return The groundtype of the tile
  * @pre Tile must be of type TileType::Trees
  */
-inline TreeGround GetTreeGround(Tile t)
+inline TreeGround GetTreeGround(const Tile &t)
 {
 	assert(IsTileType(t, TileType::Trees));
 	return (TreeGround)GB(t.m2(), 6, 3);
@@ -125,7 +125,7 @@ inline TreeGround GetTreeGround(Tile t)
  * @return The current density.
  * @see GetTreeCount
  */
-inline uint GetTreeDensity(Tile t)
+inline uint GetTreeDensity(const Tile &t)
 {
 	assert(IsTileType(t, TileType::Trees));
 	return GB(t.m2(), 4, 2);
@@ -142,7 +142,7 @@ inline uint GetTreeDensity(Tile t)
  * @param d The density to save with
  * @pre Tile must be of type TileType::Trees
  */
-inline void SetTreeGroundDensity(Tile t, TreeGround g, uint d)
+inline void SetTreeGroundDensity(const Tile &t, TreeGround g, uint d)
 {
 	assert(IsTileType(t, TileType::Trees)); // XXX incomplete
 	SB(t.m2(), 4, 2, d);
@@ -161,7 +161,7 @@ inline void SetTreeGroundDensity(Tile t, TreeGround g, uint d)
  * @return The number of trees (1-4)
  * @pre Tile must be of type TileType::Trees
  */
-inline uint GetTreeCount(Tile t)
+inline uint GetTreeCount(const Tile &t)
 {
 	assert(IsTileType(t, TileType::Trees));
 	return GB(t.m5(), 6, 2) + 1;
@@ -178,7 +178,7 @@ inline uint GetTreeCount(Tile t)
  * @param c The value to add (or reduce) on the tree-count value
  * @pre Tile must be of type TileType::Trees
  */
-inline void AddTreeCount(Tile t, int c)
+inline void AddTreeCount(const Tile &t, int c)
 {
 	assert(IsTileType(t, TileType::Trees)); // XXX incomplete
 	t.m5() += c << 6;
@@ -193,7 +193,7 @@ inline void AddTreeCount(Tile t, int c)
  * @return The tree growth stage
  * @pre Tile must be of type TileType::Trees
  */
-inline TreeGrowthStage GetTreeGrowth(Tile t)
+inline TreeGrowthStage GetTreeGrowth(const Tile &t)
 {
 	assert(IsTileType(t, TileType::Trees));
 	return static_cast<TreeGrowthStage>(GB(t.m5(), 0, 3));
@@ -208,7 +208,7 @@ inline TreeGrowthStage GetTreeGrowth(Tile t)
  * @param a The value to add on the tree growth stage
  * @pre Tile must be of type TileType::Trees
  */
-inline void AddTreeGrowth(Tile t, int a)
+inline void AddTreeGrowth(const Tile &t, int a)
 {
 	assert(IsTileType(t, TileType::Trees)); // XXX incomplete
 	t.m5() += a;
@@ -224,7 +224,7 @@ inline void AddTreeGrowth(Tile t, int a)
  * @param g The new value
  * @pre Tile must be of type TileType::Trees
  */
-inline void SetTreeGrowth(Tile t, TreeGrowthStage g)
+inline void SetTreeGrowth(const Tile &t, TreeGrowthStage g)
 {
 	assert(IsTileType(t, TileType::Trees)); // XXX incomplete
 	SB(t.m5(), 0, 3, to_underlying(g));
@@ -242,7 +242,7 @@ inline void SetTreeGrowth(Tile t, TreeGrowthStage g)
  * @param ground the ground type
  * @param density the density (not the number of trees)
  */
-inline void MakeTree(Tile t, TreeType type, uint count, TreeGrowthStage growth, TreeGround ground, uint density)
+inline void MakeTree(const Tile &t, TreeType type, uint count, TreeGrowthStage growth, TreeGround ground, uint density)
 {
 	SetTileType(t, TileType::Trees);
 	SetTileOwner(t, OWNER_NONE);

@@ -21,7 +21,7 @@
  * @pre IsTileType(t, TileType::TunnelBridge)
  * @return true if the structure is a bridge one
  */
-inline bool IsBridge(Tile t)
+inline bool IsBridge(const Tile &t)
 {
 	assert(IsTileType(t, TileType::TunnelBridge));
 	return HasBit(t.m5(), 7);
@@ -32,7 +32,7 @@ inline bool IsBridge(Tile t)
  * @param t The tile to analyze
  * @return true if a bridge is present
  */
-inline bool IsBridgeTile(Tile t)
+inline bool IsBridgeTile(const Tile &t)
 {
 	return IsTileType(t, TileType::TunnelBridge) && IsBridge(t);
 }
@@ -42,7 +42,7 @@ inline bool IsBridgeTile(Tile t)
  * @param t The tile to analyze
  * @return true if a bridge is detected above
  */
-inline bool IsBridgeAbove(Tile t)
+inline bool IsBridgeAbove(const Tile &t)
 {
 	return GB(t.type(), 2, 2) != 0;
 }
@@ -53,7 +53,7 @@ inline bool IsBridgeAbove(Tile t)
  * @pre IsBridgeTile(t)
  * @return The bridge type
  */
-inline BridgeType GetBridgeType(Tile t)
+inline BridgeType GetBridgeType(const Tile &t)
 {
 	assert(IsBridgeTile(t));
 	return GB(t.m6(), 2, 4);
@@ -65,7 +65,7 @@ inline BridgeType GetBridgeType(Tile t)
  * @pre IsBridgeAbove(t)
  * @return the above mentioned axis
  */
-inline Axis GetBridgeAxis(Tile t)
+inline Axis GetBridgeAxis(const Tile &t)
 {
 	assert(IsBridgeAbove(t));
 	return static_cast<Axis>(GB(t.type(), 2, 2) - 1);
@@ -91,7 +91,7 @@ inline int GetBridgePixelHeight(TileIndex tile)
  * @param t the tile to remove the bridge from
  * @param a the axis of the bridge to remove
  */
-inline void ClearSingleBridgeMiddle(Tile t, Axis a)
+inline void ClearSingleBridgeMiddle(const Tile &t, Axis a)
 {
 	ClrBit(t.type(), 2 + to_underlying(a));
 }
@@ -100,7 +100,7 @@ inline void ClearSingleBridgeMiddle(Tile t, Axis a)
  * Removes bridges from the given, that is bridges along the X and Y axis.
  * @param t the tile to remove the bridge from
  */
-inline void ClearBridgeMiddle(Tile t)
+inline void ClearBridgeMiddle(const Tile &t)
 {
 	ClearSingleBridgeMiddle(t, Axis::X);
 	ClearSingleBridgeMiddle(t, Axis::Y);
@@ -111,7 +111,7 @@ inline void ClearBridgeMiddle(Tile t)
  * @param t the tile to add the bridge to
  * @param a the axis of the bridge to add
  */
-inline void SetBridgeMiddle(Tile t, Axis a)
+inline void SetBridgeMiddle(const Tile &t, Axis a)
 {
 	SetBit(t.type(), 2 + to_underlying(a));
 }
@@ -125,7 +125,7 @@ inline void SetBridgeMiddle(Tile t, Axis a)
  * @param tt         the transport type of the bridge
  * @note this function should not be called directly.
  */
-inline void MakeBridgeRamp(Tile t, Owner o, BridgeType bridgetype, DiagDirection d, TransportType tt)
+inline void MakeBridgeRamp(const Tile &t, Owner o, BridgeType bridgetype, DiagDirection d, TransportType tt)
 {
 	SetTileType(t, TileType::TunnelBridge);
 	SetTileOwner(t, o);
@@ -151,7 +151,7 @@ inline void MakeBridgeRamp(Tile t, Owner o, BridgeType bridgetype, DiagDirection
  * @param road_rt    the road type of the bridge
  * @param tram_rt    the tram type of the bridge
  */
-inline void MakeRoadBridgeRamp(Tile t, Owner o, Owner owner_road, Owner owner_tram, BridgeType bridgetype, DiagDirection d, RoadType road_rt, RoadType tram_rt)
+inline void MakeRoadBridgeRamp(const Tile &t, Owner o, Owner owner_road, Owner owner_tram, BridgeType bridgetype, DiagDirection d, RoadType road_rt, RoadType tram_rt)
 {
 	MakeBridgeRamp(t, o, bridgetype, d, TRANSPORT_ROAD);
 	SetRoadOwner(t, RoadTramType::Road, owner_road);
@@ -167,7 +167,7 @@ inline void MakeRoadBridgeRamp(Tile t, Owner o, Owner owner_road, Owner owner_tr
  * @param d          the direction this ramp must be facing
  * @param rt         the rail type of the bridge
  */
-inline void MakeRailBridgeRamp(Tile t, Owner o, BridgeType bridgetype, DiagDirection d, RailType rt)
+inline void MakeRailBridgeRamp(const Tile &t, Owner o, BridgeType bridgetype, DiagDirection d, RailType rt)
 {
 	MakeBridgeRamp(t, o, bridgetype, d, TRANSPORT_RAIL);
 	SetRailType(t, rt);
@@ -179,7 +179,7 @@ inline void MakeRailBridgeRamp(Tile t, Owner o, BridgeType bridgetype, DiagDirec
  * @param o          the new owner of the bridge ramp
  * @param d          the direction this ramp must be facing
  */
-inline void MakeAqueductBridgeRamp(Tile t, Owner o, DiagDirection d)
+inline void MakeAqueductBridgeRamp(const Tile &t, Owner o, DiagDirection d)
 {
 	MakeBridgeRamp(t, o, 0, d, TRANSPORT_WATER);
 }

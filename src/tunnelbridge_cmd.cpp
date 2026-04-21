@@ -1754,7 +1754,7 @@ static Foundation GetFoundation_TunnelBridge(TileIndex tile, Slope tileh)
 }
 
 /** @copydoc GetTileDescProc */
-static void GetTileDesc_TunnelBridge([[maybe_unused]] TileIndex index, Tile tile, TileDesc &td)
+static void GetTileDesc_TunnelBridge([[maybe_unused]] TileIndex index, const Tile &tile, TileDesc &td)
 {
 	TransportType tt = GetTunnelBridgeTransportType(tile);
 

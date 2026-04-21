@@ -2217,7 +2217,7 @@ static const StringID _road_tile_strings[] = {
 };
 
 /** @copydoc GetTileDescProc */
-static void GetTileDesc_Road([[maybe_unused]] TileIndex index, Tile tile, TileDesc &td)
+static void GetTileDesc_Road([[maybe_unused]] TileIndex index, const Tile &tile, TileDesc &td)
 {
 	Owner rail_owner = INVALID_OWNER;
 	Owner road_owner = INVALID_OWNER;

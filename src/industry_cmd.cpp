@@ -106,7 +106,7 @@ void ResetIndustries()
  * @pre IsTileType(tile, TileType::Industry)
  * @return general type for this industry, as defined in industry.h
  */
-IndustryType GetIndustryType(Tile tile)
+IndustryType GetIndustryType(const Tile &tile)
 {
 	assert(IsTileType(tile, TileType::Industry));
 
@@ -469,7 +469,7 @@ static void AddAcceptedCargo_Industry(TileIndex tile, CargoArray &acceptance, Ca
 }
 
 /** @copydoc GetTileDescProc */
-static void GetTileDesc_Industry([[maybe_unused]] TileIndex index, Tile tile, TileDesc &td)
+static void GetTileDesc_Industry([[maybe_unused]] TileIndex index, const Tile &tile, TileDesc &td)
 {
 	const Industry *i = Industry::GetByTile(tile);
 	const IndustrySpec *is = GetIndustrySpec(i->type);
@@ -1535,7 +1535,7 @@ static CommandCost CheckIfIndustryTilesAreFree(TileIndex tile, const IndustryTil
 			if (!its->slopes_refused.Test(Corner::HalfTile) && ((HasTileWaterClass(cur_tile) && IsTileOnWater(cur_tile)) != ind_behav.Test(IndustryBehaviour::BuiltOnWater))) return CommandCost(STR_ERROR_SITE_UNSUITABLE);
 
 			if (ind_behav.Any({IndustryBehaviour::OnlyInTown, IndustryBehaviour::Town1200More}) || // Tile must be a house
-					(ind_behav.Test(IndustryBehaviour::OnlyNearTown) && IsTileType(cur_tile, TileType::House))) { // Tile is allowed to be a house (and it is a house)
+					(ind_behav.Test(IndustryBehaviour::OnlyNearTown) && IsTileType(cur_tile, TileType::House))) { // const Tile &is allowed to be a house (and it is a house)
 				if (!IsTileType(cur_tile, TileType::House)) {
 					return CommandCost(STR_ERROR_CAN_ONLY_BE_BUILT_IN_TOWNS);
 				}

@@ -365,7 +365,7 @@ public:
 			pf2.DisableCache(true);
 			result1 = pf2.FindNearestSafeTile(v, t1, td, override_railtype, false);
 			if (result1 != result2) {
-				Debug(desync, 2, "warning: FindSafeTile cache mismatch: {} vs {}", result2 ? "T" : "F", result1 ? "T" : "F");
+				Debug(desync, 2, "warning: FindSafeconst Tile &cache mismatch: {} vs {}", result2 ? "T" : "F", result1 ? "T" : "F");
 				DumpState(pf1, pf2);
 			}
 		}

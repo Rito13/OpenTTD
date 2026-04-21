@@ -737,7 +737,7 @@ static CommandCost ClearTile_Trees(TileIndex tile, DoCommandFlags flags)
 }
 
 /** @copydoc GetTileDescProc */
-static void GetTileDesc_Trees([[maybe_unused]] TileIndex index, Tile tile, TileDesc &td)
+static void GetTileDesc_Trees([[maybe_unused]] TileIndex index, const Tile &tile, TileDesc &td)
 {
 	TreeType tt = GetTreeType(tile);
 
@@ -814,7 +814,7 @@ static void TileLoopTreesAlps(TileIndex tile)
  * @param tile The tile to check.
  * @return Whether trees on this tile can spread.
  */
-static bool TreesOnTileCanSpread(Tile tile)
+static bool TreesOnTileCanSpread(const Tile &tile)
 {
 	/* Desert and rainforest trees need special handling. */
 	if (_settings_game.game_creation.landscape == LandscapeType::Tropic) {

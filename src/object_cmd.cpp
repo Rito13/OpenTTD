@@ -52,7 +52,7 @@ INSTANTIATE_POOL_METHODS(Object)
  * @param tile The tile to fetch the object for.
  * @return The object.
  */
-/* static */ Object *Object::GetByTile(Tile tile)
+/* static */ Object *Object::GetByTile(const Tile &tile)
 {
 	return Object::Get(GetObjectIndex(tile));
 }
@@ -63,7 +63,7 @@ INSTANTIATE_POOL_METHODS(Object)
  * @pre IsTileType(t, TileType::Object)
  * @return the type.
  */
-ObjectType GetObjectType(Tile t)
+ObjectType GetObjectType(const Tile &t)
 {
 	assert(IsTileType(t, TileType::Object));
 	return Object::GetByTile(t)->type;
@@ -663,7 +663,7 @@ static void AddProducedCargo_Object(TileIndex tile, CargoArray &produced)
 
 
 /** @copydoc GetTileDescProc */
-static void GetTileDesc_Object([[maybe_unused]] TileIndex index, Tile tile, TileDesc &td)
+static void GetTileDesc_Object([[maybe_unused]] TileIndex index, const Tile &tile, TileDesc &td)
 {
 	const ObjectSpec *spec = ObjectSpec::GetByTile(tile);
 	td.str = spec->name;
