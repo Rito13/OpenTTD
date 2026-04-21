@@ -23,7 +23,7 @@
  * @pre IsTileType(t, TileType::TunnelBridge)
  * @return the above mentioned direction
  */
-inline DiagDirection GetTunnelBridgeDirection(Tile t)
+inline DiagDirection GetTunnelBridgeDirection(const Tile &t)
 {
 	assert(IsTileType(t, TileType::TunnelBridge));
 	return (DiagDirection)GB(t.m5(), 0, 2);
@@ -36,7 +36,7 @@ inline DiagDirection GetTunnelBridgeDirection(Tile t)
  * @pre IsTileType(t, TileType::TunnelBridge)
  * @return the transport type in the tunnel/bridge
  */
-inline TransportType GetTunnelBridgeTransportType(Tile t)
+inline TransportType GetTunnelBridgeTransportType(const Tile &t)
 {
 	assert(IsTileType(t, TileType::TunnelBridge));
 	return (TransportType)GB(t.m5(), 2, 2);
@@ -49,7 +49,7 @@ inline TransportType GetTunnelBridgeTransportType(Tile t)
  * @pre IsTileType(t, TileType::TunnelBridge)
  * @return true if and only if the tile is in a snowy/desert area
  */
-inline bool HasTunnelBridgeSnowOrDesert(Tile t)
+inline bool HasTunnelBridgeSnowOrDesert(const Tile &t)
 {
 	assert(IsTileType(t, TileType::TunnelBridge));
 	return HasBit(t.m7(), 5);
@@ -63,7 +63,7 @@ inline bool HasTunnelBridgeSnowOrDesert(Tile t)
  *                       not in snow and not in desert false
  * @pre IsTileType(t, TileType::TunnelBridge)
  */
-inline void SetTunnelBridgeSnowOrDesert(Tile t, bool snow_or_desert)
+inline void SetTunnelBridgeSnowOrDesert(const Tile &t, bool snow_or_desert)
 {
 	assert(IsTileType(t, TileType::TunnelBridge));
 	SB(t.m7(), 5, 1, snow_or_desert);
@@ -88,7 +88,7 @@ inline TileIndex GetOtherTunnelBridgeEnd(TileIndex t)
  * @param t the tile
  * @return reservation state
  */
-inline bool HasTunnelBridgeReservation(Tile t)
+inline bool HasTunnelBridgeReservation(const Tile &t)
 {
 	assert(IsTileType(t, TileType::TunnelBridge));
 	assert(GetTunnelBridgeTransportType(t) == TransportType::Rail);
@@ -101,7 +101,7 @@ inline bool HasTunnelBridgeReservation(Tile t)
  * @param t the tile
  * @param b the reservation state
  */
-inline void SetTunnelBridgeReservation(Tile t, bool b)
+inline void SetTunnelBridgeReservation(const Tile &t, bool b)
 {
 	assert(IsTileType(t, TileType::TunnelBridge));
 	assert(GetTunnelBridgeTransportType(t) == TransportType::Rail);
@@ -114,7 +114,7 @@ inline void SetTunnelBridgeReservation(Tile t, bool b)
  * @param t the tile
  * @return reserved track bits
  */
-inline TrackBits GetTunnelBridgeReservationTrackBits(Tile t)
+inline TrackBits GetTunnelBridgeReservationTrackBits(const Tile &t)
 {
 	return HasTunnelBridgeReservation(t) ? DiagDirToDiagTrack(GetTunnelBridgeDirection(t)) : TrackBits{};
 }

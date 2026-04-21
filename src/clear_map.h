@@ -37,7 +37,7 @@ static_assert(ClearGround::End <= ClearGround::MaxSize);
  * @pre IsTileType(t, TileType::Clear)
  * @return whether the tile is covered with snow.
  */
-inline bool IsSnowTile(Tile t)
+inline bool IsSnowTile(const Tile &t)
 {
 	assert(IsTileType(t, TileType::Clear));
 	return HasBit(t.m3(), 4);
@@ -49,7 +49,7 @@ inline bool IsSnowTile(Tile t)
  * @pre IsTileType(t, TileType::Clear)
  * @return the ground type
  */
-inline ClearGround GetClearGround(Tile t)
+inline ClearGround GetClearGround(const Tile &t)
 {
 	assert(IsTileType(t, TileType::Clear));
 	return static_cast<ClearGround>(GB(t.m5(), 2, CLEAR_GROUND_BITS));
@@ -62,7 +62,7 @@ inline ClearGround GetClearGround(Tile t)
  * @pre IsTileType(t, TileType::Clear)
  * @return \c true when the ground is of the given ground type.
  */
-inline bool IsClearGround(Tile t, ClearGround ct)
+inline bool IsClearGround(const Tile &t, ClearGround ct)
 {
 	return GetClearGround(t) == ct;
 }
@@ -74,7 +74,7 @@ inline bool IsClearGround(Tile t, ClearGround ct)
  * @pre IsTileType(t, TileType::Clear)
  * @return the density
  */
-inline uint GetClearDensity(Tile t)
+inline uint GetClearDensity(const Tile &t)
 {
 	assert(IsTileType(t, TileType::Clear));
 	return GB(t.m5(), 0, 2);
@@ -86,7 +86,7 @@ inline uint GetClearDensity(Tile t)
  * @param d the amount to increment the density with
  * @pre IsTileType(t, TileType::Clear)
  */
-inline void AddClearDensity(Tile t, int d)
+inline void AddClearDensity(const Tile &t, int d)
 {
 	assert(IsTileType(t, TileType::Clear)); // XXX incomplete
 	t.m5() += d;
@@ -98,7 +98,7 @@ inline void AddClearDensity(Tile t, int d)
  * @param d the new density
  * @pre IsTileType(t, TileType::Clear)
  */
-inline void SetClearDensity(Tile t, uint d)
+inline void SetClearDensity(const Tile &t, uint d)
 {
 	assert(IsTileType(t, TileType::Clear));
 	SB(t.m5(), 0, 2, d);
@@ -111,7 +111,7 @@ inline void SetClearDensity(Tile t, uint d)
  * @pre IsTileType(t, TileType::Clear)
  * @return the value of the counter
  */
-inline uint GetClearCounter(Tile t)
+inline uint GetClearCounter(const Tile &t)
 {
 	assert(IsTileType(t, TileType::Clear));
 	return GB(t.m5(), 5, 3);
@@ -123,7 +123,7 @@ inline uint GetClearCounter(Tile t)
  * @param c the amount to increment the counter with
  * @pre IsTileType(t, TileType::Clear)
  */
-inline void AddClearCounter(Tile t, int c)
+inline void AddClearCounter(const Tile &t, int c)
 {
 	assert(IsTileType(t, TileType::Clear)); // XXX incomplete
 	t.m5() += c << 5;
@@ -135,7 +135,7 @@ inline void AddClearCounter(Tile t, int c)
  * @param c the amount to set the counter to
  * @pre IsTileType(t, TileType::Clear)
  */
-inline void SetClearCounter(Tile t, uint c)
+inline void SetClearCounter(const Tile &t, uint c)
 {
 	assert(IsTileType(t, TileType::Clear)); // XXX incomplete
 	SB(t.m5(), 5, 3, c);
@@ -149,7 +149,7 @@ inline void SetClearCounter(Tile t, uint c)
  * @param density the density of the ground tile
  * @pre IsTileType(t, TileType::Clear)
  */
-inline void SetClearGroundDensity(Tile t, ClearGround type, uint density)
+inline void SetClearGroundDensity(const Tile &t, ClearGround type, uint density)
 {
 	assert(IsTileType(t, TileType::Clear)); // XXX incomplete
 	t.m5() = 0 << 5 | to_underlying(type) << 2 | density;
@@ -162,7 +162,7 @@ inline void SetClearGroundDensity(Tile t, ClearGround type, uint density)
  * @pre GetClearGround(t) == ClearGround::Fields
  * @return the field type
  */
-inline uint GetFieldType(Tile t)
+inline uint GetFieldType(const Tile &t)
 {
 	assert(GetClearGround(t) == ClearGround::Fields);
 	return GB(t.m3(), 0, 4);
@@ -174,7 +174,7 @@ inline uint GetFieldType(Tile t)
  * @param f the field type
  * @pre GetClearGround(t) == ClearGround::Fields
  */
-inline void SetFieldType(Tile t, uint f)
+inline void SetFieldType(const Tile &t, uint f)
 {
 	assert(GetClearGround(t) == ClearGround::Fields); // XXX incomplete
 	SB(t.m3(), 0, 4, f);
@@ -186,7 +186,7 @@ inline void SetFieldType(Tile t, uint f)
  * @pre GetClearGround(t) == ClearGround::Fields
  * @return the industry that made the field
  */
-inline IndustryID GetIndustryIndexOfField(Tile t)
+inline IndustryID GetIndustryIndexOfField(const Tile &t)
 {
 	assert(GetClearGround(t) == ClearGround::Fields);
 	return(IndustryID) t.m2();
@@ -198,7 +198,7 @@ inline IndustryID GetIndustryIndexOfField(Tile t)
  * @param i the industry that made the field
  * @pre GetClearGround(t) == ClearGround::Fields
  */
-inline void SetIndustryIndexOfField(Tile t, IndustryID i)
+inline void SetIndustryIndexOfField(const Tile &t, IndustryID i)
 {
 	assert(GetClearGround(t) == ClearGround::Fields);
 	t.m2() = i.base();
@@ -212,7 +212,7 @@ inline void SetIndustryIndexOfField(Tile t, IndustryID i)
  * @pre IsClearGround(t, ClearGround::Fields)
  * @return 0 if there is no fence, otherwise the fence type
  */
-inline uint GetFence(Tile t, DiagDirection side)
+inline uint GetFence(const Tile &t, DiagDirection side)
 {
 	assert(IsClearGround(t, ClearGround::Fields));
 	switch (side) {
@@ -231,7 +231,7 @@ inline uint GetFence(Tile t, DiagDirection side)
  * @param h 0 if there is no fence, otherwise the fence type
  * @pre IsClearGround(t, ClearGround::Fields)
  */
-inline void SetFence(Tile t, DiagDirection side, uint h)
+inline void SetFence(const Tile &t, DiagDirection side, uint h)
 {
 	assert(IsClearGround(t, ClearGround::Fields));
 	switch (side) {
@@ -250,7 +250,7 @@ inline void SetFence(Tile t, DiagDirection side, uint h)
  * @param g       the type of ground
  * @param density the density of the grass/snow/desert etc
  */
-inline void MakeClear(Tile t, ClearGround g, uint density)
+inline void MakeClear(const Tile &t, ClearGround g, uint density)
 {
 	SetTileType(t, TileType::Clear);
 	t.m1() = 0;
@@ -271,7 +271,7 @@ inline void MakeClear(Tile t, ClearGround g, uint density)
  * @param field_type the 'growth' level of the field
  * @param industry   the industry this tile belongs to
  */
-inline void MakeField(Tile t, uint field_type, IndustryID industry)
+inline void MakeField(const Tile &t, uint field_type, IndustryID industry)
 {
 	SetTileType(t, TileType::Clear);
 	t.m1() = 0;
@@ -291,7 +291,7 @@ inline void MakeField(Tile t, uint field_type, IndustryID industry)
  * @param density The density of snowiness.
  * @pre !IsSnowTile(t)
  */
-inline void MakeSnow(Tile t, uint density = 0)
+inline void MakeSnow(const Tile &t, uint density = 0)
 {
 	assert(!IsSnowTile(t));
 	SetBit(t.m3(), 4);
@@ -307,7 +307,7 @@ inline void MakeSnow(Tile t, uint density = 0)
  * @param t the tile to clear of snow
  * @pre IsSnowTile(t)
  */
-inline void ClearSnow(Tile t)
+inline void ClearSnow(const Tile &t)
 {
 	assert(IsSnowTile(t));
 	ClrBit(t.m3(), 4);

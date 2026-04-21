@@ -844,7 +844,7 @@ CargoArray GetAcceptedCargoOfHouse(const HouseSpec *hs)
 }
 
 /** @copydoc GetTileDescProc */
-static void GetTileDesc_Town(TileIndex index, Tile tile, TileDesc &td)
+static void GetTileDesc_Town(TileIndex index, const Tile &tile, TileDesc &td)
 {
 	const HouseID house = GetHouseType(tile);
 	const HouseSpec *hs = HouseSpec::Get(house);

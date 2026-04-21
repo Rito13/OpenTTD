@@ -99,7 +99,7 @@ struct ObjectSpec : NewGRFSpecBase<ObjectClassID> {
 	static const std::vector<ObjectSpec> &Specs();
 	static size_t Count();
 	static const ObjectSpec *Get(ObjectType index);
-	static const ObjectSpec *GetByTile(Tile tile);
+	static const ObjectSpec *GetByTile(const Tile &tile);
 
 	static void BindToClasses();
 };
