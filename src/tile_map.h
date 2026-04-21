@@ -26,7 +26,7 @@
  * @return the height of the tile
  * @pre tile < Map::Size()
  */
-[[debug_inline]] inline static uint TileHeight(Tile tile)
+[[debug_inline]] inline static uint TileHeight(const Tile &tile)
 {
 	assert(tile.IsValid());
 	return tile.height();
@@ -54,7 +54,7 @@ inline uint TileHeightOutsideMap(int x, int y)
  * @pre tile < Map::Size()
  * @pre height <= MAX_TILE_HEIGHT
  */
-inline void SetTileHeight(Tile tile, uint height)
+inline void SetTileHeight(const Tile &tile, uint height)
 {
 	assert(tile.IsValid());
 	assert(height <= MAX_TILE_HEIGHT);
@@ -69,7 +69,7 @@ inline void SetTileHeight(Tile tile, uint height)
  * @param tile The tile to get the height
  * @return The height of the tile in pixel
  */
-inline uint TilePixelHeight(Tile tile)
+inline uint TilePixelHeight(const Tile &tile)
 {
 	return TileHeight(tile) * TILE_HEIGHT;
 }
@@ -128,7 +128,7 @@ inline bool IsInnerTile(TileIndex tile)
  * @pre tile < Map::Size()
  * @pre type TileType::Void <=> tile is on the south-east or south-west edge.
  */
-inline void SetTileType(Tile tile, TileType type)
+inline void SetTileType(const Tile &tile, TileType type)
 {
 	assert(tile.IsValid());
 	SB(tile.type(), 4, TILE_TYPE_BITS, to_underlying(type));
@@ -143,7 +143,7 @@ inline void SetTileType(Tile tile, TileType type)
  * @param type The type to check against
  * @return true If the type matches against the type of the tile
  */
-[[debug_inline]] inline static bool IsTileType(Tile tile, TileType type)
+[[debug_inline]] inline static bool IsTileType(const Tile &tile, TileType type)
 {
 	return GetTileType(tile) == type;
 }
@@ -165,7 +165,7 @@ inline bool IsValidTile(TileIndex tile)
  * @param tile The tile to check
  * @return True if the tile is on the map and not one of MP_VOID.
  */
-inline bool IsValidTile(Tile tile)
+inline bool IsValidTile(const Tile &tile)
 {
 	return tile.IsValid() && !IsTileType(tile, TileType::Void);
 }
@@ -182,7 +182,7 @@ inline bool IsValidTile(Tile tile)
  * @pre IsValidTile(tile)
  * @pre The type of the tile must not be TileType::House and TileType::Industry
  */
-inline Owner GetTileOwner(Tile tile)
+inline Owner GetTileOwner(const Tile &tile)
 {
 	assert(IsValidTile(tile));
 	assert(!IsTileType(tile, TileType::House));
@@ -202,7 +202,7 @@ inline Owner GetTileOwner(Tile tile)
  * @pre IsValidTile(tile)
  * @pre The type of the tile must not be TileType::House and TileType::Industry
  */
-inline void SetTileOwner(Tile tile, Owner owner)
+inline void SetTileOwner(const Tile &tile, Owner owner)
 {
 	assert(IsValidTile(tile));
 	assert(!IsTileType(tile, TileType::House));
@@ -218,7 +218,7 @@ inline void SetTileOwner(Tile tile, Owner owner)
  * @param owner The owner to check against
  * @return True if a tile belongs the the given owner
  */
-inline bool IsTileOwner(Tile tile, Owner owner)
+inline bool IsTileOwner(const Tile &tile, Owner owner)
 {
 	return GetTileOwner(tile) == owner;
 }
@@ -229,7 +229,7 @@ inline bool IsTileOwner(Tile tile, Owner owner)
  * @param type the new type
  * @pre tile < Map::Size()
  */
-inline void SetTropicZone(Tile tile, TropicZone type)
+inline void SetTropicZone(const Tile &tile, TropicZone type)
 {
 	assert(tile.IsValid());
 	assert(!IsTileType(tile, TileType::Void) || type == TropicZone::Normal);
@@ -242,7 +242,7 @@ inline void SetTropicZone(Tile tile, TropicZone type)
  * @pre tile < Map::Size()
  * @return the zone type
  */
-inline TropicZone GetTropicZone(Tile tile)
+inline TropicZone GetTropicZone(const Tile &tile)
 {
 	assert(tile.IsValid());
 	return static_cast<TropicZone>(GB(tile.type(), 0, 2));
@@ -254,7 +254,7 @@ inline TropicZone GetTropicZone(Tile tile)
  * @pre IsTileType(t, TileType::House) || IsTileType(t, TileType::Object) || IsTileType(t, TileType::Industry) || IsTileType(t, TileType::Station)
  * @return frame number
  */
-inline uint8_t GetAnimationFrame(Tile t)
+inline uint8_t GetAnimationFrame(const Tile &t)
 {
 	assert(IsTileType(t, TileType::House) || IsTileType(t, TileType::Object) || IsTileType(t, TileType::Industry) || IsTileType(t, TileType::Station));
 	return t.m7();
@@ -266,7 +266,7 @@ inline uint8_t GetAnimationFrame(Tile t)
  * @param frame the new frame number
  * @pre IsTileType(t, TileType::House) || IsTileType(t, TileType::Object) || IsTileType(t, TileType::Industry) || IsTileType(t, TileType::Station)
  */
-inline void SetAnimationFrame(Tile t, uint8_t frame)
+inline void SetAnimationFrame(const Tile &t, uint8_t frame)
 {
 	assert(IsTileType(t, TileType::House) || IsTileType(t, TileType::Object) || IsTileType(t, TileType::Industry) || IsTileType(t, TileType::Station));
 	t.m7() = frame;

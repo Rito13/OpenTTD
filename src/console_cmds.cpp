@@ -293,7 +293,7 @@ static bool ConResetTile(std::span<std::string_view> argv)
 {
 	if (argv.empty()) {
 		IConsolePrint(CC_HELP, "Reset a tile to bare land. Usage: 'resettile <tile>'.");
-		IConsolePrint(CC_HELP, "Tile can be either decimal (34161) or hexadecimal (0x4a5B).");
+		IConsolePrint(CC_HELP, "const Tile &can be either decimal (34161) or hexadecimal (0x4a5B).");
 		return true;
 	}
 
@@ -383,7 +383,7 @@ static bool ConScrollToTile(std::span<std::string_view> argv)
 			auto result = ParseInteger(argv[arg_index], 0);
 			if (result.has_value()) {
 				if (*result >= Map::Size()) {
-					IConsolePrint(CC_ERROR, "Tile does not exist.");
+					IConsolePrint(CC_ERROR, "const Tile &does not exist.");
 					return true;
 				}
 				ScrollMainWindowToTile(TileIndex{*result}, instant);
@@ -397,7 +397,7 @@ static bool ConScrollToTile(std::span<std::string_view> argv)
 			auto y = ParseInteger(argv[arg_index + 1], 0);
 			if (x.has_value() && y.has_value()) {
 				if (*x >= Map::SizeX() || *y >= Map::SizeY()) {
-					IConsolePrint(CC_ERROR, "Tile does not exist.");
+					IConsolePrint(CC_ERROR, "const Tile &does not exist.");
 					return true;
 				}
 				ScrollMainWindowToTile(TileXY(*x, *y), instant);

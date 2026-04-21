@@ -36,7 +36,7 @@ RailType RailTypeInfo::Index() const
  * @param tile An arbitrary tile.
  * @return The rail type, or \c INVALID_RAILTYPE.
  */
-RailType GetTileRailType(Tile tile)
+RailType GetTileRailType(const Tile &tile)
 {
 	switch (GetTileType(tile)) {
 		case TileType::Railway:
