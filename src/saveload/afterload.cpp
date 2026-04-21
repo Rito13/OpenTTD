@@ -417,7 +417,7 @@ static void CDECL HandleSavegameLoadCrash(int signum)
  * @param ti Index of the tile to update.
  * @param t tile to update
  */
-static void FixOwnerOfRailTrack(TileIndex ti, Tile t)
+static void FixOwnerOfRailTrack(TileIndex ti, const Tile &t)
 {
 	assert(!Company::IsValidID(GetTileOwner(t)) && (IsLevelCrossingTile(t) || IsPlainRailTile(t)));
 
@@ -530,7 +530,7 @@ static void CheckGroundVehiclesAtCorrectZ()
  * @param t The tile to analyze
  * @return True if a bridge might have been present prior to savegame 194.
  */
-static inline bool MayHaveBridgeAbove(Tile t)
+static inline bool MayHaveBridgeAbove(const Tile &t)
 {
 	return IsTileType(t, TileType::Clear) || IsTileType(t, TileType::Railway) || IsTileType(t, TileType::Road) ||
 			IsTileType(t, TileType::Water) || IsTileType(t, TileType::TunnelBridge) || IsTileType(t, TileType::Object);

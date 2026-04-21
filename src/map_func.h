@@ -392,7 +392,7 @@ public:
 	 * Look at docs/landscape.html for the exact meaning of the data.
 	 * @return reference to the byte holding the height.
 	 */
-	[[debug_inline]] inline uint8_t &height()
+	[[debug_inline]] inline uint8_t &height() const
 	{
 		return this->tile->height;
 	}
@@ -403,7 +403,7 @@ public:
 	 * Look at docs/landscape.html for the exact meaning of the data.
 	 * @return reference to the byte holding the data.
 	 */
-	[[debug_inline]] inline uint8_t &m1()
+	[[debug_inline]] inline uint8_t &m1() const
 	{
 		return this->tile->m1;
 	}
@@ -414,7 +414,7 @@ public:
 	 * Look at docs/landscape.html for the exact meaning of the data.
 	 * @return reference to the uint16_t holding the data.
 	 */
-	[[debug_inline]] inline uint16_t &m2()
+	[[debug_inline]] inline uint16_t &m2() const
 	{
 		return this->tile->m2;
 	}
@@ -425,7 +425,7 @@ public:
 	 * Look at docs/landscape.html for the exact meaning of the data.
 	 * @return reference to the byte holding the data.
 	 */
-	[[debug_inline]] inline uint8_t &m3()
+	[[debug_inline]] inline uint8_t &m3() const
 	{
 		return this->tile->m3;
 	}
@@ -436,7 +436,7 @@ public:
 	 * Look at docs/landscape.html for the exact meaning of the data.
 	 * @return reference to the byte holding the data.
 	 */
-	[[debug_inline]] inline uint8_t &m4()
+	[[debug_inline]] inline uint8_t &m4() const
 	{
 		return this->tile->m4;
 	}
@@ -447,7 +447,7 @@ public:
 	 * Look at docs/landscape.html for the exact meaning of the data.
 	 * @return reference to the byte holding the data.
 	 */
-	[[debug_inline]] inline uint8_t &m5()
+	[[debug_inline]] inline uint8_t &m5() const
 	{
 		return this->tile->m5;
 	}
@@ -458,7 +458,7 @@ public:
 	 * Look at docs/landscape.html for the exact meaning of the data.
 	 * @return reference to the byte holding the data.
 	 */
-	[[debug_inline]] inline uint8_t &m6()
+	[[debug_inline]] inline uint8_t &m6() const
 	{
 		return this->tile_extended->m6;
 	}
@@ -469,7 +469,7 @@ public:
 	 * Look at docs/landscape.html for the exact meaning of the data.
 	 * @return reference to the byte holding the data.
 	 */
-	[[debug_inline]] inline uint8_t &m7()
+	[[debug_inline]] inline uint8_t &m7() const
 	{
 		return this->tile_extended->m7;
 	}
@@ -480,13 +480,13 @@ public:
 	 * Look at docs/landscape.html for the exact meaning of the data.
 	 * @return reference to the uint16_t holding the data.
 	 */
-	[[debug_inline]] inline uint16_t &m8()
+	[[debug_inline]] inline uint16_t &m8() const
 	{
 		return this->tile_extended->m8;
 	}
 
 	/** Clear m8 part of the storage. Preserves the state of the associated tile flag. */
-	inline void ClearM8()
+	inline void ClearM8() const
 	{
 		this->m8() &= 1U << M8_ASSOCIATED_TILE_BIT; // Clear everything except the associated tile flag.
 	}
@@ -504,7 +504,7 @@ public:
 	 * Check if this tile has an associated tile following.
 	 * @return \c true iff the next tile is associated with this tile.
 	 */
-	[[debug_inline]] inline bool HasAssociated()
+	[[debug_inline]] inline bool HasAssociated() const
 	{
 		assert(MayHaveAssociatedTile(this->GetTileType()) || !HasBit(this->m8(), M8_ASSOCIATED_TILE_BIT));
 		return HasBit(this->m8(), M8_ASSOCIATED_TILE_BIT);
