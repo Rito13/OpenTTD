@@ -459,7 +459,7 @@ void GenerateClearTile()
 }
 
 /** @copydoc GetTileDescProc */
-static void GetTileDesc_Clear([[maybe_unused]] TileIndex index, Tile tile, TileDesc &td)
+static void GetTileDesc_Clear([[maybe_unused]] TileIndex index, const Tile &tile, TileDesc &td)
 {
 	/* Each pair holds a normal and a snowy ClearGround description. */
 	static constexpr EnumIndexArray<std::pair<StringID, StringID>, ClearGround, ClearGround::MaxSize> clear_land_str{{{
