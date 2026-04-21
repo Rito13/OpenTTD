@@ -27,7 +27,7 @@ enum class AnimatedTileState : uint8_t {
  * @param t The tile.
  * @returns true iff the tile is animated.
  */
-inline AnimatedTileState GetAnimatedTileState(Tile t)
+inline AnimatedTileState GetAnimatedTileState(const Tile &t)
 {
 	return static_cast<AnimatedTileState>(GB(t.m6(), 0, 2));
 }
@@ -37,7 +37,7 @@ inline AnimatedTileState GetAnimatedTileState(Tile t)
  * @param t The tile.
  * @param state The new state.
  */
-inline void SetAnimatedTileState(Tile t, AnimatedTileState state)
+inline void SetAnimatedTileState(const Tile &t, AnimatedTileState state)
 {
 	SB(t.m6(), 0, 2, to_underlying(state));
 }
