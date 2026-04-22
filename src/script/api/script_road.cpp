@@ -197,18 +197,20 @@ static bool CheckAutoExpandedRoadBits(const Array<RoadPartOrientation> &existing
  */
 static int32_t LookupWithoutBuildOnSlopes(::Slope slope, const Array<RoadPartOrientation> &existing, RoadPartOrientation start, RoadPartOrientation end)
 {
-	switch (slope) {
+	switch (slope.base()) {
 		/* Flat slopes can always be build. */
-		case SLOPE_FLAT:
+		case ::SLOPE_FLAT.base():
 			return 1;
 
 		/* Only 4 of the slopes can be build upon. Testing the existing bits is
 		 * necessary because these bits can be something else when the settings
 		 * in the game have been changed.
 		 */
-		case SLOPE_NE: case SLOPE_SW:
+		case ::SLOPE_NE.base():
+		case ::SLOPE_SW.base():
 			return (CheckAutoExpandedRoadBits(existing, start, end) && (start == RoadPartOrientation::SW || end == RoadPartOrientation::SW)) ? (existing.empty() ? 2 : 1) : 0;
-		case SLOPE_SE: case SLOPE_NW:
+		case ::SLOPE_SE.base():
+		case ::SLOPE_NW.base():
 			return (CheckAutoExpandedRoadBits(existing, start, end) && (start != RoadPartOrientation::SW && end != RoadPartOrientation::SW)) ? (existing.empty() ? 2 : 1) : 0;
 
 		/* Any other tile cannot be built on. */
@@ -266,7 +268,7 @@ static int32_t LookupWithBuildOnSlopes(::Slope slope, const Array<RoadPartOrient
 		slope = SlopeWithOneCornerRaised(GetHighestSlopeCorner(slope));
 	}
 
-	static const uint8_t base_rotates[] = {0, 0, 1, 0, 2, 0, 1, 0, 3, 3, 2, 3, 2, 2, 1};
+	static constexpr TypedIndexContainer<std::array<uint8_t, 15>, Slope> base_rotates = {0, 0, 1, 0, 2, 0, 1, 0, 3, 3, 2, 3, 2, 2, 1};
 
 	if (slope >= SLOPE_ELEVATED) {
 		/* This slope is an invalid slope, so ignore it. */
@@ -276,17 +278,17 @@ static int32_t LookupWithBuildOnSlopes(::Slope slope, const Array<RoadPartOrient
 
 	/* Some slopes don't need rotating, so return early when we know we do
 	 * not need to rotate. */
-	switch (slope) {
-		case ::SLOPE_FLAT:
+	switch (slope.base()) {
+		case ::SLOPE_FLAT.base():
 			/* Flat slopes can always be build. */
 			return 1;
 
-		case ::SLOPE_EW:
-		case ::SLOPE_NS:
-		case ::SLOPE_WSE:
-		case ::SLOPE_NWS:
-		case ::SLOPE_SEN:
-		case ::SLOPE_ENW:
+		case ::SLOPE_EW.base():
+		case ::SLOPE_NS.base():
+		case ::SLOPE_WSE.base():
+		case ::SLOPE_NWS.base():
+		case ::SLOPE_SEN.base():
+		case ::SLOPE_ENW.base():
 			/* A slope similar to a SLOPE_EW or SLOPE_WSE will always cause
 			 * foundations which makes them accessible from all sides. */
 			return 1;
