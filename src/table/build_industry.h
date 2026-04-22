@@ -1534,12 +1534,12 @@ extern const IndustrySpec _origin_industry_specs[NEW_INDUSTRYOFFSET] = {
  */
 #define MT(ca1, c1, ca2, c2, ca3, c3, sl, a1, a2, a3) { \
 	{INVALID_CARGO, INVALID_CARGO, INVALID_CARGO, INVALID_CARGO, INVALID_CARGO, INVALID_CARGO, INVALID_CARGO, INVALID_CARGO, INVALID_CARGO, INVALID_CARGO, INVALID_CARGO, INVALID_CARGO, INVALID_CARGO, INVALID_CARGO, INVALID_CARGO, INVALID_CARGO}, \
-	{ca1, ca2, ca3}, sl, a1, a2, a3, IndustryTileCallbackMasks{}, AnimationInfo<IndustryAnimationTriggers>{}, IndustryTileSpecialFlags{}, true, SubstituteGRFFileProps(INVALID_INDUSTRYTILE), {}, {c1, c2, c3} \
+	{ca1, ca2, ca3}, Slope{sl}, a1, a2, a3, IndustryTileCallbackMasks{}, AnimationInfo<IndustryAnimationTriggers>{}, IndustryTileSpecialFlags{}, true, SubstituteGRFFileProps(INVALID_INDUSTRYTILE), {}, {c1, c2, c3} \
 }
 
 consteval IndustryTileSpec CreateSimpleIndustryTileSpec(int8_t cargo_acceptance1, std::variant<CargoLabel, MixedCargoType> cargo1, int8_t cargo_acceptance2, std::variant<CargoLabel, MixedCargoType> cargo2, bool is_construction)
 {
-	return MT(cargo_acceptance1, cargo1, cargo_acceptance2, cargo2, 0, CT_INVALID, SLOPE_STEEP, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, is_construction);
+	return MT(cargo_acceptance1, cargo1, cargo_acceptance2, cargo2, 0, CT_INVALID, Corner::Steep, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, is_construction);
 }
 
 static constexpr IndustryTileSpec _origin_industry_tile_specs[NEW_INDUSTRYTILEOFFSET] = {
@@ -1566,8 +1566,8 @@ static constexpr IndustryTileSpec _origin_industry_tile_specs[NEW_INDUSTRYTILEOF
 	CreateSimpleIndustryTileSpec(0, CT_INVALID, 0, CT_INVALID, false),
 
 	/* Forest Artic, temperate */
-	MT(0, CT_INVALID,      0, CT_INVALID,      0, CT_INVALID,     SLOPE_STEEP,                  17, INDUSTRYTILE_NOANIM, false), ///< Chopping forest
-	MT(0, CT_INVALID,      0, CT_INVALID,      0, CT_INVALID,     SLOPE_STEEP, INDUSTRYTILE_NOANIM,                  16, false), ///< Growing forest
+	MT(0, CT_INVALID, 0, CT_INVALID, 0, CT_INVALID, Corner::Steep, 17, INDUSTRYTILE_NOANIM, false), ///< Chopping forest
+	MT(0, CT_INVALID, 0, CT_INVALID, 0, CT_INVALID, Corner::Steep, INDUSTRYTILE_NOANIM, 16, false), ///< Growing forest
 
 	/* Oil refinery */
 	CreateSimpleIndustryTileSpec(0, CT_INVALID, 0, CT_INVALID, false),
@@ -1586,9 +1586,9 @@ static constexpr IndustryTileSpec _origin_industry_tile_specs[NEW_INDUSTRYTILEOF
 
 	/* Oil Wells arctic, temperate and sub-tropical */
 	CreateSimpleIndustryTileSpec(0, CT_INVALID, 0, CT_INVALID, false),
-	MT(0, CT_INVALID,      0, CT_INVALID,      0, CT_INVALID,     SLOPE_STEEP, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, true ),
-	MT(0, CT_INVALID,      0, CT_INVALID,      0, CT_INVALID,     SLOPE_STEEP, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, true ),
-	MT(0, CT_INVALID,      0, CT_INVALID,      0, CT_INVALID,     SLOPE_STEEP, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, true ),
+	MT(0, CT_INVALID, 0, CT_INVALID, 0, CT_INVALID, Corner::Steep, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, true),
+	MT(0, CT_INVALID, 0, CT_INVALID, 0, CT_INVALID, Corner::Steep, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, true),
+	MT(0, CT_INVALID, 0, CT_INVALID, 0, CT_INVALID, Corner::Steep, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, true),
 
 	/* Farm tropic, arctic and temperate */
 	CreateSimpleIndustryTileSpec(1, CT_PASSENGERS, 0, CT_INVALID, false),
@@ -1599,10 +1599,10 @@ static constexpr IndustryTileSpec _origin_industry_tile_specs[NEW_INDUSTRYTILEOF
 	CreateSimpleIndustryTileSpec(0, CT_INVALID, 0, CT_INVALID, false),
 
 	/* Factory temperate */
-	MT(8, MCT_GRAIN_WHEAT_MAIZE,        8, MCT_LIVESTOCK_FRUIT,    8, CT_STEEL,       SLOPE_STEEP, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
-	MT(8, MCT_GRAIN_WHEAT_MAIZE,        8, MCT_LIVESTOCK_FRUIT,    8, CT_STEEL,       SLOPE_STEEP, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
-	MT(8, MCT_GRAIN_WHEAT_MAIZE,        8, MCT_LIVESTOCK_FRUIT,    8, CT_STEEL,       SLOPE_STEEP, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
-	MT(8, MCT_GRAIN_WHEAT_MAIZE,        8, MCT_LIVESTOCK_FRUIT,    8, CT_STEEL,       SLOPE_STEEP, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
+	MT(8, MCT_GRAIN_WHEAT_MAIZE, 8, MCT_LIVESTOCK_FRUIT, 8, CT_STEEL, Corner::Steep, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
+	MT(8, MCT_GRAIN_WHEAT_MAIZE, 8, MCT_LIVESTOCK_FRUIT, 8, CT_STEEL, Corner::Steep, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
+	MT(8, MCT_GRAIN_WHEAT_MAIZE, 8, MCT_LIVESTOCK_FRUIT, 8, CT_STEEL, Corner::Steep, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
+	MT(8, MCT_GRAIN_WHEAT_MAIZE, 8, MCT_LIVESTOCK_FRUIT, 8, CT_STEEL, Corner::Steep, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
 
 	/* Printing works */
 	CreateSimpleIndustryTileSpec(0, CT_INVALID, 8, CT_PAPER, false),
@@ -1612,7 +1612,7 @@ static constexpr IndustryTileSpec _origin_industry_tile_specs[NEW_INDUSTRYTILEOF
 
 	/* Copper ore mine */
 	CreateSimpleIndustryTileSpec(0, CT_INVALID, 0, CT_INVALID, false),
-	MT(0, CT_INVALID,      0, CT_INVALID,      0, CT_INVALID,     SLOPE_STEEP, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, true ),
+	MT(0, CT_INVALID, 0, CT_INVALID, 0, CT_INVALID, Corner::Steep, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, true),
 	CreateSimpleIndustryTileSpec(0, CT_INVALID, 0, CT_INVALID, false),
 	CreateSimpleIndustryTileSpec(1, CT_PASSENGERS, 0, CT_INVALID, false),
 	CreateSimpleIndustryTileSpec(1, CT_PASSENGERS, 0, CT_INVALID, false),
@@ -1626,8 +1626,8 @@ static constexpr IndustryTileSpec _origin_industry_tile_specs[NEW_INDUSTRYTILEOF
 	CreateSimpleIndustryTileSpec(1, CT_PASSENGERS, 8, CT_IRON_ORE, false),
 
 	/* Bank temperate*/
-	MT(1, CT_PASSENGERS,   8, MCT_VALUABLES_GOLD_DIAMONDS,    0, CT_INVALID,     SLOPE_E,     INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
-	MT(1, CT_PASSENGERS,   8, MCT_VALUABLES_GOLD_DIAMONDS,    0, CT_INVALID,     SLOPE_S,     INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
+	MT(1, CT_PASSENGERS, 8, MCT_VALUABLES_GOLD_DIAMONDS, 0, CT_INVALID, Corner::E, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
+	MT(1, CT_PASSENGERS, 8, MCT_VALUABLES_GOLD_DIAMONDS, 0, CT_INVALID, Corner::S, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
 
 	/* Food processing plant, tropic and arctic. CT_MAIZE or CT_WHEAT, CT_LIVESTOCK or CT_FRUIT*/
 	CreateSimpleIndustryTileSpec(8, MCT_GRAIN_WHEAT_MAIZE, 8, MCT_LIVESTOCK_FRUIT, false),
@@ -1665,8 +1665,8 @@ static constexpr IndustryTileSpec _origin_industry_tile_specs[NEW_INDUSTRYTILEOF
 	CreateSimpleIndustryTileSpec(0, CT_INVALID, 0, CT_INVALID, true),
 
 	/* Bank Sub Arctic */
-	MT(0, CT_INVALID,      8, MCT_VALUABLES_GOLD_DIAMONDS,         0, CT_INVALID,     SLOPE_E,     INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
-	MT(0, CT_INVALID,      8, MCT_VALUABLES_GOLD_DIAMONDS,         0, CT_INVALID,     SLOPE_S,     INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
+	MT(0, CT_INVALID, 8, MCT_VALUABLES_GOLD_DIAMONDS, 0, CT_INVALID, Corner::E, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
+	MT(0, CT_INVALID, 8, MCT_VALUABLES_GOLD_DIAMONDS, 0, CT_INVALID, Corner::S, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
 
 	/* Diamond mine */
 	CreateSimpleIndustryTileSpec(0, CT_INVALID, 0, CT_INVALID, false),
@@ -1711,10 +1711,10 @@ static constexpr IndustryTileSpec _origin_industry_tile_specs[NEW_INDUSTRYTILEOF
 	CreateSimpleIndustryTileSpec(0, CT_INVALID, 8, CT_WATER, false),
 
 	/* Factory (sub-tropical) */
-	MT(8, CT_COPPER_ORE,   8, CT_RUBBER,       8, CT_WOOD,        SLOPE_STEEP, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
-	MT(8, CT_COPPER_ORE,   8, CT_RUBBER,       8, CT_WOOD,        SLOPE_STEEP, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
-	MT(8, CT_COPPER_ORE,   8, CT_RUBBER,       8, CT_WOOD,        SLOPE_STEEP, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
-	MT(8, CT_COPPER_ORE,   8, CT_RUBBER,       8, CT_WOOD,        SLOPE_STEEP, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
+	MT(8, CT_COPPER_ORE, 8, CT_RUBBER, 8, CT_WOOD, Corner::Steep, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
+	MT(8, CT_COPPER_ORE, 8, CT_RUBBER, 8, CT_WOOD, Corner::Steep, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
+	MT(8, CT_COPPER_ORE, 8, CT_RUBBER, 8, CT_WOOD, Corner::Steep, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
+	MT(8, CT_COPPER_ORE, 8, CT_RUBBER, 8, CT_WOOD, Corner::Steep, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
 
 	/* Lumber mill */
 	CreateSimpleIndustryTileSpec(0, CT_INVALID, 0, CT_INVALID, false),
@@ -1723,18 +1723,18 @@ static constexpr IndustryTileSpec _origin_industry_tile_specs[NEW_INDUSTRYTILEOF
 	CreateSimpleIndustryTileSpec(0, CT_INVALID, 0, CT_INVALID, false),
 
 	/* Candyfloss forest */
-	MT(0, CT_INVALID,      0, CT_INVALID,      0, CT_INVALID,     SLOPE_STEEP,                 130, INDUSTRYTILE_NOANIM, false), ///< Chopping candyfloss
-	MT(0, CT_INVALID,      0, CT_INVALID,      0, CT_INVALID,     SLOPE_STEEP, INDUSTRYTILE_NOANIM,                 129, false), ///< Growing candyfloss
+	MT(0, CT_INVALID, 0, CT_INVALID, 0, CT_INVALID, Corner::Steep, 130, INDUSTRYTILE_NOANIM, false), ///< Chopping candyfloss
+	MT(0, CT_INVALID, 0, CT_INVALID, 0, CT_INVALID, Corner::Steep, INDUSTRYTILE_NOANIM, 129, false), ///< Growing candyfloss
 
 	/* Sweet factory */
-	MT(8, CT_COTTON_CANDY, 8, CT_TOFFEE,       8, CT_SUGAR,       SLOPE_STEEP, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
-	MT(8, CT_COTTON_CANDY, 8, CT_TOFFEE,       8, CT_SUGAR,       SLOPE_STEEP, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
-	MT(8, CT_COTTON_CANDY, 8, CT_TOFFEE,       8, CT_SUGAR,       SLOPE_STEEP, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
-	MT(8, CT_COTTON_CANDY, 8, CT_TOFFEE,       8, CT_SUGAR,       SLOPE_STEEP, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
+	MT(8, CT_COTTON_CANDY, 8, CT_TOFFEE, 8, CT_SUGAR, Corner::Steep, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
+	MT(8, CT_COTTON_CANDY, 8, CT_TOFFEE, 8, CT_SUGAR, Corner::Steep, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
+	MT(8, CT_COTTON_CANDY, 8, CT_TOFFEE, 8, CT_SUGAR, Corner::Steep, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
+	MT(8, CT_COTTON_CANDY, 8, CT_TOFFEE, 8, CT_SUGAR, Corner::Steep, INDUSTRYTILE_NOANIM, INDUSTRYTILE_NOANIM, false),
 
 	/* Battery farm */
-	MT(0, CT_INVALID,      0, CT_INVALID,      0, CT_INVALID,     SLOPE_STEEP,                 136, INDUSTRYTILE_NOANIM, false), ///< Reaping batteries
-	MT(0, CT_INVALID,      0, CT_INVALID,      0, CT_INVALID,     SLOPE_STEEP, INDUSTRYTILE_NOANIM,                 135, false), ///< Growing batteries
+	MT(0, CT_INVALID, 0, CT_INVALID, 0, CT_INVALID, Corner::Steep, 136, INDUSTRYTILE_NOANIM, false), ///< Reaping batteries
+	MT(0, CT_INVALID, 0, CT_INVALID, 0, CT_INVALID, Corner::Steep, INDUSTRYTILE_NOANIM, 135, false), ///< Growing batteries
 
 	/* Cola wells */
 	CreateSimpleIndustryTileSpec(0, CT_INVALID, 0, CT_INVALID, false),
