@@ -37,12 +37,12 @@ static std::tuple<Slope, int> GetTileSlopeGivenHeight(int hnorth, int hwest, int
 
 	Slope r = SLOPE_FLAT;
 
-	if (hnorth != hmin) r |= SLOPE_N;
-	if (hwest  != hmin) r |= SLOPE_W;
-	if (heast  != hmin) r |= SLOPE_E;
-	if (hsouth != hmin) r |= SLOPE_S;
+	if (hnorth != hmin) r.Set(BaseSlope::N);
+	if (hwest != hmin) r.Set(BaseSlope::W);
+	if (heast != hmin) r.Set(BaseSlope::E);
+	if (hsouth != hmin) r.Set(BaseSlope::S);
 
-	if (hmax - hmin == 2) r |= SLOPE_STEEP;
+	if (hmax - hmin == 2) r.Set(BaseSlope::Steep);
 
 	return {r, hmin};
 }

@@ -209,7 +209,7 @@ static void AdjustTileh(TileIndex tile, Slope *tileh)
 {
 	if (IsTileType(tile, TileType::TunnelBridge)) {
 		if (IsTunnel(tile)) {
-			*tileh = SLOPE_STEEP; // XXX - Hack to make tunnel entrances to always have a pylon
+			*tileh = Slope(BaseSlope::Steep); // XXX - Hack to make tunnel entrances to always have a pylon
 		} else if (*tileh != SLOPE_FLAT) {
 			*tileh = SLOPE_FLAT;
 		} else {
@@ -472,7 +472,7 @@ static void DrawRailCatenaryRailway(const TileInfo *ti)
 		SpriteID wire_base = (t == halftile_track) ? wire_halftile : wire_normal;
 		uint8_t pcp_config = pcp_status.Test(_pcp_positions[t][0]) +
 			(pcp_status.Test(_pcp_positions[t][1]) << 1);
-		int tileh_selector = !(tileh[TS_HOME] % 3) * tileh[TS_HOME] / 3; // tileh for the slopes, 0 otherwise
+		int tileh_selector = !(tileh[TS_HOME].base() % 3) * tileh[TS_HOME].base() / 3; // tileh for the slopes, 0 otherwise
 
 		assert(pcp_config != 0); // We have a pylon on neither end of the wire, that doesn't work (since we have no sprites for that)
 		assert(!IsSteepSlope(tileh[TS_HOME]));

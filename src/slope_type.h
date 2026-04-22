@@ -31,10 +31,20 @@ enum class Corner : uint8_t {
 /** Bitset of \c Corner elements. */
 using Corners = EnumBitSet<Corner, uint8_t>;
 
+/** Base bit members of Slope bitset. */
+enum class BaseSlope : uint8_t {
+	W, ///< The west corner of the tile is raised.
+	S, ///< The south corner of the tile is raised.
+	E, ///< The east corner of the tile is raised.
+	N, ///< The north corner of the tile is raised.
+	Steep, ///< Indicates the slope is steep.
+	HalfTile, ///< One halftile is leveled (non continuous slope).
+};
+
 /**
- * Enumeration for the slope-type.
+ * Bitset for the slope-type.
  *
- * This enumeration use the chars N,E,S,W corresponding the
+ * This bitset use the chars N,E,S,W corresponding the
  * direction north, east, south and west. The top corner of a tile
  * is the north-part of the tile. The whole slope is encoded with
  * 5 bits, 4 bits for each corner and 1 bit for a steep-flag.
@@ -46,44 +56,40 @@ using Corners = EnumBitSet<Corner, uint8_t>;
  * slope for steep slopes, which is logical because two leveled
  * slopes would mean that it is not a steep slope as halftile
  * slopes only span one height level.
+ * @{
  */
-enum Slope : uint8_t {
-	SLOPE_FLAT     = 0x00,                                  ///< a flat tile
-	SLOPE_W        = 0x01,                                  ///< the west corner of the tile is raised
-	SLOPE_S        = 0x02,                                  ///< the south corner of the tile is raised
-	SLOPE_E        = 0x04,                                  ///< the east corner of the tile is raised
-	SLOPE_N        = 0x08,                                  ///< the north corner of the tile is raised
-	SLOPE_STEEP    = 0x10,                                  ///< indicates the slope is steep
-	SLOPE_NW       = SLOPE_N | SLOPE_W,                     ///< north and west corner are raised
-	SLOPE_SW       = SLOPE_S | SLOPE_W,                     ///< south and west corner are raised
-	SLOPE_SE       = SLOPE_S | SLOPE_E,                     ///< south and east corner are raised
-	SLOPE_NE       = SLOPE_N | SLOPE_E,                     ///< north and east corner are raised
-	SLOPE_EW       = SLOPE_E | SLOPE_W,                     ///< east and west corner are raised
-	SLOPE_NS       = SLOPE_N | SLOPE_S,                     ///< north and south corner are raised
-	SLOPE_ELEVATED = SLOPE_N | SLOPE_E | SLOPE_S | SLOPE_W, ///< bit mask containing all 'simple' slopes
-	SLOPE_NWS      = SLOPE_N | SLOPE_W | SLOPE_S,           ///< north, west and south corner are raised
-	SLOPE_WSE      = SLOPE_W | SLOPE_S | SLOPE_E,           ///< west, south and east corner are raised
-	SLOPE_SEN      = SLOPE_S | SLOPE_E | SLOPE_N,           ///< south, east and north corner are raised
-	SLOPE_ENW      = SLOPE_E | SLOPE_N | SLOPE_W,           ///< east, north and west corner are raised
-	SLOPE_STEEP_W  = SLOPE_STEEP | SLOPE_NWS,               ///< a steep slope falling to east (from west)
-	SLOPE_STEEP_S  = SLOPE_STEEP | SLOPE_WSE,               ///< a steep slope falling to north (from south)
-	SLOPE_STEEP_E  = SLOPE_STEEP | SLOPE_SEN,               ///< a steep slope falling to west (from east)
-	SLOPE_STEEP_N  = SLOPE_STEEP | SLOPE_ENW,               ///< a steep slope falling to south (from north)
+using Slope = EnumBitSet<BaseSlope, uint8_t>;
 
-	SLOPE_HALFTILE = 0x20,                                  ///< one halftile is leveled (non continuous slope)
-	SLOPE_HALFTILE_MASK = 0xE0,                             ///< three bits used for halftile slopes
-	SLOPE_HALFTILE_W = SLOPE_HALFTILE | (to_underlying(Corner::W) << 6), ///< the west halftile is leveled (non continuous slope)
-	SLOPE_HALFTILE_S = SLOPE_HALFTILE | (to_underlying(Corner::S) << 6), ///< the south halftile is leveled (non continuous slope)
-	SLOPE_HALFTILE_E = SLOPE_HALFTILE | (to_underlying(Corner::E) << 6), ///< the east halftile is leveled (non continuous slope)
-	SLOPE_HALFTILE_N = SLOPE_HALFTILE | (to_underlying(Corner::N) << 6), ///< the north halftile is leveled (non continuous slope)
-};
-DECLARE_ENUM_AS_BIT_SET(Slope)
+static constexpr Slope SLOPE_FLAT{}; ///< A flat tile.
+
+static constexpr Slope SLOPE_NW{BaseSlope::N, BaseSlope::W}; ///< North and west corners are raised.
+static constexpr Slope SLOPE_SW{BaseSlope::S, BaseSlope::W}; ///< South and west corners are raised.
+static constexpr Slope SLOPE_SE{BaseSlope::S, BaseSlope::E}; ///< South and east corners are raised.
+static constexpr Slope SLOPE_NE{BaseSlope::N, BaseSlope::E}; ///< North and east corners are raised.
+static constexpr Slope SLOPE_EW{BaseSlope::E, BaseSlope::W}; ///< East and west corners are raised.
+static constexpr Slope SLOPE_NS{BaseSlope::N, BaseSlope::S}; ///< North and south corners are raised.
+static constexpr Slope SLOPE_ELEVATED{BaseSlope::N, BaseSlope::E, BaseSlope::S, BaseSlope::W}; ///< Bit mask containing all 'simple' slopes.
+static constexpr Slope SLOPE_NWS{BaseSlope::N, BaseSlope::W, BaseSlope::S}; ///< North, west and south corners are raised.
+static constexpr Slope SLOPE_WSE{BaseSlope::W, BaseSlope::S, BaseSlope::E}; ///< West, south and east corners are raised.
+static constexpr Slope SLOPE_SEN{BaseSlope::S, BaseSlope::E, BaseSlope::N}; ///< South, east and north corners are raised.
+static constexpr Slope SLOPE_ENW{BaseSlope::E, BaseSlope::N, BaseSlope::W}; ///< East, north and west corners are raised.
+static constexpr Slope SLOPE_STEEP_W = Slope(SLOPE_NWS).Set(BaseSlope::Steep); ///< A steep slope falling to east (from west).
+static constexpr Slope SLOPE_STEEP_S = Slope(SLOPE_WSE).Set(BaseSlope::Steep); ///< A steep slope falling to north (from south).
+static constexpr Slope SLOPE_STEEP_E = Slope(SLOPE_SEN).Set(BaseSlope::Steep); ///< A steep slope falling to west (from east).
+static constexpr Slope SLOPE_STEEP_N = Slope(SLOPE_ENW).Set(BaseSlope::Steep); ///< A steep slope falling to south (from north).
+
+static constexpr Slope SLOPE_HALFTILE_MASK{0xE0}; ///< Three bits used for halftile slopes.
+static constexpr Slope SLOPE_HALFTILE_W = Slope(to_underlying(Corner::W) << 6).Set(BaseSlope::HalfTile); ///< The west halftile is leveled (non continuous slope).
+static constexpr Slope SLOPE_HALFTILE_S = Slope(to_underlying(Corner::S) << 6).Set(BaseSlope::HalfTile); ///< The south halftile is leveled (non continuous slope).
+static constexpr Slope SLOPE_HALFTILE_E = Slope(to_underlying(Corner::E) << 6).Set(BaseSlope::HalfTile); ///< The east halftile is leveled (non continuous slope).
+static constexpr Slope SLOPE_HALFTILE_N = Slope(to_underlying(Corner::N) << 6).Set(BaseSlope::HalfTile); ///< The north halftile is leveled (non continuous slope).
+/** @} */
 
 /**
  * Helper for creating a bitset of slopes.
  * @param x The slope to convert into a bitset.
  */
-#define M(x) (1U << (x))
+#define M(x) (1U << (x.base()))
 /** Constant bitset with safe slopes for building a level crossing. */
 static const uint32_t VALID_LEVEL_CROSSING_SLOPES = M(SLOPE_SEN) | M(SLOPE_ENW) | M(SLOPE_NWS) | M(SLOPE_NS) | M(SLOPE_WSE) | M(SLOPE_EW) | M(SLOPE_FLAT);
 #undef M
