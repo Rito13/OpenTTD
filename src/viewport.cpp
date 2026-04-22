@@ -914,7 +914,7 @@ static void DrawTileSelectionRect(const TileInfo *ti, PaletteID pal)
 	SpriteID sel;
 	if (IsHalftileSlope(ti->tileh)) {
 		Corner halftile_corner = GetHalftileSlopeCorner(ti->tileh);
-		SpriteID sel2 = SPR_HALFTILE_SELECTION_FLAT + halftile_corner;
+		SpriteID sel2 = SPR_HALFTILE_SELECTION_FLAT + to_underlying(halftile_corner);
 		DrawSelectionSprite(sel2, pal, ti, 7 + TILE_HEIGHT, FOUNDATION_PART_HALFTILE);
 
 		Corner opposite_corner = OppositeCorner(halftile_corner);
@@ -923,7 +923,7 @@ static void DrawTileSelectionRect(const TileInfo *ti, PaletteID pal)
 		} else {
 			sel = ((ti->tileh & SlopeWithOneCornerRaised(opposite_corner)) != 0 ? SPR_HALFTILE_SELECTION_UP : SPR_HALFTILE_SELECTION_FLAT);
 		}
-		sel += opposite_corner;
+		sel += to_underlying(opposite_corner);
 	} else {
 		sel = SPR_SELECT_TILE + SlopeToSpriteOffset(ti->tileh);
 	}
@@ -1148,8 +1148,8 @@ draw_inner:
 			}
 			if (IsHalftileSlope(ti->tileh)) {
 				Corner halftile_corner = GetHalftileSlopeCorner(ti->tileh);
-				if ((halftile_corner == CORNER_W) || (halftile_corner == CORNER_E)) z += TILE_HEIGHT;
-				if (halftile_corner != CORNER_S) {
+				if ((halftile_corner == Corner::W) || (halftile_corner == Corner::E)) z += TILE_HEIGHT;
+				if (halftile_corner != Corner::S) {
 					foundation_part = FOUNDATION_PART_HALFTILE;
 					if (IsSteepSlope(ti->tileh)) z -= TILE_HEIGHT;
 				}
