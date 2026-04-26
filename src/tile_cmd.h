@@ -61,8 +61,10 @@ struct TileDesc {
 /**
  * Tile callback function signature for drawing a tile and its contents to the screen
  * @param ti Information about the tile to draw
+ * @param draw_halftile Whether the halftile part of the tile should be drawn.
+ * @param halftile_corner A valid corner if the tile has a halftile foundation.
  */
-using DrawTileProc = void(TileInfo *ti);
+using DrawTileProc = void(TileInfo *ti, bool draw_halftile, Corner halftile_corner);
 
 /**
  * Tile callback function signature for clearing a tile.
@@ -171,11 +173,12 @@ using VehicleEnterTileProc = VehicleEnterTileStates(Vehicle *v, TileIndex index,
 
 /**
  * Tile callback function signature for getting the foundation of a tile.
- * @param tile The tile to check.
+ * @param index The index of the tile to find a foundation for.
+ * @param tile The tile to find a foundation for.
  * @param tileh The current slope.
  * @return The foundation that will be used.
  */
-using GetFoundationProc = Foundation(TileIndex tile, Slope tileh);
+using GetFoundationProc = Foundation(TileIndex index, const Tile &tile, Slope tileh);
 
 /**
  * Tile callback function signature of the terraforming callback.
@@ -224,7 +227,7 @@ struct TileTypeProcs {
 	ChangeTileOwnerProc *change_tile_owner_proc = [](TileIndex, Tile&, CompanyID, CompanyID) { return false; }; ///< Called to change the ownership of elements on a tile.
 	AddProducedCargoProc *add_produced_cargo_proc = nullptr; ///< Adds produced cargo of the tile to cargo array supplied as parameter.
 	VehicleEnterTileProc *vehicle_enter_tile_proc = nullptr; ///< Called when a vehicle enters a tile.
-	GetFoundationProc *get_foundation_proc = [](TileIndex, Slope) { return Foundation::None; }; ///< Called to get the foundation.
+	GetFoundationProc *get_foundation_proc = [](TileIndex, const Tile&, Slope) { return Foundation::None; }; ///< Called to get the foundation.
 	TerraformTileProc *terraform_tile_proc; ///< Called when a terraforming operation is about to take place.
 	CheckBuildAboveProc *check_build_above_proc = nullptr; ///< Called to check whether a bridge can be build above.
 };

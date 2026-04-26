@@ -257,19 +257,19 @@ static void AirportDrawTileLayout(const TileInfo *ti, const DrawTileSpriteSpan &
 	DrawNewGRFTileSeq(ti, &dts, TransparencyOption::Buildings, 0, GetColourPalette(colour));
 }
 
-bool DrawNewAirportTile(TileInfo *ti, Station *st, const AirportTileSpec *airts)
+bool HasNewAirportTileDefaultFoundation(TileIndex tile, Station *st, const AirportTileSpec *airts)
 {
-	if (ti->tileh != SLOPE_FLAT) {
-		bool draw_old_one = true;
-		if (airts->callback_mask.Test(AirportTileCallbackMask::DrawFoundations)) {
-			/* Called to determine the type (if any) of foundation to draw */
-			uint32_t callback_res = GetAirportTileCallback(CBID_AIRPTILE_DRAW_FOUNDATIONS, 0, 0, airts, st, ti->index);
-			if (callback_res != CALLBACK_FAILED) draw_old_one = ConvertBooleanCallback(airts->grf_prop.grffile, CBID_AIRPTILE_DRAW_FOUNDATIONS, callback_res);
-		}
-
-		if (draw_old_one) DrawFoundation(ti, Foundation::Leveled);
+	if (airts->callback_mask.Test(AirportTileCallbackMask::DrawFoundations)) {
+		/* Called to determine the type (if any) of foundation to draw */
+		uint32_t callback_res = GetAirportTileCallback(CBID_AIRPTILE_DRAW_FOUNDATIONS, 0, 0, airts, st, tile);
+		if (callback_res != CALLBACK_FAILED) return ConvertBooleanCallback(airts->grf_prop.grffile, CBID_AIRPTILE_DRAW_FOUNDATIONS, callback_res);
 	}
 
+	return true;
+}
+
+bool DrawNewAirportTile(TileInfo *ti, Station *st, const AirportTileSpec *airts)
+{
 	AirportTileResolverObject object(airts, ti->index, st);
 	const auto *group = object.Resolve<TileLayoutSpriteGroup>();
 	if (group == nullptr) {

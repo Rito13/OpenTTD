@@ -1283,8 +1283,11 @@ static void DrawBridgeRoadBits(TileIndex head_tile, int x, int y, int z, int off
  * <li>Bit 3 and more: Railtype Specific subset</li>
  * </ul>
  * Please note that in this code, "roads" are treated as railtype 1, whilst the real railtypes are 0, 2 and 3
+ * @param ti TileInfo of the structure to draw
+ * @param draw_halftile Are we drawing the upper part of a half-tile?
+ * @param halftile_corner The corner where the upper half-tile is or CORNER_INVALID if no half-tile.
  */
-static void DrawTile_TunnelBridge(TileInfo *ti)
+static void DrawTile_TunnelBridge(TileInfo *ti, bool draw_halftile, Corner halftile_corner)
 {
 	TransportType transport_type = GetTunnelBridgeTransportType(ti->tile);
 	DiagDirection tunnelbridge_direction = GetTunnelBridgeDirection(ti->tile);
@@ -1444,11 +1447,11 @@ static void DrawTile_TunnelBridge(TileInfo *ti)
 
 		DrawBridgeMiddle(ti, BridgePillarFlag::EdgeNE + tunnelbridge_direction);
 	} else { // IsBridge(ti->tile)
-		DrawFoundation(ti, GetBridgeFoundation(ti->tileh, DiagDirToAxis(tunnelbridge_direction)));
 		bool is_custom_layout = false; // Set if rail/road bridge uses a custom layout.
 
 		uint base_offset = GetBridgeRampDirectionBaseOffset(tunnelbridge_direction);
 		std::span<const PalSpriteID> psid;
+
 		if (transport_type != TRANSPORT_WATER) {
 			BridgeType bridge_type = GetBridgeType(ti->tile);
 			if (ti->tileh == SLOPE_FLAT) base_offset += 4; // sloped bridge head
@@ -1463,9 +1466,9 @@ static void DrawTile_TunnelBridge(TileInfo *ti)
 		if (!HasTunnelBridgeSnowOrDesert(ti->tile)) {
 			TileIndex next = ti->index + TileOffsByDiagDir(tunnelbridge_direction);
 			if (ti->tileh != SLOPE_FLAT && ti->z == 0 && HasTileWaterClass(next) && GetWaterClass(next) == WaterClass::Sea) {
-				DrawShoreTile(ti->tileh);
+				DrawShoreTile(ti, draw_halftile, halftile_corner);
 			} else {
-				DrawClearLandTile(ti, 3);
+				DrawClearLandTile(ti, 3, draw_halftile, halftile_corner);
 			}
 		} else {
 			DrawGroundSprite(SPR_FLAT_SNOW_DESERT_TILE + SlopeToSpriteOffset(ti->tileh), PAL_NONE);
@@ -1763,7 +1766,7 @@ int GetTunnelBridgeSlopePixelZ(TileIndex tile, uint x, uint y, bool ground_vehic
 }
 
 /** @copydoc GetFoundationProc */
-static Foundation GetFoundation_TunnelBridge(TileIndex tile, Slope tileh)
+static Foundation GetFoundation_TunnelBridge([[maybe_unused]] TileIndex index, const Tile &tile, Slope tileh)
 {
 	return IsTunnel(tile) ? Foundation::None : GetBridgeFoundation(tileh, DiagDirToAxis(GetTunnelBridgeDirection(tile)));
 }

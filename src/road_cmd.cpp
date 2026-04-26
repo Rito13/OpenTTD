@@ -1635,11 +1635,6 @@ static void DrawRoadBits(TileInfo *ti)
 	const RoadTypeInfo *road_rti = road_rt == INVALID_ROADTYPE ? nullptr : GetRoadTypeInfo(road_rt);
 	const RoadTypeInfo *tram_rti = tram_rt == INVALID_ROADTYPE ? nullptr : GetRoadTypeInfo(tram_rt);
 
-	if (ti->tileh != SLOPE_FLAT) {
-		DrawFoundation(ti, GetRoadFoundation(ti->tileh, road | tram));
-		/* DrawFoundation() modifies ti. */
-	}
-
 	DrawRoadGroundSprites(ti, road, tram, road_rti, tram_rti, GetRoadside(ti->tile), IsOnSnowOrDesert(ti->tile));
 
 	/* Draw one way */
@@ -1706,7 +1701,7 @@ static void DrawRoadBits(TileInfo *ti)
 }
 
 /** @copydoc DrawTileProc */
-static void DrawTile_Road(TileInfo *ti)
+static void DrawTile_Road(TileInfo *ti, [[maybe_unused]] bool draw_halftile, [[maybe_unused]] Corner halftile_corner)
 {
 	BridgePillarFlags blocked_pillars{};
 	switch (GetRoadTileType(ti->tile)) {
@@ -1723,8 +1718,6 @@ static void DrawTile_Road(TileInfo *ti)
 			break;
 
 		case RoadTileType::Crossing: {
-			if (ti->tileh != SLOPE_FLAT) DrawFoundation(ti, Foundation::Leveled);
-
 			Axis axis = GetCrossingRailAxis(ti->tile);
 
 			const RailTypeInfo *rti = GetRailTypeInfo(GetRailType(ti->tile));
@@ -1845,8 +1838,6 @@ static void DrawTile_Road(TileInfo *ti)
 
 		default:
 		case RoadTileType::Depot: {
-			if (ti->tileh != SLOPE_FLAT) DrawFoundation(ti, Foundation::Leveled);
-
 			PaletteID palette = GetCompanyPalette(GetTileOwner(ti->tile));
 
 			RoadType road_rt = GetRoadTypeRoad(ti->tile);
@@ -1959,7 +1950,7 @@ void UpdateNearestTownForRoadTiles(bool invalidate)
 }
 
 /** @copydoc GetFoundationProc */
-static Foundation GetFoundation_Road(TileIndex tile, Slope tileh)
+static Foundation GetFoundation_Road([[maybe_unused]] TileIndex index, const Tile &tile, Slope tileh)
 {
 	if (IsNormalRoad(tile)) {
 		return GetRoadFoundation(tileh, GetAllRoadBits(tile));
