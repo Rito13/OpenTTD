@@ -134,6 +134,8 @@ inline uint ApplyPixelFoundationToSlope(Foundation f, Slope &s)
 
 uint GetFoundationSpriteBlock (TileIndex tile);
 void DrawFoundation(TileInfo *ti, Foundation f);
+void DrawTile(TileInfo *ti);
+
 
 /**
  * Return the subsprite for drawing a half-tile in the specified corner.

@@ -20,7 +20,7 @@
 #include "safeguards.h"
 
 /** @copydoc DrawTileProc */
-static void DrawTile_Void(TileInfo *ti)
+static void DrawTile_Void(TileInfo *ti, [[maybe_unused]] bool draw_halftile, [[maybe_unused]] Corner halftile_corner)
 {
 	/* If freeform edges are off, draw infinite water off the edges of the map. */
 	if (!_settings_game.construction.freeform_edges) {
