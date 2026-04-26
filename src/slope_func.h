@@ -431,4 +431,25 @@ inline uint SlopeToSpriteOffset(Slope s)
 	return slope_to_sprite_offset[s];
 }
 
+/**
+ * Combine two foundations into one.
+ *
+ * @param f1 First foundation.
+ * @param f2 Second foundation.
+ * @return The combined foundation or #Foundation::Invalid if the two foundations can't be combined.
+ */
+static inline Foundation CombineFoundations(Foundation f1, Foundation f2)
+{
+	/* Normalise order of foundations. */
+	if (f1 > f2) std::swap(f1, f2);
+
+	if (f1 == Foundation::None || f1 == f2) return f2;
+	/* Leveled + anti-zig-zag -> leveled */
+	if (IsLeveledFoundation(f1) && IsSpecialRailFoundation(f2)) return Foundation::Leveled;
+	/* Lower steep slope raised or both raised + halftile -> upper and lower corner leveled */
+	if ((f1 == Foundation::SteepLower || f1 == Foundation::SteepBoth) && IsNonContinuousFoundation(f2)) return Foundation::SteepBoth;
+
+	return Foundation::Invalid; // Can't combine.
+}
+
 #endif /* SLOPE_FUNC_H */

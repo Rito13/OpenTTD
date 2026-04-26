@@ -640,12 +640,12 @@ CommandCost CmdPlantTree(DoCommandFlags flags, TileIndex tile, TileIndex start_t
 struct TreeListEnt : PalSpriteID, Coord2D<int8_t> {};
 
 /** @copydoc DrawTileProc */
-static void DrawTile_Trees(TileInfo *ti)
+static void DrawTile_Trees(TileInfo *ti, bool draw_halftile, Corner halftile_corner)
 {
 	switch (GetTreeGround(ti->tile)) {
-		case TreeGround::Shore: DrawShoreTile(ti->tileh); break;
-		case TreeGround::Grass: DrawClearLandTile(ti, GetTreeDensity(ti->tile)); break;
-		case TreeGround::Rough: DrawHillyLandTile(ti); break;
+		case TreeGround::Shore: DrawShoreTile(ti, draw_halftile, halftile_corner); break;
+		case TreeGround::Grass: DrawClearLandTile(ti, GetTreeDensity(ti->tile), draw_halftile, halftile_corner); break;
+		case TreeGround::Rough: DrawHillyLandTile(ti, draw_halftile, halftile_corner); break;
 		default: DrawGroundSprite(_clear_land_sprites_snow_desert[GetTreeDensity(ti->tile)] + SlopeToSpriteOffset(ti->tileh), PAL_NONE); break;
 	}
 

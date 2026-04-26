@@ -441,22 +441,20 @@ CommandCost CmdBuildObjectArea(DoCommandFlags flags, TileIndex tile, TileIndex s
 }
 
 /** @copydoc GetFoundationProc */
-static Foundation GetFoundation_Object(TileIndex tile, Slope tileh)
+static Foundation GetFoundation_Object([[maybe_unused]] TileIndex index, const Tile &tile, Slope tileh)
 {
 	const ObjectSpec *spec = ObjectSpec::Get(GetObjectType(tile));
 	return spec->IsEnabled() && spec->flags.Test(ObjectFlag::HasNoFoundation) ? Foundation::None : FlatteningFoundation(tileh);
 }
 
 /** @copydoc DrawTileProc */
-static void DrawTile_Object(TileInfo *ti)
+static void DrawTile_Object(TileInfo *ti, bool draw_halftile, Corner halftile_corner)
 {
 	ObjectType type = GetObjectType(ti->tile);
 	const ObjectSpec *spec = ObjectSpec::Get(type);
 
 	/* Fall back for when the object doesn't exist anymore. */
 	if (!spec->IsEnabled()) type = OBJECT_TRANSMITTER;
-
-	DrawFoundation(ti, GetFoundation_Object(ti->index, ti->tileh));
 
 	if (type < NEW_OBJECT_OFFSET) {
 		const DrawTileSprites *dts = nullptr;
@@ -474,10 +472,10 @@ static void DrawTile_Object(TileInfo *ti)
 			/* If an object has no foundation, but tries to draw a (flat) ground
 			 * type... we have to be nice and convert that for them. */
 			switch (dts->ground.sprite) {
-				case SPR_FLAT_BARE_LAND:          DrawClearLandTile(ti, 0); break;
-				case SPR_FLAT_1_THIRD_GRASS_TILE: DrawClearLandTile(ti, 1); break;
-				case SPR_FLAT_2_THIRD_GRASS_TILE: DrawClearLandTile(ti, 2); break;
-				case SPR_FLAT_GRASS_TILE:         DrawClearLandTile(ti, 3); break;
+				case SPR_FLAT_BARE_LAND: DrawClearLandTile(ti, 0, draw_halftile, halftile_corner); break;
+				case SPR_FLAT_1_THIRD_GRASS_TILE: DrawClearLandTile(ti, 1, draw_halftile, halftile_corner); break;
+				case SPR_FLAT_2_THIRD_GRASS_TILE: DrawClearLandTile(ti, 2, draw_halftile, halftile_corner); break;
+				case SPR_FLAT_GRASS_TILE: DrawClearLandTile(ti, 3, draw_halftile, halftile_corner); break;
 				default: DrawGroundSprite(dts->ground.sprite, palette);     break;
 			}
 		} else {

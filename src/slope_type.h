@@ -124,6 +124,7 @@ enum class Foundation : uint8_t {
 	RailN, ///< Foundation for TRACK_BIT_UPPER, but not a leveled foundation.
 	End, ///< End marker.
 
+	Special = 0xFE, ///< Used to indicate that no default foundations should be drawn.
 	Invalid = 0xFF, ///< Used inside "rail_cmd.cpp" to indicate invalid slope/track combination.
 };
 

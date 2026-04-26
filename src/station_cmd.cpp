@@ -3276,7 +3276,7 @@ static bool DrawCustomStationFoundations(const StationSpec *statspec, BaseStatio
 }
 
 /** @copydoc DrawTileProc */
-static void DrawTile_Station(TileInfo *ti)
+static void DrawTile_Station(TileInfo *ti, bool draw_halftile, Corner halftile_corner)
 {
 	const NewGRFSpriteLayout *layout = nullptr;
 	SpriteLayoutProcessor processor; // owns heap, borrowed by tmp_layout and t
@@ -3388,9 +3388,9 @@ static void DrawTile_Station(TileInfo *ti)
 			TileIndex water_tile = ti->index + TileOffsByDiagDir(GetDockDirection(ti->tile));
 			WaterClass wc = HasTileWaterClass(water_tile) ? GetWaterClass(water_tile) : WaterClass::Invalid;
 			if (wc == WaterClass::Sea) {
-				DrawShoreTile(ti->tileh);
+				DrawShoreTile(ti, draw_halftile, halftile_corner);
 			} else {
-				DrawClearLandTile(ti, 3);
+				DrawClearLandTile(ti, 3, draw_halftile, halftile_corner);
 			}
 		}
 	} else if (IsRoadWaypointTile(ti->tile)) {
@@ -3401,10 +3401,6 @@ static void DrawTile_Station(TileInfo *ti)
 		RoadBits tram = (tram_rt != INVALID_ROADTYPE) ? bits : RoadBits{};
 		const RoadTypeInfo *road_rti = (road_rt != INVALID_ROADTYPE) ? GetRoadTypeInfo(road_rt) : nullptr;
 		const RoadTypeInfo *tram_rti = (tram_rt != INVALID_ROADTYPE) ? GetRoadTypeInfo(tram_rt) : nullptr;
-
-		if (ti->tileh != SLOPE_FLAT) {
-			DrawFoundation(ti, Foundation::Leveled);
-		}
 
 		DrawRoadGroundSprites(ti, road, tram, road_rti, tram_rti, GetRoadWaypointRoadside(ti->tile), IsRoadWaypointOnSnowOrDesert(ti->tile));
 	} else {
@@ -5409,6 +5405,34 @@ static std::tuple<CommandCost, bool> CheckBuildAbove_Station(TileIndex index, Ti
 	return {IsStationBridgeAboveOk(index, bridgeable_info, type, GetStationGfx(tile), height), false};
 }
 
+/** @copydoc GetFoundationProc */
+static Foundation GetFoundation_Station(TileIndex index, const Tile &tile, Slope tileh)
+{
+	/* Docks don't have a foundation. */
+	if (IsDock(tile)) return Foundation::None;
+
+	/* Is this a rail station with a custom foundation? */
+	if (HasStationRail(tile) && IsCustomStationSpecIndex(tile)) {
+		const BaseStation *st = BaseStation::GetByTile(tile);
+		const StationSpec *statspec = st->speclist[GetCustomStationSpecIndex(tile)].spec;
+
+		if (statspec != nullptr && statspec->flags.Test(StationSpecFlag::CustomFoundations)) {
+			/* Custom foundations are handled by the station drawing code. */
+			return tileh == SLOPE_FLAT ? Foundation::None : Foundation::Special;
+		}
+	}
+
+	if (tileh != SLOPE_FLAT && IsAirport(tile)) {
+		StationGfx gfx = GetAirportGfx(tile);
+		if (gfx >= NEW_AIRPORTTILE_OFFSET) {
+			const AirportTileSpec *ats = AirportTileSpec::Get(gfx);
+			if (!HasNewAirportTileDefaultFoundation(index, Station::GetByTile(tile), ats)) return Foundation::None;
+		}
+	}
+
+	return FlatteningFoundation(tileh);
+}
+
 /** TileTypeProcs definitions for TileType::Station tiles. */
 extern const TileTypeProcs _tile_type_station_procs = {
 	.draw_tile_proc = DrawTile_Station,
@@ -5420,7 +5444,7 @@ extern const TileTypeProcs _tile_type_station_procs = {
 	.tile_loop_proc = TileLoop_Station,
 	.change_tile_owner_proc = ChangeTileOwner_Station,
 	.vehicle_enter_tile_proc = VehicleEnterTile_Station,
-	.get_foundation_proc = [](TileIndex, Slope tileh) { return FlatteningFoundation(tileh); },
+	.get_foundation_proc = GetFoundation_Station,
 	.terraform_tile_proc = TerraformTile_Station,
 	.check_build_above_proc = CheckBuildAbove_Station,
 };

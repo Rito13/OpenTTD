@@ -41,6 +41,7 @@
 #include "landscape_cmd.h"
 #include "pathfinder/water_regions.h"
 #include "town_type.h"
+#include "clear_func.h"
 
 #include "table/strings.h"
 
@@ -950,9 +951,9 @@ static void DrawRiverWater(const TileInfo *ti)
 
 /**
  * Draws shore on a given tile.
- * @param tileh The slope of the tile to draw.
+ * @copydetails DrawTileProc
  */
-void DrawShoreTile(Slope tileh)
+void DrawShoreTile(const TileInfo *ti, bool draw_halftile, Corner halftile_corner)
 {
 	/* Converts the enum Slope into an offset based on SPR_SHORE_BASE.
 	 * This allows to calculate the proper sprite to display for this Slope */
@@ -961,12 +962,17 @@ void DrawShoreTile(Slope tileh)
 		0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0,  5,  0, 10, 15, 0,
 	};
 
-	assert(!IsHalftileSlope(tileh)); // Halftile slopes need to get handled earlier.
-	assert(tileh != SLOPE_FLAT);     // Shore is never flat
+	if (!draw_halftile) {
+		assert(!IsHalftileSlope(ti->tileh)); // Halftile slopes need to get handled earlier.
+		assert(ti->tileh != SLOPE_FLAT);     // Shore is never flat
 
-	assert((tileh != SLOPE_EW) && (tileh != SLOPE_NS)); // No suitable sprites for current flooding behaviour
+		assert((ti->tileh != SLOPE_EW) && (ti->tileh != SLOPE_NS)); // No suitable sprites for current flooding behaviour
 
-	DrawGroundSprite(SPR_SHORE_BASE + tileh_to_shoresprite[tileh], PAL_NONE);
+		DrawGroundSprite(SPR_SHORE_BASE + tileh_to_shoresprite[ti->tileh], PAL_NONE);
+	} else {
+		/* Draw higher halftile-overlay using clear land graphics. */
+		DrawClearLandTile(ti, 3, draw_halftile, halftile_corner);
+	}
 }
 
 void DrawWaterClassGround(const TileInfo *ti)
@@ -980,7 +986,7 @@ void DrawWaterClassGround(const TileInfo *ti)
 }
 
 /** @copydoc DrawTileProc */
-static void DrawTile_Water(TileInfo *ti)
+static void DrawTile_Water(TileInfo *ti, bool draw_halftile, Corner halftile_corner)
 {
 	switch (GetWaterTileType(ti->tile)) {
 		case WaterTileType::Clear:
@@ -991,7 +997,7 @@ static void DrawTile_Water(TileInfo *ti)
 			break;
 
 		case WaterTileType::Coast: {
-			DrawShoreTile(ti->tileh);
+			DrawShoreTile(ti, draw_halftile, halftile_corner);
 			DrawBridgeMiddle(ti, {});
 			break;
 		}
