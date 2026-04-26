@@ -33,7 +33,7 @@ void ConvertGroundTilesIntoWaterTiles();
 
 void DrawShipDepotSprite(int x, int y, Axis axis, DepotPart part);
 void DrawWaterClassGround(const struct TileInfo *ti);
-void DrawShoreTile(Slope tileh);
+void DrawShoreTile(const TileInfo *ti, bool draw_halftile, Corner halftile_corner);
 
 void MakeWaterKeepingClass(TileIndex tile, Owner o);
 void CheckForDockingTile(TileIndex t);

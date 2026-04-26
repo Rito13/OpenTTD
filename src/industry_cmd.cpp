@@ -328,7 +328,7 @@ static IndustryDrawTileProc * const _industry_draw_tile_procs[5] = {
 };
 
 /** @copydoc DrawTileProc */
-static void DrawTile_Industry(TileInfo *ti)
+static void DrawTile_Industry(TileInfo *ti, [[maybe_unused]] bool draw_halftile, [[maybe_unused]] Corner halftile_corner)
 {
 	IndustryGfx gfx = GetIndustryGfx(ti->tile);
 	Industry *ind = Industry::GetByTile(ti->tile);
@@ -340,7 +340,7 @@ static void DrawTile_Industry(TileInfo *ti)
 		 * DrawNewIndustry will return false if ever the resolver could not
 		 * find any sprite to display.  So in this case, we will jump on the
 		 * substitute gfx instead. */
-		if (indts->grf_prop.HasSpriteGroups() && DrawNewIndustryTile(ti, ind, gfx, indts)) {
+		if (indts->grf_prop.HasSpriteGroups() && DrawNewIndustryTile(ti, ind, gfx)) {
 			return;
 		} else {
 			/* No sprite group (or no valid one) found, meaning no graphics associated.
@@ -358,9 +358,6 @@ static void DrawTile_Industry(TileInfo *ti)
 			GetIndustryConstructionStage(ti->tile))];
 
 	SpriteID image = dits->ground.sprite;
-
-	/* DrawFoundation() modifies ti->z and ti->tileh */
-	if (ti->tileh != SLOPE_FLAT) DrawFoundation(ti, Foundation::Leveled);
 
 	/* If the ground sprite is the default flat water sprite, draw also canal/river borders.
 	 * Do not do this if the tile's WaterClass is 'land'. */
@@ -389,7 +386,7 @@ static void DrawTile_Industry(TileInfo *ti)
 }
 
 /** @copydoc GetFoundationProc */
-static Foundation GetFoundation_Industry(TileIndex tile, Slope tileh)
+static Foundation GetFoundation_Industry(TileIndex index, const Tile &tile, Slope tileh)
 {
 	IndustryGfx gfx = GetIndustryGfx(tile);
 
@@ -400,7 +397,7 @@ static Foundation GetFoundation_Industry(TileIndex tile, Slope tileh)
 	if (gfx >= NEW_INDUSTRYTILEOFFSET) {
 		const IndustryTileSpec *indts = GetIndustryTileSpec(gfx);
 		if (indts->callback_mask.Test(IndustryTileCallbackMask::DrawFoundations)) {
-			uint32_t callback_res = GetIndustryTileCallback(CBID_INDTILE_DRAW_FOUNDATIONS, 0, 0, gfx, Industry::GetByTile(tile), tile);
+			uint32_t callback_res = GetIndustryTileCallback(CBID_INDTILE_DRAW_FOUNDATIONS, 0, 0, gfx, Industry::GetByTile(tile), index);
 			if (callback_res != CALLBACK_FAILED && !ConvertBooleanCallback(indts->grf_prop.grffile, CBID_INDTILE_DRAW_FOUNDATIONS, callback_res)) return Foundation::None;
 		}
 	}

@@ -1315,10 +1315,8 @@ static void ViewportAddLandscape()
 				_vd.last_foundation_child[FoundationPart::Normal] = LAST_CHILD_NONE;
 				_vd.last_foundation_child[FoundationPart::Halftile] = LAST_CHILD_NONE;
 
-				do {
-					tile_type = _cur_ti.tile.IsValid() ? _cur_ti.tile.GetTileType() : TileType::Void;
-					_tile_type_procs[tile_type]->draw_tile_proc(&_cur_ti);
-				} while (++_cur_ti.tile);
+				DrawTile(&_cur_ti);
+
 				if (_cur_ti.index != INVALID_TILE) DrawTileSelection(&_cur_ti);
 			}
 		}
