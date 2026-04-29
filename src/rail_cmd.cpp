@@ -3180,13 +3180,13 @@ static CommandCost TerraformTile_Rail(TileIndex index, const Tile &tile, DoComma
 }
 
 /** @copydoc CheckBuildAboveProc */
-static CommandCost CheckBuildAbove_Rail(TileIndex tile, [[maybe_unused]] DoCommandFlags flags, [[maybe_unused]] Axis axis, int height)
+static std::tuple<CommandCost, bool> CheckBuildAbove_Rail(TileIndex index, Tile &tile, [[maybe_unused]] DoCommandFlags flags, [[maybe_unused]] Axis axis, [[maybe_unused]] int height)
 {
-	if (IsPlainRail(tile)) return CommandCost();
+	if (IsPlainRail(tile)) return {CommandCost(), false};
 
-	int height_diff = GetTileMaxZ(tile) + MINIMAL_DEPOT_BRIDGE_HEIGHT - height;
-	if (height_diff <= 0) return CommandCost();
-	return CommandCostWithParam(STR_ERROR_BRIDGE_TOO_LOW_FOR_TRAIN_DEPOT, height_diff * TILE_HEIGHT_STEP);
+	int height_diff = GetTileMaxZ(index) + MINIMAL_DEPOT_BRIDGE_HEIGHT - height;
+	if (height_diff <= 0) return {CommandCost(), false};
+	return {CommandCostWithParam(STR_ERROR_BRIDGE_TOO_LOW_FOR_TRAIN_DEPOT, height_diff * TILE_HEIGHT_STEP), false};
 }
 
 /** TileTypeProcs definitions for TileType::Rail tiles. */
