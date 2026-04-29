@@ -199,14 +199,15 @@ using TerraformTileProc = CommandCost(TileIndex index, const Tile &tile, DoComma
 
 /**
  * Tile callback function signature to test if a bridge can be built above a tile.
- * @param tile The involved tile.
+ * @param index The involved index.
+ * @param[in,out] tile The involved tile.
  * @param flags Command flags passed to the build command.
  * @param axis Axis of bridge being built.
  * @param height Absolute height of bridge platform.
- * @return Error code or extra cost for building bridge above the tile.
+ * @return Tuple: Error code or extra cost for building bridge above the tile. / Indication if the current associated tile was removed from the map array.
  * @see CheckBuildAbove
  */
-using CheckBuildAboveProc = CommandCost(TileIndex tile, DoCommandFlags flags, Axis axis, int height);
+using CheckBuildAboveProc = std::tuple<CommandCost, bool>(TileIndex index, Tile &tile, DoCommandFlags flags, Axis axis, int height);
 
 /**
  * Set of callback functions for performing tile operations of a given tile type.
