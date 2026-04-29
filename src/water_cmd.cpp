@@ -1472,7 +1472,7 @@ static CommandCost TerraformTile_Water([[maybe_unused]] TileIndex index, const T
 }
 
 /** @copydoc CheckBuildAboveProc */
-static CommandCost CheckBuildAbove_Water(TileIndex tile, [[maybe_unused]] DoCommandFlags flags, [[maybe_unused]] Axis axis, int height)
+static std::tuple<CommandCost, bool> CheckBuildAbove_Water(TileIndex index, Tile &tile, [[maybe_unused]] DoCommandFlags flags, [[maybe_unused]] Axis axis, int height)
 {
 	switch (GetWaterTileType(tile)) {
 		case WaterTileType::Clear:
@@ -1480,19 +1480,19 @@ static CommandCost CheckBuildAbove_Water(TileIndex tile, [[maybe_unused]] DoComm
 			break;
 
 		case WaterTileType::Lock: {
-			int height_diff = GetTileMaxZ(tile) + GetLockPartMinimalBridgeHeight(GetLockPart(tile)) - height;
-			if (height_diff > 0) return CommandCostWithParam(STR_ERROR_BRIDGE_TOO_LOW_FOR_LOCK, height_diff * TILE_HEIGHT_STEP);
+			int height_diff = GetTileMaxZ(index) + GetLockPartMinimalBridgeHeight(GetLockPart(tile)) - height;
+			if (height_diff > 0) return {CommandCostWithParam(STR_ERROR_BRIDGE_TOO_LOW_FOR_LOCK, height_diff * TILE_HEIGHT_STEP), false};
 			break;
 		}
 
 		case WaterTileType::Depot: {
-			int height_diff = GetTileMaxZ(tile) + MINIMAL_DEPOT_BRIDGE_HEIGHT - height;
-			if (height_diff > 0) return CommandCostWithParam(STR_ERROR_BRIDGE_TOO_LOW_FOR_SHIP_DEPOT, height_diff * TILE_HEIGHT_STEP);
+			int height_diff = GetTileMaxZ(index) + MINIMAL_DEPOT_BRIDGE_HEIGHT - height;
+			if (height_diff > 0) return {CommandCostWithParam(STR_ERROR_BRIDGE_TOO_LOW_FOR_SHIP_DEPOT, height_diff * TILE_HEIGHT_STEP), false};
 			break;
 		}
 	}
 
-	return CommandCost();
+	return {CommandCost(), false};
 }
 
 /** TileTypeProcs definitions for TileType::Water tiles. */
