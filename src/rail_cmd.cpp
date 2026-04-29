@@ -3166,10 +3166,10 @@ static CommandCost TerraformTile_Rail(TileIndex index, const Tile &tile, DoComma
 }
 
 /** @copydoc CheckBuildAboveProc */
-static CommandCost CheckBuildAbove_Rail(TileIndex tile, DoCommandFlags flags, [[maybe_unused]] Axis axis, [[maybe_unused]] int height)
+static std::tuple<CommandCost, bool> CheckBuildAbove_Rail(TileIndex index, Tile &tile, DoCommandFlags flags, [[maybe_unused]] Axis axis, [[maybe_unused]] int height)
 {
-	if (IsPlainRail(tile)) return CommandCost();
-	return Command<Commands::LandscapeClear>::Do(flags, tile);
+	if (IsPlainRail(tile)) return {CommandCost(), false};
+	return ClearTile_Rail(index, tile, flags);
 }
 
 /** TileTypeProcs definitions for TileType::Rail tiles. */

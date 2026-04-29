@@ -1467,15 +1467,15 @@ static CommandCost TerraformTile_Water([[maybe_unused]] TileIndex index, const T
 }
 
 /** @copydoc CheckBuildAboveProc */
-static CommandCost CheckBuildAbove_Water(TileIndex tile, DoCommandFlags flags, [[maybe_unused]] Axis axis, int height)
+static std::tuple<CommandCost, bool> CheckBuildAbove_Water(TileIndex index, Tile &tile, DoCommandFlags flags, [[maybe_unused]] Axis axis, int height)
 {
-	if (IsWater(tile) || IsCoast(tile)) return CommandCost();
+	if (IsWater(tile) || IsCoast(tile)) return {CommandCost(), false};
 	if (IsLock(tile)) {
-		if (GetTileMaxZ(tile) + GetLockPartMinimalBridgeHeight(GetLockPart(tile)) <= height) return CommandCost();
-		int height_diff = (GetTileMaxZ(tile) + GetLockPartMinimalBridgeHeight(GetLockPart(tile)) - height) * TILE_HEIGHT_STEP;
-		return CommandCostWithParam(STR_ERROR_BRIDGE_TOO_LOW_FOR_LOCK, height_diff);
+		if (GetTileMaxZ(index) + GetLockPartMinimalBridgeHeight(GetLockPart(tile)) <= height) return {CommandCost(), false};
+		int height_diff = (GetTileMaxZ(index) + GetLockPartMinimalBridgeHeight(GetLockPart(tile)) - height) * TILE_HEIGHT_STEP;
+		return {CommandCostWithParam(STR_ERROR_BRIDGE_TOO_LOW_FOR_LOCK, height_diff), false};
 	}
-	return Command<Commands::LandscapeClear>::Do(flags, tile);
+	return ClearTile_Water(index, tile, flags);
 }
 
 /** TileTypeProcs definitions for TileType::Water tiles. */

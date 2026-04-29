@@ -1000,14 +1000,14 @@ static CommandCost TerraformTile_Object(TileIndex index, const Tile &tile, [[may
 }
 
 /** @copydoc CheckBuildAboveProc */
-static CommandCost CheckBuildAbove_Object(TileIndex tile, DoCommandFlags flags, [[maybe_unused]] Axis axis, int height)
+static std::tuple<CommandCost, bool> CheckBuildAbove_Object([[maybe_unused]] TileIndex index, Tile &tile, DoCommandFlags flags, [[maybe_unused]] Axis axis, int height)
 {
 	const ObjectSpec *spec = ObjectSpec::GetByTile(tile);
-	if (spec->flags.Test(ObjectFlag::AllowUnderBridge) && GetTileMaxZ(tile) + spec->height <= height) {
-		return CommandCost();
+	if (spec->flags.Test(ObjectFlag::AllowUnderBridge) && GetTileMaxZ(index) + spec->height <= height) {
+		return {CommandCost(), false};
 	}
 
-	return Command<Commands::LandscapeClear>::Do(flags, tile);
+	return ClearTile_Object(index, tile, flags);
 }
 
 /** TileTypeProcs definitions for TileType::Object tiles. */

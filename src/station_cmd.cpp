@@ -5386,7 +5386,7 @@ uint FlowStatMap::GetFlowFromVia(StationID from, StationID via) const
 }
 
 /** @copydoc CheckBuildAboveProc */
-static CommandCost CheckBuildAbove_Station(TileIndex tile, [[maybe_unused]] DoCommandFlags flags, [[maybe_unused]] Axis axis, int height)
+static std::tuple<CommandCost, bool> CheckBuildAbove_Station(TileIndex index, Tile &tile, [[maybe_unused]] DoCommandFlags flags, [[maybe_unused]] Axis axis, int height)
 {
 	StationType type = GetStationType(tile);
 	auto bridgeable_info = GetStationBridgeableTileInfo(type);
@@ -5406,7 +5406,7 @@ static CommandCost CheckBuildAbove_Station(TileIndex tile, [[maybe_unused]] DoCo
 		default: break;
 	}
 
-	return IsStationBridgeAboveOk(tile, bridgeable_info, type, GetStationGfx(tile), height);
+	return {IsStationBridgeAboveOk(index, bridgeable_info, type, GetStationGfx(tile), height), false};
 }
 
 /** TileTypeProcs definitions for TileType::Station tiles. */

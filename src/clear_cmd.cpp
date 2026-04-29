@@ -409,5 +409,5 @@ extern const TileTypeProcs _tile_type_clear_procs = {
 	.get_tile_desc_proc = GetTileDesc_Clear,
 	.tile_loop_proc = TileLoop_Clear,
 	.terraform_tile_proc = [](TileIndex, const Tile&, DoCommandFlags, int, Slope) { return CommandCost(INVALID_STRING_ID); /* Dummy error */ },
-	.check_build_above_proc = [](TileIndex, DoCommandFlags, Axis, int) { return CommandCost(); }, // Can always build above clear tiles
+	.check_build_above_proc = [](TileIndex, Tile&, DoCommandFlags, Axis, int) { return std::tuple<CommandCost, bool>{CommandCost(), false}; }, // Can always build above clear tiles
 };

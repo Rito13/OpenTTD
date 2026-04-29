@@ -10,6 +10,7 @@
  * @todo separate this file into two.
  */
 
+#include "command_type.h"
 #include "stdafx.h"
 #include "viewport_func.h"
 #include "command_func.h"
@@ -288,13 +289,18 @@ static Money TunnelBridgeClearCost(TileIndex tile, Price base_price)
 	return base_cost;
 }
 
-static CommandCost CheckBuildAbove(TileIndex tile, DoCommandFlags flags, Axis axis, int height)
+static CommandCost CheckBuildAbove(TileIndex index, DoCommandFlags flags, Axis axis, int height)
 {
-	if (_tile_type_procs[GetTileType(tile)]->check_build_above_proc != nullptr) {
-		return _tile_type_procs[GetTileType(tile)]->check_build_above_proc(tile, flags, axis, height);
-	}
-	/* A tile without a handler must be cleared. */
-	return Command<Commands::LandscapeClear>::Do(flags, tile);
+	CommandCost cost{};
+	Tile tile(index);
+	do {
+		auto [tile_cost, deleted] = _tile_type_procs[tile.GetTileType()]->check_build_above_proc != nullptr
+			? _tile_type_procs[tile.GetTileType()]->check_build_above_proc(index, tile, flags, axis, height)
+			: _tile_type_procs[tile.GetTileType()]->clear_tile_proc(index, tile, flags); // A tile without a handler must be cleared.
+		cost.AddCost(std::move(tile_cost));
+		if (!deleted) ++tile;
+	} while(tile);
+	return cost;
 }
 
 /**
@@ -2133,15 +2139,15 @@ static CommandCost TerraformTile_TunnelBridge(TileIndex index, const Tile &tile,
 }
 
 /** @copydoc CheckBuildAboveProc */
-static CommandCost CheckBuildAbove_TunnelBridge(TileIndex tile, DoCommandFlags flags, Axis axis, int height)
+static std::tuple<CommandCost, bool> CheckBuildAbove_TunnelBridge(TileIndex index, Tile &tile, DoCommandFlags flags, Axis axis, int height)
 {
-	if (IsTunnel(tile)) return CommandCost();
+	if (IsTunnel(tile)) return {CommandCost(), false};
 
-	if (axis != DiagDirToAxis(GetTunnelBridgeDirection(tile)) && height > GetBridgeHeight(tile)) {
-		return CommandCost();
+	if (axis != DiagDirToAxis(GetTunnelBridgeDirection(tile)) && height > GetBridgeHeight(index)) {
+		return {CommandCost(), false};
 	}
 
-	return Command<Commands::LandscapeClear>::Do(flags, tile);
+	return ClearTile_TunnelBridge(index, tile, flags);
 }
 
 /** TileTypeProcs definitions for TileType::TunnelBridge tiles. */
