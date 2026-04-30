@@ -153,9 +153,9 @@ static void _GenerateWorld()
 					HandleGeneratingWorldAbortion();
 					return;
 				}
+				GenerateTrees();
 				GenerateIndustries();
 				GenerateObjects();
-				GenerateTrees();
 			}
 		}
 
