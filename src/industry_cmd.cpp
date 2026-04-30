@@ -1108,12 +1108,18 @@ static void PlantFarmField(TileIndex tile, IndustryID industry)
 	r = Random();
 	uint counter = GB(r, 5, 3);
 	uint field_type = GB(r, 8, 8) * 9 >> 8;
+	assert(((size_x * size_y) >> 5) <= 7); // Should read up to 7 bits.
+	uint tree_chance = GB(r, 16, (size_x * size_y) >> 5);
 
 	/* make field */
 	for (TileIndex cur_tile : ta) {
 		assert(cur_tile < Map::Size());
 		if (IsSuitableForFarmField(cur_tile, true, true)) {
-			DoClearSquare(cur_tile);
+			if (Tile::HasType(cur_tile, TileType::Trees) && ((DistanceSquare(ta.GetCenterTile(), cur_tile) ^ tree_chance) & 0xB) == 0xA) {
+				tree_chance = ((~tree_chance) + (0x29)) & 0x7F;
+			} else {
+				DoClearSquare(cur_tile);
+			}
 			MakeField(cur_tile, field_type, industry);
 			SetClearCounter(cur_tile, counter);
 			MarkTileDirtyByTile(cur_tile);
