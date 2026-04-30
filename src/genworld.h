@@ -62,10 +62,10 @@ enum class GenWorldProgress : uint8_t {
 	Rivers, ///< Create the rivers.
 	RoughAndRocks, ///< Make rough and rocky areas.
 	Towns, ///< Generate towns.
+	Trees, ///< Generate trees.
 	LandIndustries, ///< Generate industries.
 	WaterIndustries, ///< Generate industries.
 	Objects, ///< Generate objects (radio tower, light houses).
-	Trees, ///< Generate trees.
 	GameInit, ///< Initialize the game.
 	RunTileLoop, ///< Runs the tile loop 1280 times to make snow etc.
 	GameScript, ///< Runs the game script at most 2500 times, or when ever the script sleeps.
