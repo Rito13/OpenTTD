@@ -167,7 +167,7 @@ static void DrawTile_Clear(TileInfo *ti)
 }
 
 /** @copydoc GetSlopePixelZProc */
-static int GetSlopePixelZ_Clear(TileIndex tile, uint x, uint y, [[maybe_unused]] bool ground_vehicle)
+static int GetSlopePixelZ_Clear(TileIndex tile, uint x, uint y, bool)
 {
 	auto [tileh, z] = GetTilePixelSlope(tile);
 

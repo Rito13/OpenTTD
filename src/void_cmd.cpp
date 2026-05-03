@@ -31,7 +31,7 @@ static void DrawTile_Void(TileInfo *ti)
 }
 
 /** @copydoc GetSlopePixelZProc */
-static int GetSlopePixelZ_Void([[maybe_unused]] TileIndex tile, uint x, uint y, [[maybe_unused]] bool ground_vehicle)
+static int GetSlopePixelZ_Void(TileIndex, uint x, uint y, bool)
 {
 	/* This function may be called on tiles outside the map, don't assume
 	 * that 'tile' is a valid tile index. See GetSlopePixelZOutsideMap. */

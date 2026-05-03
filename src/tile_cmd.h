@@ -67,10 +67,10 @@ using DrawTileProc = void(TileInfo *ti);
  * Tile callback function signature for obtaining the world \c Z coordinate of a given
  * point of a tile.
  *
- * @param tile The queries tile for the Z coordinate.
- * @param x World X coordinate in tile "units".
- * @param y World Y coordinate in tile "units".
- * @param ground_vehicle Whether to get the Z coordinate of the ground vehicle, or the ground.
+ * @param 1 The queries tile for the Z coordinate.
+ * @param 2 World X coordinate in tile "units".
+ * @param 3 World Y coordinate in tile "units".
+ * @param 4 Whether to get the Z coordinate of the ground vehicle, or the ground.
  * @return World Z coordinate at tile ground (vehicle) level, including slopes and foundations.
  * @see GetSlopePixelZ
  */
