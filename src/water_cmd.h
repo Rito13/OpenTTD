@@ -21,4 +21,6 @@ DEF_CMD_TRAIT(Commands::BuildShipDepot, CmdBuildShipDepot, CommandFlag::Auto, Co
 DEF_CMD_TRAIT(Commands::BuildCanal, CmdBuildCanal, CommandFlag::Auto, CommandType::LandscapeConstruction)
 DEF_CMD_TRAIT(Commands::BuildLock, CmdBuildLock, CommandFlag::Auto, CommandType::LandscapeConstruction)
 
+CommandCallback CcBuildWaterTunnel;
+
 #endif /* WATER_CMD_H */
