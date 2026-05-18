@@ -9,6 +9,8 @@
 
 #include "stdafx.h"
 #include "terraform_gui.h"
+#include "transport_type.h"
+#include "tunnelbridge.h"
 #include "window_gui.h"
 #include "station_gui.h"
 #include "command_func.h"
@@ -94,6 +96,21 @@ static TileIndex GetOtherAqueductEnd(TileIndex tile_from, TileIndex *tile_to = n
 	}
 
 	return endtile;
+}
+
+/**
+ * Callback executed after a build water tunnel command has been called.
+ * @param result Whether the build succeeded.
+ * @param start_tile Starting tile of the tunnel.
+ */
+void CcBuildWaterTunnel(Commands, const CommandCost &result, TileIndex start_tile)
+{
+	if (result.Succeeded()) {
+		if (_settings_client.sound.confirm) SndPlayTileFx(SND_1F_CONSTRUCTION_OTHER, start_tile);
+		if (!_settings_client.gui.persistent_buildingtools) ResetObjectToPlace();
+	} else {
+		SetRedErrorSquare(_build_tunnel_endtile);
+	}
 }
 
 /** Toolbar window for constructing water infrastructure. */
@@ -187,6 +204,10 @@ struct BuildDocksToolbarWindow : Window {
 				HandlePlacePushButton(this, WID_DT_BUILD_AQUEDUCT, SPR_CURSOR_AQUEDUCT, HT_SPECIAL);
 				break;
 
+			case WID_DT_BUILD_TUNNEL:
+				HandlePlacePushButton(this, WID_DT_BUILD_TUNNEL, SPR_CURSOR_ROAD_TUNNEL, HT_SPECIAL);
+				break;
+
 			default: return;
 		}
 		this->last_clicked_widget = widget;
@@ -239,6 +260,10 @@ struct BuildDocksToolbarWindow : Window {
 
 			case WID_DT_BUILD_AQUEDUCT: // Build aqueduct button
 				Command<Commands::BuildBridge>::Post(STR_ERROR_CAN_T_BUILD_AQUEDUCT_HERE, CcBuildBridge, tile, GetOtherAqueductEnd(tile), TRANSPORT_WATER, 0, INVALID_RAILTYPE, INVALID_ROADTYPE);
+				break;
+
+			case WID_DT_BUILD_TUNNEL:
+				Command<Commands::BuildTunnel>::Post(STR_ERROR_CAN_T_BUILD_TUNNEL_HERE, CcBuildWaterTunnel, tile, TRANSPORT_WATER, INVALID_RAILTYPE, INVALID_ROADTYPE);
 				break;
 
 			default: NOT_REACHED();
@@ -296,6 +321,9 @@ struct BuildDocksToolbarWindow : Window {
 
 		if (this->last_clicked_widget == WID_DT_BUILD_AQUEDUCT) {
 			GetOtherAqueductEnd(tile_from, &tile_to);
+		} else if (this->last_clicked_widget == WID_DT_BUILD_TUNNEL) {
+			Command<Commands::BuildTunnel>::Do(DoCommandFlag::Auto, tile_from, TRANSPORT_WATER, INVALID_RAILTYPE, INVALID_ROADTYPE);
+			if (_build_tunnel_endtile != 0) tile_to = _build_tunnel_endtile;
 		} else {
 			DiagDirection dir = GetInclinedSlopeDirection(GetTileSlope(tile_from));
 			if (IsValidDiagDirection(dir)) {
@@ -331,6 +359,7 @@ struct BuildDocksToolbarWindow : Window {
 		Hotkey('6', "buoy", WID_DT_BUOY),
 		Hotkey('7', "river", WID_DT_RIVER),
 		Hotkey({'B', '8'}, "aqueduct", WID_DT_BUILD_AQUEDUCT),
+		Hotkey('T', "tunnel", WID_DT_BUILD_TUNNEL),
 	}, DockToolbarGlobalHotkeys};
 };
 
@@ -353,6 +382,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_build_docks_toolbar_
 		NWidget(WWT_IMGBTN, Colours::DarkGreen, WID_DT_STATION), SetToolbarMinimalSize(1), SetFill(0, 1), SetSpriteTip(SPR_IMG_SHIP_DOCK, STR_WATERWAYS_TOOLBAR_BUILD_DOCK_TOOLTIP),
 		NWidget(WWT_IMGBTN, Colours::DarkGreen, WID_DT_BUOY), SetToolbarMinimalSize(1), SetFill(0, 1), SetSpriteTip(SPR_IMG_BUOY, STR_WATERWAYS_TOOLBAR_BUOY_TOOLTIP),
 		NWidget(WWT_IMGBTN, Colours::DarkGreen, WID_DT_BUILD_AQUEDUCT), SetToolbarMinimalSize(1), SetFill(0, 1), SetSpriteTip(SPR_IMG_AQUEDUCT, STR_WATERWAYS_TOOLBAR_BUILD_AQUEDUCT_TOOLTIP),
+		NWidget(WWT_IMGBTN, Colours::DarkGreen, WID_DT_BUILD_TUNNEL), SetToolbarMinimalSize(1), SetFill(0, 1), SetSpriteTip(SPR_IMG_ROAD_TUNNEL, STR_WATERWAYS_TOOLBAR_BUILD_AQUEDUCT_TOOLTIP),
 	EndContainer(),
 };
 
@@ -397,6 +427,7 @@ static constexpr std::initializer_list<NWidgetPart> _nested_build_docks_scen_too
 		NWidget(WWT_IMGBTN, Colours::DarkGreen, WID_DT_DEMOLISH), SetToolbarMinimalSize(1), SetFill(0, 1), SetSpriteTip(SPR_IMG_DYNAMITE, STR_TOOLTIP_DEMOLISH_BUILDINGS_ETC),
 		NWidget(WWT_IMGBTN, Colours::DarkGreen, WID_DT_RIVER), SetToolbarMinimalSize(1), SetFill(0, 1), SetSpriteTip(SPR_IMG_BUILD_RIVER, STR_WATERWAYS_TOOLBAR_CREATE_RIVER_TOOLTIP),
 		NWidget(WWT_IMGBTN, Colours::DarkGreen, WID_DT_BUILD_AQUEDUCT), SetToolbarMinimalSize(1), SetFill(0, 1), SetSpriteTip(SPR_IMG_AQUEDUCT, STR_WATERWAYS_TOOLBAR_BUILD_AQUEDUCT_TOOLTIP),
+		NWidget(WWT_IMGBTN, Colours::DarkGreen, WID_DT_BUILD_TUNNEL), SetToolbarMinimalSize(1), SetFill(0, 1), SetSpriteTip(SPR_IMG_ROAD_TUNNEL, STR_WATERWAYS_TOOLBAR_BUILD_AQUEDUCT_TOOLTIP),
 	EndContainer(),
 };
 

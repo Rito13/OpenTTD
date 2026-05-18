@@ -85,4 +85,23 @@ inline void MakeRailTunnel(Tile t, Owner o, DiagDirection d, RailType r)
 	SetRailType(t, r);
 }
 
+/**
+ * Makes a water tunnel entrance.
+ * @param tile The entrance of the tunnel.
+ * @param owner The owner of the entrance.
+ * @param dir The direction facing out of the tunnel.
+ */
+inline void MakeWaterTunnel(Tile tile, Owner owner, DiagDirection dir)
+{
+	SetTileType(tile, TileType::TunnelBridge);
+	SetTileOwner(tile, owner);
+	tile.m2() = 0;
+	tile.m3() = 0;
+	tile.m4() = 0;
+	tile.m5() = TRANSPORT_WATER << 2 | dir;
+	SB(tile.m6(), 2, 6, 0);
+	tile.m7() = 0;
+	tile.m8() = 0;
+}
+
 #endif /* TUNNEL_MAP_H */

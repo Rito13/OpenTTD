@@ -10,7 +10,10 @@
  * @todo separate this file into two.
  */
 
+#include "economy_func.h"
+#include "economy_type.h"
 #include "stdafx.h"
+#include "transport_type.h"
 #include "viewport_func.h"
 #include "command_func.h"
 #include "town.h"
@@ -655,11 +658,12 @@ CommandCost CmdBuildTunnel(DoCommandFlags flags, TileIndex start_tile, Transport
 			if (!ValParamRoadType(roadtype)) return CMD_ERROR;
 			break;
 
+		case TRANSPORT_WATER: break;
 		default: return CMD_ERROR;
 	}
 
 	if (company == OWNER_DEITY) {
-		if (transport_type != TRANSPORT_ROAD) return CMD_ERROR;
+		if (transport_type == TRANSPORT_RAIL) return CMD_ERROR;
 		const Town *town = CalcClosestTownFromTile(start_tile);
 
 		company = OWNER_TOWN;
@@ -776,10 +780,11 @@ CommandCost CmdBuildTunnel(DoCommandFlags flags, TileIndex start_tile, Transport
 	}
 	cost.AddCost(_price[Price::BuildTunnel]);
 
-	/* Pay for the rail/road in the tunnel including entrances */
+	/* Pay for the rail/road/canal in the tunnel including entrances */
 	switch (transport_type) {
 		case TRANSPORT_ROAD: cost.AddCost((tiles + 2) * RoadBuildCost(roadtype) * 2); break;
 		case TRANSPORT_RAIL: cost.AddCost((tiles + 2) * RailBuildCost(railtype)); break;
+		case TRANSPORT_WATER: cost.AddCost((tiles + 2) * _price[Price::BuildCanal]); break;
 		default: NOT_REACHED();
 	}
 
@@ -792,6 +797,10 @@ CommandCost CmdBuildTunnel(DoCommandFlags flags, TileIndex start_tile, Transport
 			MakeRailTunnel(end_tile,   company, ReverseDiagDir(direction), railtype);
 			AddSideToSignalBuffer(start_tile, INVALID_DIAGDIR, company);
 			YapfNotifyTrackLayoutChange(start_tile, DiagDirToDiagTrack(direction));
+		} else if (transport_type == TRANSPORT_WATER) {
+			if (c != nullptr) c->infrastructure.water += num_pieces;
+			MakeWaterTunnel(start_tile, company, direction);
+			MakeWaterTunnel(end_tile, company, ReverseDiagDir(direction));
 		} else {
 			if (c != nullptr) c->infrastructure.road[roadtype] += num_pieces * 2; // A full diagonal road has two road bits.
 			RoadType road_rt = RoadTypeIsRoad(roadtype) ? roadtype : INVALID_ROADTYPE;
@@ -919,6 +928,16 @@ static CommandCost DoClearTunnel(TileIndex tile, DoCommandFlags flags)
 			YapfNotifyTrackLayoutChange(endtile, track);
 
 			if (v != nullptr) TryPathReserve(v);
+		} else if (GetTunnelBridgeTransportType(tile) == TRANSPORT_WATER) {
+			Owner owner = GetTileOwner(tile);
+
+			if (Company::IsValidID(owner)) {
+				Company::Get(owner)->infrastructure.water -= len * TUNNELBRIDGE_TRACKBIT_FACTOR;
+				DirtyCompanyInfrastructureWindows(owner);
+			}
+
+			DoClearSquare(tile);
+			DoClearSquare(endtile);
 		} else {
 			/* A full diagonal road tile has two road bits. */
 			UpdateCompanyRoadInfrastructure(GetRoadTypeRoad(tile), GetRoadOwner(tile, RoadTramType::Road), -(int)(len * 2 * TUNNELBRIDGE_TRACKBIT_FACTOR));
@@ -1396,6 +1415,7 @@ static void DrawTile_TunnelBridge(TileInfo *ti)
 				StartSpriteCombine();
 				AddSortableSpriteToDraw(catenary_sprite_base + tunnelbridge_direction, PAL_NONE, *ti, catenary_bounds[tunnelbridge_direction], IsTransparencySet(TO_CATENARY));
 			}
+		} else if (transport_type == TRANSPORT_WATER) {
 		} else {
 			const RailTypeInfo *rti = GetRailTypeInfo(GetRailType(ti->tile));
 			if (rti->UsesOverlay()) {
@@ -2021,6 +2041,23 @@ static VehicleEnterTileStates VehicleEnterTile_TunnelBridge(Vehicle *v, TileInde
 				rv->frame = frame;
 				rv->vehstatus.Reset(VehState::Hidden);
 				return VehicleEnterTileState::EnteredWormhole;
+			}
+		} else if (v->type == VehicleType::Ship) {
+			if (frame == _tunnel_visibility_frame[dir]) {
+				Ship *ship = Ship::From(v);
+				if (dir == vdir) {
+					ship->state = TRACK_BIT_WORMHOLE;
+					ship->vehstatus.Set(VehState::Hidden);
+				} else {
+					ship->tile = tile;
+					ship->vehstatus.Reset(VehState::Hidden);
+					if (ship->state == TRACK_BIT_WORMHOLE) {
+						ship->state = DiagDirToDiagTrackBits(vdir);
+						return VehicleEnterTileState::EnteredWormhole;
+					}
+				}
+			} else {
+				return {};
 			}
 		}
 	} else { // IsBridge(tile)

@@ -168,7 +168,7 @@ public:
 					if (ft.Follow(tile, dir)) {
 						if (this->tile_area.Contains(ft.new_tile)) {
 							tiles_to_check.push_back(ft.new_tile);
-						} else if (!ft.is_bridge) {
+						} else if (!ft.is_bridge && !ft.is_tunnel) {
 							assert(DistanceManhattan(ft.new_tile, tile) == 1);
 							const auto side = DiagdirBetweenTiles(tile, ft.new_tile);
 							const int local_x_or_y = DiagDirToAxis(side) == AXIS_X ? TileY(tile) - TileY(this->tile_area.tile) : TileX(tile) - TileX(this->tile_area.tile);
