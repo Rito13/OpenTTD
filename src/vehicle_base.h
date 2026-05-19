@@ -102,6 +102,7 @@ struct VehicleCache {
 struct VehicleSpriteSeq {
 	std::array<PalSpriteID, 8> seq;
 	uint count;
+	std::variant<std::monostate, SubSprite> sub_sprite; ///< If specified, determines what part of vehicle should be drawn.
 
 	bool operator==(const VehicleSpriteSeq &other) const
 	{
@@ -123,17 +124,20 @@ struct VehicleSpriteSeq {
 	void Clear()
 	{
 		this->count = 0;
+		this->sub_sprite = std::monostate{};
 	}
 
 	/**
 	 * Assign a single sprite to the sequence.
 	 * @param sprite The new first sprite.
+	 * @param sub If specified, determines what part of vehicle should be drawn.
 	 */
-	void Set(SpriteID sprite)
+	void Set(SpriteID sprite, std::variant<std::monostate, SubSprite> sub = std::monostate{})
 	{
 		this->count = 1;
 		this->seq[0].sprite = sprite;
 		this->seq[0].pal = 0;
+		this->sub_sprite = sub;
 	}
 
 	/**
@@ -147,6 +151,7 @@ struct VehicleSpriteSeq {
 			this->seq[i].sprite = src.seq[i].sprite;
 			this->seq[i].pal = 0;
 		}
+		this->sub_sprite = src.sub_sprite;
 	}
 
 	void GetBounds(Rect *bounds) const;

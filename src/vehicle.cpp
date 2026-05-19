@@ -152,7 +152,7 @@ void VehicleSpriteSeq::Draw(int x, int y, PaletteID default_pal, bool force_pal)
 {
 	for (uint i = 0; i < this->count; ++i) {
 		PaletteID pal = force_pal || !this->seq[i].pal ? default_pal : this->seq[i].pal;
-		DrawSprite(this->seq[i].sprite, pal, x, y);
+		DrawSprite(this->seq[i].sprite, pal, x, y, std::get_if<SubSprite>(&this->sub_sprite));
 	}
 }
 
@@ -1136,7 +1136,7 @@ static void DoDrawVehicle(const Vehicle *v)
 	for (uint i = 0; i < v->sprite_cache.sprite_seq.count; ++i) {
 		PaletteID pal2 = v->sprite_cache.sprite_seq.seq[i].pal;
 		if (!pal2 || v->vehstatus.Test(VehState::Crashed)) pal2 = pal;
-		AddSortableSpriteToDraw(v->sprite_cache.sprite_seq.seq[i].sprite, pal2, v->x_pos, v->y_pos, v->z_pos, v->bounds, shadowed);
+		AddSortableSpriteToDraw(v->sprite_cache.sprite_seq.seq[i].sprite, pal2, v->x_pos, v->y_pos, v->z_pos, v->bounds, shadowed, std::get_if<SubSprite>(&v->sprite_cache.sprite_seq.sub_sprite));
 	}
 	EndSpriteCombine();
 }

@@ -7,6 +7,7 @@
 
 /** @file ship_cmd.cpp Handling of ships. */
 
+#include "gfx_type.h"
 #include "stdafx.h"
 #include "ship.h"
 #include "landscape.h"
@@ -20,6 +21,7 @@
 #include "pathfinder/yapf/yapf_ship_regions.h"
 #include "newgrf_sound.h"
 #include "strings_func.h"
+#include "vehicle_type.h"
 #include "window_func.h"
 #include "timer/timer_game_calendar.h"
 #include "timer/timer_game_economy.h"
@@ -39,6 +41,7 @@
 #include "table/strings.h"
 
 #include <unordered_set>
+#include <variant>
 
 #include "safeguards.h"
 
@@ -131,6 +134,17 @@ void GetShipSpriteSize(EngineID engine, uint &width, uint &height, int &xoffs, i
 	yoffs  = UnScaleGUI(rect.top);
 }
 
+/**
+ * Get the sub sprite for the ship image.
+ * @param image_type In what context the ship will be drawn.
+ * @return The sub sprite or \c std::monostate if not needed.
+ */
+std::variant<std::monostate, SubSprite> Ship::GetShipSubSprite(EngineImageType image_type) const
+{
+	if (image_type == EIT_ON_MAP) return SubSprite{0,0,20,20};
+	return std::monostate{};
+}
+
 void Ship::GetImage(Direction direction, EngineImageType image_type, VehicleSpriteSeq *result) const
 {
 	uint8_t spritenum = this->spritenum;
@@ -139,13 +153,17 @@ void Ship::GetImage(Direction direction, EngineImageType image_type, VehicleSpri
 
 	if (IsCustomVehicleSpriteNum(spritenum)) {
 		GetCustomVehicleSprite(this, direction, image_type, result);
-		if (result->IsValid()) return;
+		if (result->IsValid()) {
+			result->sub_sprite = this->GetShipSubSprite(image_type);
+			return;
+		}
 
 		spritenum = this->GetEngine()->original_image_index;
 	}
 
 	assert(IsValidImageIndex<VehicleType::Ship>(spritenum));
-	result->Set(_ship_sprites[spritenum] + direction);
+
+	result->Set(_ship_sprites[spritenum] + direction, this->GetShipSubSprite(image_type));
 }
 
 static const Depot *FindClosestShipDepot(const Vehicle *v, uint max_distance)

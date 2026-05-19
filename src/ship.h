@@ -59,6 +59,9 @@ struct Ship final : public SpecializedVehicle<Ship, VehicleType::Ship> {
 	ClosestDepot FindClosestDepot() override;
 	void UpdateCache();
 	void SetDestTile(TileIndex tile) override;
+
+private:
+	std::variant<std::monostate, SubSprite> GetShipSubSprite(EngineImageType image_type) const;
 };
 
 bool IsShipDestinationTile(TileIndex tile, StationID station);
