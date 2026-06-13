@@ -11,20 +11,34 @@
 #define MAP_FUNC_H
 
 #include "core/math_func.hpp"
+#include "core/bitmath_func.hpp"
 #include "tile_type.h"
 #include "map_type.h"
 #include "direction_func.h"
 
+class Tile;
+
 /**
- * Wrapper class to abstract away the way the tiles are stored. It is
- * intended to be used to access the "map" data of a single tile.
- *
- * The wrapper is expected to be fully optimized away by the compiler, even
- * with low optimization levels except when completely disabling it.
+ * Check if a tile type can have associated tiles.
+ * @note Because of how association is stored tiles with types that don't allow for it must have M8_ASSOCIATED_TILE_BIT clear.
+ * @param tt The tile type to check
+ * @return True if the type can have associated tiles
  */
-class Tile {
+static inline bool MayHaveAssociatedTile(TileType tt)
+{
+	return tt == TileType::Clear || tt == TileType::Water;
+}
+
+/**
+ * Size related data of the map.
+ */
+struct Map {
 private:
-	friend struct Map;
+	friend class Tile;
+	friend struct MAPRChunkHandler;
+	friend struct RawMapIterator;
+	friend struct M8ORChunkHandler;
+
 	/**
 	 * Data that is stored per tile. Also used TileExtended for this.
 	 * Look at docs/landscape.html for the exact meaning of the members.
@@ -51,157 +65,12 @@ private:
 		uint16_t m8 = 0; ///< General purpose
 	};
 
-	static std::unique_ptr<TileBase[]> base_tiles; ///< Pointer to the tile-array.
-	static std::unique_ptr<TileExtended[]> extended_tiles; ///< Pointer to the extended tile-array.
-
-	TileIndex tile; ///< The tile to access the map data for.
-
-public:
-	/**
-	 * Create the tile wrapper for the given tile.
-	 * @param tile The tile to access the map for.
-	 */
-	[[debug_inline]] inline Tile(TileIndex tile) : tile(tile) {}
-
-	/**
-	 * Create the tile wrapper for the given tile.
-	 * @param tile The tile to access the map for.
-	 */
-	Tile(uint tile) : tile(tile) {}
-
-	/**
-	 * Implicit conversion to the TileIndex.
-	 * @return The converted tile index.
-	 */
-	[[debug_inline]] inline constexpr operator TileIndex() const { return this->tile; }
-
-	/**
-	 * Implicit conversion to the uint for bounds checking.
-	 * @return The (unsigned) integer representation of the tile location.
-	 */
-	[[debug_inline]] inline constexpr operator uint() const { return this->tile.base(); }
-
-	/**
-	 * The type (bits 4..7), bridges (2..3), rainforest/desert (0..1)
-	 *
-	 * Look at docs/landscape.html for the exact meaning of the data.
-	 * @return reference to the byte holding the data.
-	 */
-	[[debug_inline]] inline uint8_t &type()
-	{
-		return base_tiles[this->tile.base()].type;
-	}
-
-	/**
-	 * The height of the northern corner
-	 *
-	 * Look at docs/landscape.html for the exact meaning of the data.
-	 * @return reference to the byte holding the height.
-	 */
-	[[debug_inline]] inline uint8_t &height()
-	{
-		return base_tiles[this->tile.base()].height;
-	}
-
-	/**
-	 * Primarily used for ownership information
-	 *
-	 * Look at docs/landscape.html for the exact meaning of the data.
-	 * @return reference to the byte holding the data.
-	 */
-	[[debug_inline]] inline uint8_t &m1()
-	{
-		return base_tiles[this->tile.base()].m1;
-	}
-
-	/**
-	 * Primarily used for indices to towns, industries and stations
-	 *
-	 * Look at docs/landscape.html for the exact meaning of the data.
-	 * @return reference to the uint16_t holding the data.
-	 */
-	[[debug_inline]] inline uint16_t &m2()
-	{
-		return base_tiles[this->tile.base()].m2;
-	}
-
-	/**
-	 * General purpose
-	 *
-	 * Look at docs/landscape.html for the exact meaning of the data.
-	 * @return reference to the byte holding the data.
-	 */
-	[[debug_inline]] inline uint8_t &m3()
-	{
-		return base_tiles[this->tile.base()].m3;
-	}
-
-	/**
-	 * General purpose
-	 *
-	 * Look at docs/landscape.html for the exact meaning of the data.
-	 * @return reference to the byte holding the data.
-	 */
-	[[debug_inline]] inline uint8_t &m4()
-	{
-		return base_tiles[this->tile.base()].m4;
-	}
-
-	/**
-	 * General purpose
-	 *
-	 * Look at docs/landscape.html for the exact meaning of the data.
-	 * @return reference to the byte holding the data.
-	 */
-	[[debug_inline]] inline uint8_t &m5()
-	{
-		return base_tiles[this->tile.base()].m5;
-	}
-
-	/**
-	 * General purpose
-	 *
-	 * Look at docs/landscape.html for the exact meaning of the data.
-	 * @return reference to the byte holding the data.
-	 */
-	[[debug_inline]] inline uint8_t &m6()
-	{
-		return extended_tiles[this->tile.base()].m6;
-	}
-
-	/**
-	 * Primarily used for newgrf support
-	 *
-	 * Look at docs/landscape.html for the exact meaning of the data.
-	 * @return reference to the byte holding the data.
-	 */
-	[[debug_inline]] inline uint8_t &m7()
-	{
-		return extended_tiles[this->tile.base()].m7;
-	}
-
-	/**
-	 * General purpose
-	 *
-	 * Look at docs/landscape.html for the exact meaning of the data.
-	 * @return reference to the uint16_t holding the data.
-	 */
-	[[debug_inline]] inline uint16_t &m8()
-	{
-		return extended_tiles[this->tile.base()].m8;
-	}
-};
-
-/**
- * Size related data of the map.
- */
-struct Map {
-private:
 	/**
 	 * Iterator to iterate all Tiles
 	 */
+	template <class Tvalue>
 	struct Iterator {
-		typedef Tile value_type;
+		typedef Tvalue value_type;
 		typedef Tile *pointer;
 		typedef Tile &reference;
 		typedef size_t difference_type;
@@ -209,16 +78,17 @@ private:
 
 		explicit Iterator(TileIndex index) : index(index) {}
 		bool operator==(const Iterator &other) const { return this->index == other.index; }
-		Tile operator*() const { return this->index; }
+		value_type operator*() const { return this->index; }
 		Iterator & operator++() { this->index++; return *this; }
 	private:
 		TileIndex index;
 	};
 
 	/** Iterable ensemble of all %Tiles. */
+	template <class Tvalue>
 	struct IterateWrapper {
-		Iterator begin() { return Iterator(TileIndex{}); }
-		Iterator end() { return Iterator(TileIndex{Map::Size()}); }
+		Iterator<Tvalue> begin() { return Iterator<Tvalue>(TileIndex{}); }
+		Iterator<Tvalue> end() { return Iterator<Tvalue>(TileIndex{Map::Size()}); }
 		bool empty() { return false; }
 	};
 
@@ -228,11 +98,15 @@ private:
 	static uint size_y;    ///< Size of the map along the Y
 	static uint size;      ///< The number of tiles on the map
 	static uint tile_mask; ///< _map_size - 1 (to mask the mapsize)
-
 	static uint initial_land_count; ///< Initial number of land tiles on the map.
+
+	static std::vector<std::vector<TileBase>> base_tiles; ///< Map array organized as an array of tile lines.
+	static std::vector<std::vector<TileExtended>> extended_tiles; ///< Extended map array organized as an array of tile lines.
+	static std::vector<MapOffsetType> offsets; ///< Mapping of TileIndex to offset in tile line.
 
 public:
 	static void Allocate(uint size_x, uint size_y);
+	static size_t GetTotalTileCount();
 	static void CountLandTiles();
 
 	/**
@@ -350,20 +224,351 @@ public:
 	}
 
 	/**
+	 * Get offset in map array chunk for given map array index.
+	 * @param index The index into map array to get offset for.
+	 * @return The offset in map array chunk.
+	 */
+	static inline MapOffsetType GetOffsetForIndex(TileIndex index)
+	{
+		return Map::offsets[index.base()];
+	}
+
+	/**
 	 * Check whether the map has been initialized, as to not try to save the map
 	 * during crashlog when the map is not there yet.
 	 * @return true when the map has been allocated/initialized.
 	 */
 	static bool IsInitialized()
 	{
-		return Tile::base_tiles != nullptr;
+		return !Map::base_tiles.empty() && !Map::extended_tiles.empty() && !Map::offsets.empty();
 	}
 
 	/**
-	 * Returns an iterable ensemble of all Tiles
-	 * @return an iterable ensemble of all Tiles
+	 * Returns an iterable ensemble of all primary Tiles
+	 * @return an iterable ensemble of all primary Tiles
 	 */
-	static IterateWrapper Iterate() { return IterateWrapper(); }
+	static IterateWrapper<Tile> Iterate() { return IterateWrapper<Tile>(); }
+
+	/**
+	 * Returns an iterable ensemble of all TileIndexes
+	 * @return an iterable ensemble of all TileIndexes
+	 */
+	static IterateWrapper<TileIndex> IterateIndex() { return IterateWrapper<TileIndex>(); }
+};
+
+/**
+ * Wrapper class to abstract away the way the tiles are stored. It is
+ * intended to be used to access the "map" data of a single tile.
+ *
+ * The wrapper is expected to be fully optimized away by the compiler, even
+ * with low optimization levels except when completely disabling it.
+ */
+class Tile {
+private:
+	friend struct RawMapIterator;
+	friend void DecomposeTile(TileIndex index);
+
+	Map::TileBase *tile; ///< The tile to access the map data for.
+	Map::TileExtended *tile_extended; ///< The tile to access the map extended data for.
+
+	/**
+	 * Create the tile wrapper from raw pointers.
+	 * @param tile Pointer to a tile inside the map array.
+	 * @param tile_extended Pointer to the same tile but inside the map extended array.
+	 */
+	Tile(Map::TileBase *tile, Map::TileExtended *tile_extended) : tile(tile), tile_extended(tile_extended) {}
+protected:
+	/**
+	 * Duplicate the tile wrapper.
+	 * @param other The tile to duplicate.
+	 */
+	Tile(const Tile &other) : tile(other.tile), tile_extended(other.tile_extended) {}
+public:
+	/** Create an invalid tile wrapper. */
+	[[debug_inline]] inline Tile() : tile(nullptr), tile_extended(nullptr) {}
+
+	/**
+	 * Move the tile wrapper.
+	 * @param other The tile to move.
+	 */
+	Tile(Tile &&other) : tile(std::move(other.tile)), tile_extended(std::move(other.tile_extended)) {}
+
+	/**
+	 * Create the tile wrapper for the given tile.
+	 * @param tile_index The tile to access the map for.
+	 */
+	Tile(TileIndex::BaseType tile_index)
+	{
+		if (tile_index < Map::Size()) {
+			this->tile = &Map::base_tiles[tile_index >> LOG_2_OF_TILE_INDEXES_PER_CHUNK][Map::offsets[tile_index]];
+			this->tile_extended = &Map::extended_tiles[tile_index >> LOG_2_OF_TILE_INDEXES_PER_CHUNK][Map::offsets[tile_index]];
+		} else {
+			this->tile = nullptr;
+			this->tile_extended = nullptr;
+		}
+	}
+
+	inline constexpr Tile& operator=(const Tile &other)
+	{
+		tile = other.tile;
+		tile_extended = other.tile_extended;
+		return *this;
+	}
+
+	/**
+	 * Create the tile wrapper for the given tile.
+	 * @param tile The tile to access the map for.
+	 */
+	[[debug_inline]] inline Tile(TileIndex tile) : Tile(tile.base()) {}
+
+	/**
+	 * Check if the tile reference is a valid on-map tile.
+	 * @return True if the tile is valid.
+	 */
+	[[debug_inline]] inline bool IsValid() const
+	{
+		return this->tile != nullptr && this->tile_extended != nullptr;
+	}
+
+	/**
+	 * The type (bits 4..7), bridges (2..3), rainforest/desert (0..1)
+	 *
+	 * Look at docs/landscape.html for the exact meaning of the data.
+	 * @return reference to the byte holding the data.
+	 */
+	[[debug_inline]] inline uint8_t &type() const
+	{
+		return this->tile->type;
+	}
+
+	/**
+	 * The height of the northern corner
+	 *
+	 * Look at docs/landscape.html for the exact meaning of the data.
+	 * @return reference to the byte holding the height.
+	 */
+	[[debug_inline]] inline uint8_t &height() const
+	{
+		return this->tile->height;
+	}
+
+	/**
+	 * Primarily used for ownership information
+	 *
+	 * Look at docs/landscape.html for the exact meaning of the data.
+	 * @return reference to the byte holding the data.
+	 */
+	[[debug_inline]] inline uint8_t &m1() const
+	{
+		return this->tile->m1;
+	}
+
+	/**
+	 * Primarily used for indices to towns, industries and stations
+	 *
+	 * Look at docs/landscape.html for the exact meaning of the data.
+	 * @return reference to the uint16_t holding the data.
+	 */
+	[[debug_inline]] inline uint16_t &m2() const
+	{
+		return this->tile->m2;
+	}
+
+	/**
+	 * General purpose
+	 *
+	 * Look at docs/landscape.html for the exact meaning of the data.
+	 * @return reference to the byte holding the data.
+	 */
+	[[debug_inline]] inline uint8_t &m3() const
+	{
+		return this->tile->m3;
+	}
+
+	/**
+	 * General purpose
+	 *
+	 * Look at docs/landscape.html for the exact meaning of the data.
+	 * @return reference to the byte holding the data.
+	 */
+	[[debug_inline]] inline uint8_t &m4() const
+	{
+		return this->tile->m4;
+	}
+
+	/**
+	 * General purpose
+	 *
+	 * Look at docs/landscape.html for the exact meaning of the data.
+	 * @return reference to the byte holding the data.
+	 */
+	[[debug_inline]] inline uint8_t &m5() const
+	{
+		return this->tile->m5;
+	}
+
+	/**
+	 * General purpose
+	 *
+	 * Look at docs/landscape.html for the exact meaning of the data.
+	 * @return reference to the byte holding the data.
+	 */
+	[[debug_inline]] inline uint8_t &m6() const
+	{
+		return this->tile_extended->m6;
+	}
+
+	/**
+	 * Primarily used for newgrf support
+	 *
+	 * Look at docs/landscape.html for the exact meaning of the data.
+	 * @return reference to the byte holding the data.
+	 */
+	[[debug_inline]] inline uint8_t &m7() const
+	{
+		return this->tile_extended->m7;
+	}
+
+	/**
+	 * General purpose
+	 *
+	 * Look at docs/landscape.html for the exact meaning of the data.
+	 * @return reference to the uint16_t holding the data.
+	 */
+	[[debug_inline]] inline uint16_t &m8() const
+	{
+		return this->tile_extended->m8;
+	}
+
+	/** Clear m8 part of the storage. Preserves the state of the associated tile flag. */
+	inline void ClearM8() const
+	{
+		this->m8() &= 1U << M8_ASSOCIATED_TILE_BIT; // Clear everything except the associated tile flag.
+	}
+
+	/**
+	 * Get the tiletype of a this tile.
+	 * @return The tiletype of the tile.
+	 */
+	[[debug_inline]] inline TileType GetTileType() const
+	{
+		return static_cast<TileType>(GB(this->type(), 4, TILE_TYPE_BITS));
+	}
+
+	/**
+	 * Get the tile with a specific tile type associated with a tile index.
+	 * @param tile Tile index to query.
+	 * @param type Tile type to search for.
+	 * @return The associated tile having the asked tile type or an invalid \c Tile if no such tile exists.
+	 */
+	inline static Tile GetByType(TileIndex tile, TileType type)
+	{
+		Tile t(tile);
+		while (t.IsValid() && t.GetTileType() != type) ++t;
+		return t;
+	}
+
+	/**
+	 * Check if a tile index has an associated tile with a given type.
+	 * @param tile Tile index to query.
+	 * @param type Tile type to search for.
+	 * @return Whether such a tile exists.
+	 */
+	inline static bool HasType(TileIndex tile, TileType type)
+	{
+		return GetByType(tile, type).IsValid();
+	}
+
+	/**
+	 * Check if a tile index has an associated tile with any type from given types.
+	 * @param tile Tile index to query.
+	 * @param types Tile types to search for.
+	 * @return Whether such a tile exists.
+	 */
+	inline static bool HasAnyType(TileIndex tile, TileTypes types)
+	{
+		Tile t(tile);
+		while (t.IsValid()) {
+			if (types.Test(t.GetTileType())) return true;
+			++t;
+		}
+		return false;
+	}
+
+	/**
+	 * Check if this tile has an associated tile following.
+	 * @return \c true iff the next tile is associated with this tile.
+	 */
+	[[debug_inline]] inline bool HasAssociated() const
+	{
+		assert(MayHaveAssociatedTile(this->GetTileType()) || !HasBit(this->m8(), M8_ASSOCIATED_TILE_BIT));
+		return HasBit(this->m8(), M8_ASSOCIATED_TILE_BIT);
+	}
+
+	/**
+	 * Check if this tile index has any associated tiles.
+	 * @param index The tile index to check.
+	 * @return \c true iff the tile under index has any associated tiles.
+	 */
+	inline static bool HasAssociated(TileIndex index)
+	{
+		return Tile(index).HasAssociated();
+	}
+
+	/**
+	 * Set the flag indicating if a tile has an associated tile.
+	 * @param has_associated \c true for has tile, \c false for has not.
+	 * @pre this->IsValid()
+	 * @pre MayHaveAssociatedTile()
+	 */
+	void SetAssociated(bool has_associated)
+	{
+		assert(this->IsValid());
+		assert(MayHaveAssociatedTile(this->GetTileType()));
+		AssignBit(this->m8(), M8_ASSOCIATED_TILE_BIT, has_associated);
+	}
+
+	/**
+	 * Advance tile to the next associated tile.
+	 * @return Next associated tile if present or an invalid tile.
+	 */
+	Tile &operator ++()
+	{
+		if (this->IsValid() && this->HasAssociated()) {
+			++this->tile;
+			++this->tile_extended;
+		} else {
+			this->tile = nullptr;
+			this->tile_extended = nullptr;
+		}
+		return *this;
+	}
+
+	/**
+	 * Advance tile to the next associated tile.
+	 * @return Current tile.
+	 */
+	Tile operator ++(int)
+	{
+		Tile old(this->tile, this->tile_extended);
+		this->operator++();
+		return old;
+	}
+
+	/**
+	 * Equality comparison. Check whether this and an other tile point to the same place in map array.
+	 * @param other The other #Tile to compare to.
+	 * @return \c true iff both tiles point to the same place in map array.
+	 */
+	constexpr bool operator ==(const Tile &other) const noexcept { return this->tile == other.tile && this->tile_extended == other.tile_extended; }
+
+	/** Bool conversion operator. Converts this tile into a boolean. */
+	explicit operator bool() const { return this->IsValid(); }
+
+	static Tile RawNew(TileIndex index, Tile insert_after = INVALID_TILE);
+	static Tile New(TileIndex index, TileType type, Tile insert_after = INVALID_TILE);
+	static Tile Remove(TileIndex index, Tile tile);
+	bool BelongsToIndex(TileIndex index) const;
 };
 
 /**

@@ -35,7 +35,7 @@ bool IsValidLink(Link link)
 {
 	switch (link.type) {
 		case LinkType::None: return (link.target == 0);
-		case LinkType::Tile: return IsValidTile(link.target);
+		case LinkType::Tile: return IsValidTile(TileIndex(link.target));
 		case LinkType::Industry: return Industry::IsValidID(link.target);
 		case LinkType::Town: return Town::IsValidID(link.target);
 		case LinkType::Company: return Company::IsValidID(link.target);

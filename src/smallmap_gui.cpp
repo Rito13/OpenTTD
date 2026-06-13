@@ -480,7 +480,7 @@ static inline uint32_t GetSmallMapRoutesPixels(TileIndex tile, TileType t)
 
 		case TileType::Railway: {
 			AndOr andor = {
-				MKCOLOUR_0XX0(GetRailTypeInfo(GetRailType(tile))->map_colour),
+				MKCOLOUR_0XX0(GetRailTypeInfo(GetTileRailType(tile))->map_colour),
 				_smallmap_contours_andor[t].mand
 			};
 
@@ -560,8 +560,9 @@ static inline uint32_t GetSmallMapVegetationPixels(TileIndex tile, TileType t)
 			return IsTileForestIndustry(tile) ? MKCOLOUR_XXXX(PC_GREEN) : MKCOLOUR_XXXX(PC_DARK_RED);
 
 		case TileType::Trees:
-			if (GetTreeGround(tile) == TreeGround::SnowOrDesert || GetTreeGround(tile) == TreeGround::RoughSnow) {
-				return (_settings_game.game_creation.landscape == LandscapeType::Arctic) ? MKCOLOUR_XYYX(PC_LIGHT_BLUE, PC_TREES) : MKCOLOUR_XYYX(PC_ORANGE, PC_TREES);
+			if (IsTileType(tile, TileType::Clear)) {
+				if (IsSnowTile(tile)) return MKCOLOUR_XYYX(PC_LIGHT_BLUE, PC_TREES);
+				if (GetClearGround(tile) == ClearGround::Desert) return MKCOLOUR_XYYX(PC_ORANGE, PC_TREES);
 			}
 			return (GetTropicZone(tile) == TropicZone::Rainforest) ? MKCOLOUR_XYYX(PC_RAINFOREST, PC_TREES) : MKCOLOUR_XYYX(PC_GRASS_LAND, PC_TREES);
 
@@ -592,7 +593,11 @@ uint32_t GetSmallMapOwnerPixels(TileIndex tile, TileType t, IncludeHeightmap inc
 			break;
 
 		default:
-			o = GetTileOwner(tile);
+			if (Tile rail = Tile::GetByType(tile, TileType::Railway); rail.IsValid()) {
+				o = GetTileOwner(rail);
+			} else {
+				o = GetTileOwner(tile);
+			}
 			break;
 	}
 
@@ -1331,6 +1336,9 @@ protected:
 
 		for (TileIndex ti : ta) {
 			TileType ttype = GetTileType(ti);
+
+			if (Tile::HasType(ti, TileType::Trees)) ttype = TileType::Trees;
+			if (Tile::HasType(ti, TileType::Railway)) ttype = TileType::Railway;
 
 			switch (ttype) {
 				case TileType::TunnelBridge: {

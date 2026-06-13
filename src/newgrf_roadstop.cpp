@@ -103,7 +103,7 @@ uint32_t RoadStopScopeResolver::GetVariable(uint8_t variable, [[maybe_unused]] u
 			return 2;
 
 		/* Terrain type */
-		case 0x42: return this->tile == INVALID_TILE ? 0 : (GetTileSlope(this->tile) << 8 | GetTerrainType(this->tile, TCX_NORMAL));
+		case 0x42: return this->tile == INVALID_TILE ? 0 : (GetTileSlope(this->tile).base() << 8 | GetTerrainType(this->tile, TCX_NORMAL));
 
 		/* Road type */
 		case 0x43: return get_road_type_variable(RoadTramType::Road);
@@ -348,7 +348,7 @@ void DrawRoadStopTile(int x, int y, RoadType roadtype, const RoadStopSpec *spec,
 
 std::optional<SpriteLayoutProcessor> GetRoadStopLayout(TileInfo *ti, const RoadStopSpec *spec, BaseStation *st, StationType type, int view, std::span<int32_t> regs100)
 {
-	RoadStopResolverObject object(spec, st, ti->tile, INVALID_ROADTYPE, type, view);
+	RoadStopResolverObject object(spec, st, ti->index, INVALID_ROADTYPE, type, view);
 	auto group = object.Resolve<TileLayoutSpriteGroup>();
 	if (group == nullptr) return std::nullopt;
 	for (uint i = 0; i < regs100.size(); ++i) {
@@ -373,8 +373,8 @@ uint16_t GetAnimRoadStopCallback(CallbackID callback, uint32_t param1, uint32_t 
 }
 
 struct RoadStopAnimationFrameAnimationHelper {
-	static uint8_t Get(BaseStation *st, TileIndex tile) { return st->GetRoadStopAnimationFrame(tile); }
-	static bool Set(BaseStation *st, TileIndex tile, uint8_t frame) { return st->SetRoadStopAnimationFrame(tile, frame); }
+	static uint8_t Get(BaseStation *st, TileIndex index, const Tile&) { return st->GetRoadStopAnimationFrame(index); }
+	static bool Set(BaseStation *st, TileIndex index, const Tile&, uint8_t frame) { return st->SetRoadStopAnimationFrame(index, frame); }
 };
 
 /** Helper class for animation control. */
@@ -386,12 +386,12 @@ struct RoadStopAnimationBase : public AnimationBase<RoadStopAnimationBase, RoadS
 	static constexpr RoadStopCallbackMask cbm_animation_next_frame = RoadStopCallbackMask::AnimationNextFrame;
 };
 
-void AnimateRoadStopTile(TileIndex tile)
+void AnimateRoadStopTile(TileIndex index, const Tile &tile)
 {
 	const RoadStopSpec *ss = GetRoadStopSpec(tile);
 	if (ss == nullptr) return;
 
-	RoadStopAnimationBase::AnimateTile(ss, BaseStation::GetByTile(tile), tile, ss->flags.Test(RoadStopSpecFlag::Cb141RandomBits));
+	RoadStopAnimationBase::AnimateTile(ss, BaseStation::GetByTile(tile), index, tile, ss->flags.Test(RoadStopSpecFlag::Cb141RandomBits));
 }
 
 void TriggerRoadStopAnimation(BaseStation *st, TileIndex trigger_tile, StationAnimationTrigger trigger, CargoType cargo_type)
@@ -410,7 +410,7 @@ void TriggerRoadStopAnimation(BaseStation *st, TileIndex trigger_tile, StationAn
 			if (IsValidCargoType(cargo_type)) {
 				var18_extra |= ss->grf_prop.grffile->cargo_map[cargo_type] << 8;
 			}
-			RoadStopAnimationBase::ChangeAnimationFrame(CBID_STATION_ANIMATION_TRIGGER, ss, st, cur_tile, (random_bits << 16) | GB(Random(), 0, 16), to_underlying(trigger) | var18_extra);
+			RoadStopAnimationBase::ChangeAnimationFrame(CBID_STATION_ANIMATION_TRIGGER, ss, st, cur_tile, Tile(cur_tile), (random_bits << 16) | GB(Random(), 0, 16), to_underlying(trigger) | var18_extra);
 		}
 	};
 
@@ -580,7 +580,7 @@ bool GetIfStopIsForType(const RoadStopSpec *roadstopspec, RoadStopType rs, RoadT
 	return false;
 }
 
-const RoadStopSpec *GetRoadStopSpec(TileIndex t)
+const RoadStopSpec *GetRoadStopSpec(const Tile &t)
 {
 	if (!IsCustomRoadStopSpecIndex(t)) return nullptr;
 

@@ -97,7 +97,7 @@ struct ObjectSpec : NewGRFSpecBase<ObjectClassID> {
 	static const std::vector<ObjectSpec> &Specs();
 	static size_t Count();
 	static const ObjectSpec *Get(ObjectType index);
-	static const ObjectSpec *GetByTile(TileIndex tile);
+	static const ObjectSpec *GetByTile(const Tile &tile);
 
 	static void BindToClasses();
 };
@@ -165,7 +165,7 @@ uint16_t GetObjectCallback(CallbackID callback, uint32_t param1, uint32_t param2
 
 void DrawNewObjectTile(TileInfo *ti, const ObjectSpec *spec);
 void DrawNewObjectTileInGUI(int x, int y, const ObjectSpec *spec, uint8_t view);
-void AnimateNewObjectTile(TileIndex tile);
+void AnimateNewObjectTile(TileIndex index, const Tile &tile);
 bool TriggerObjectTileAnimation(Object *o, TileIndex tile, ObjectAnimationTrigger trigger, const ObjectSpec *spec);
 bool TriggerObjectAnimation(Object *o, ObjectAnimationTrigger trigger, const ObjectSpec *spec);
 

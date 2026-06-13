@@ -1298,7 +1298,7 @@ struct BuildVehicleWindow : Window {
 		this->querystrings[WID_BV_FILTER] = &this->vehicle_editbox;
 		this->vehicle_editbox.cancel_button = QueryString::ACTION_CLEAR;
 
-		this->owner = (tile != INVALID_TILE) ? GetTileOwner(tile) : _local_company;
+		this->owner = (tile != INVALID_TILE) ? GetTileOwnerIfDepot(tile) : _local_company;
 
 		this->eng_list.ForceRebuild();
 		this->GenerateBuildList(); // generate the list, since we need it in the next line
@@ -1319,7 +1319,7 @@ struct BuildVehicleWindow : Window {
 				if (this->listview_mode) {
 					this->filter.railtype = INVALID_RAILTYPE;
 				} else {
-					this->filter.railtype = GetRailType(this->window_number);
+					this->filter.railtype = GetTileRailType(TileIndex(this->window_number));
 				}
 				break;
 

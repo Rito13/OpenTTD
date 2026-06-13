@@ -420,12 +420,14 @@ CommandCost CheckOwnership(Owner owner, TileIndex tile)
  * Check whether the current owner owns the stuff on
  * the given tile.  If that isn't the case an
  * appropriate error will be given.
- * @param tile the tile to check.
+ * @param index The tile index to check.
+ * @param tile The associated sub-tile to check.
  * @return A succeeded command iff it's owned by the current company, else a failed command.
  */
-CommandCost CheckTileOwnership(TileIndex tile)
+CommandCost CheckTileOwnership(TileIndex index, const Tile &tile)
 {
-	return CheckOwnership(GetTileOwner(tile), tile);
+	if (tile.IsValid()) return CheckOwnership(GetTileOwner(tile), index);
+	return CheckOwnership(GetTileOwner(index), index);
 }
 
 /**

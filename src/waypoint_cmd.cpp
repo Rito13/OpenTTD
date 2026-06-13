@@ -109,9 +109,10 @@ Axis GetAxisForNewRailWaypoint(TileIndex tile)
 	if (IsRailWaypointTile(tile)) return GetRailStationAxis(tile);
 
 	/* Non-plain rail type, no valid axis for waypoints. */
-	if (!IsTileType(tile, TileType::Railway) || GetRailTileType(tile) != RailTileType::Normal) return Axis::Invalid;
+	Tile rail = Tile::GetByType(tile, TileType::Railway);
+	if (!rail.IsValid() || GetRailTileType(rail) != RailTileType::Normal) return Axis::Invalid;
 
-	TrackBits bits = GetTrackBits(tile);
+	TrackBits bits = GetTrackBits(rail);
 	if (bits == Track::X) return Axis::X;
 	if (bits == Track::Y) return Axis::Y;
 	return Axis::Invalid;
@@ -140,7 +141,7 @@ Axis GetAxisForNewRoadWaypoint(TileIndex tile)
 	return Axis::Invalid;
 }
 
-extern CommandCost ClearTile_Station(TileIndex tile, DoCommandFlags flags);
+extern std::tuple<CommandCost, bool> ClearTile_Station(TileIndex index, Tile &tile, DoCommandFlags flags);
 
 /**
  * Check whether the given tile is suitable for a waypoint.
@@ -156,7 +157,8 @@ static CommandCost IsValidTileForWaypoint(TileIndex tile, Axis axis, StationID *
 	 * Or it points to a waypoint if we're only allowed to build on exactly that waypoint. */
 	if (waypoint != nullptr && IsTileType(tile, TileType::Station)) {
 		if (!IsRailWaypoint(tile)) {
-			return ClearTile_Station(tile, DoCommandFlag::Auto); // get error message
+			Tile t(tile);
+			return ExtractCommandCost(ClearTile_Station(tile, t, DoCommandFlag::Auto)); // get error message
 		} else {
 			StationID wp = GetStationIndex(tile);
 			if (*waypoint == StationID::Invalid()) {
@@ -169,14 +171,15 @@ static CommandCost IsValidTileForWaypoint(TileIndex tile, Axis axis, StationID *
 
 	if (GetAxisForNewRailWaypoint(tile) != axis) return CommandCost(STR_ERROR_NO_SUITABLE_RAILROAD_TRACK);
 
-	Owner owner = GetTileOwner(tile);
+	Tile rail = Tile::GetByType(tile, TileType::Railway);
+	Owner owner = rail.IsValid() ? GetTileOwner(rail) : GetTileOwner(tile);
 	CommandCost ret = CheckOwnership(owner);
 	if (ret.Succeeded()) ret = EnsureNoVehicleOnGround(tile);
 	if (ret.Failed()) return ret;
 
 	Slope tileh = GetTileSlope(tile);
 	if (tileh != SLOPE_FLAT &&
-			(!_settings_game.construction.build_on_slopes || IsSteepSlope(tileh) || !(tileh & (0x3 << to_underlying(axis))) || !(tileh & ~(0x3 << to_underlying(axis))))) {
+			(!_settings_game.construction.build_on_slopes || IsSteepSlope(tileh) || !(axis == Axis::X ? (tileh.Any(SLOPE_SW) && tileh.Any(SLOPE_NE)) : (tileh.Any(SLOPE_SE) && tileh.Any(SLOPE_NW))))) {
 		return CommandCost(STR_ERROR_FLAT_LAND_REQUIRED);
 	}
 
@@ -304,7 +307,8 @@ CommandCost CmdBuildRailWaypoint(DoCommandFlags flags, TileIndex start_tile, Axi
 			/* Move existing (recently deleted) waypoint to the new location */
 			wp->xy = start_tile;
 		}
-		wp->owner = GetTileOwner(start_tile);
+		Tile rail = Tile::GetByType(start_tile, TileType::Railway);
+		wp->owner = rail.IsValid() ? GetTileOwner(rail) : GetTileOwner(start_tile);
 
 		wp->rect.BeforeAddRect(start_tile, width, height, StationRect::ADD_TRY);
 		if (specindex.has_value()) AssignSpecToStation(spec, wp, *specindex);
@@ -323,10 +327,11 @@ CommandCost CmdBuildRailWaypoint(DoCommandFlags flags, TileIndex start_tile, Axi
 		for (auto [i, it, tile] = std::make_tuple(0, stl.begin(), start_tile); i < count; ++i, ++it, tile += offset) {
 			uint8_t old_specindex = HasStationTileRail(tile) ? GetCustomStationSpecIndex(tile) : 0;
 			if (!HasStationTileRail(tile)) c->infrastructure.station++;
-			bool reserved = IsTileType(tile, TileType::Railway) ?
+			rail = Tile::GetByType(tile, TileType::Railway);
+			bool reserved = rail.IsValid() ?
 					GetRailReservationTrackBits(tile).Test(AxisToTrack(axis)) :
 					HasStationReservation(tile);
-			MakeRailWaypoint(tile, wp->owner, wp->index, axis, *it, GetRailType(tile));
+			MakeRailWaypoint(tile, wp->owner, wp->index, axis, *it, rail.IsValid() ? GetRailType(rail) : GetRailType(tile));
 			SetCustomStationSpecIndex(tile, *specindex);
 
 			if (spec != nullptr) {

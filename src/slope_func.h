@@ -23,7 +23,7 @@
  */
 static constexpr inline bool IsValidCorner(Corner corner)
 {
-	return IsInsideMM(corner, 0, CORNER_END);
+	return IsInsideMM(corner, Corner::Begin, Corner::End);
 }
 
 
@@ -35,7 +35,7 @@ static constexpr inline bool IsValidCorner(Corner corner)
  */
 static constexpr inline bool IsSteepSlope(Slope s)
 {
-	return (s & SLOPE_STEEP) != 0;
+	return s.Test(Corner::Steep);
 }
 
 /**
@@ -46,7 +46,7 @@ static constexpr inline bool IsSteepSlope(Slope s)
  */
 static constexpr inline bool IsHalftileSlope(Slope s)
 {
-	return (s & SLOPE_HALFTILE) != 0;
+	return s.Test(Corner::HalfTile);
 }
 
 /**
@@ -59,7 +59,7 @@ static constexpr inline bool IsHalftileSlope(Slope s)
  */
 static constexpr inline Slope RemoveHalftileSlope(Slope s)
 {
-	return s & ~SLOPE_HALFTILE_MASK;
+	return s.Reset(SLOPE_HALFTILE_MASK);
 }
 
 /**
@@ -76,7 +76,7 @@ static constexpr inline Slope RemoveHalftileSlope(Slope s)
 inline Slope ComplementSlope(Slope s)
 {
 	assert(!IsSteepSlope(s) && !IsHalftileSlope(s));
-	return s ^ SLOPE_ELEVATED;
+	return s.Flip(SLOPE_ELEVATED);
 }
 
 /**
@@ -87,7 +87,7 @@ inline Slope ComplementSlope(Slope s)
  */
 inline bool IsSlopeWithOneCornerRaised(Slope s)
 {
-	return (s == SLOPE_W) || (s == SLOPE_S) || (s == SLOPE_E) || (s == SLOPE_N);
+	return (s == Corner::W) || (s == Corner::S) || (s == Corner::E) || (s == Corner::N);
 }
 
 /**
@@ -99,7 +99,7 @@ inline bool IsSlopeWithOneCornerRaised(Slope s)
 inline Slope SlopeWithOneCornerRaised(Corner corner)
 {
 	assert(IsValidCorner(corner));
-	return (Slope)(1 << corner);
+	return static_cast<Slope>(1 << to_underlying(corner));
 }
 
 /**
@@ -125,15 +125,15 @@ inline bool HasSlopeHighestCorner(Slope s)
  */
 inline Corner GetHighestSlopeCorner(Slope s)
 {
-	switch (RemoveHalftileSlope(s)) {
-		case SLOPE_W:
-		case SLOPE_STEEP_W: return CORNER_W;
-		case SLOPE_S:
-		case SLOPE_STEEP_S: return CORNER_S;
-		case SLOPE_E:
-		case SLOPE_STEEP_E: return CORNER_E;
-		case SLOPE_N:
-		case SLOPE_STEEP_N: return CORNER_N;
+	switch (RemoveHalftileSlope(s).base()) {
+		case Slope{Corner::W}.base():
+		case SLOPE_STEEP_W.base(): return Corner::W;
+		case Slope{Corner::S}.base():
+		case SLOPE_STEEP_S.base(): return Corner::S;
+		case Slope{Corner::E}.base():
+		case SLOPE_STEEP_E.base(): return Corner::E;
+		case Slope{Corner::N}.base():
+		case SLOPE_STEEP_N.base(): return Corner::N;
 		default: NOT_REACHED();
 	}
 }
@@ -148,7 +148,7 @@ inline Corner GetHighestSlopeCorner(Slope s)
 static constexpr inline Corner GetHalftileSlopeCorner(Slope s)
 {
 	assert(IsHalftileSlope(s));
-	return (Corner)((s >> 6) & 3);
+	return static_cast<Corner>((s.base() >> 6) & 3);
 }
 
 /**
@@ -183,7 +183,7 @@ static constexpr inline int GetSlopeMaxPixelZ(Slope s)
  */
 inline Corner OppositeCorner(Corner corner)
 {
-	return (Corner)(corner ^ 2);
+	return static_cast<Corner>(to_underlying(corner) ^ 2);
 }
 
 /**
@@ -216,7 +216,7 @@ inline Slope SlopeWithThreeCornersRaised(Corner corner)
  */
 inline Slope SteepSlope(Corner corner)
 {
-	return SLOPE_STEEP | SlopeWithThreeCornersRaised(OppositeCorner(corner));
+	return SlopeWithThreeCornersRaised(OppositeCorner(corner)).Set(Corner::Steep);
 }
 
 /**
@@ -238,11 +238,11 @@ inline bool IsInclinedSlope(Slope s)
  */
 inline DiagDirection GetInclinedSlopeDirection(Slope s)
 {
-	switch (s) {
-		case SLOPE_NE: return DiagDirection::NE;
-		case SLOPE_SE: return DiagDirection::SE;
-		case SLOPE_SW: return DiagDirection::SW;
-		case SLOPE_NW: return DiagDirection::NW;
+	switch (s.base()) {
+		case SLOPE_NE.base(): return DiagDirection::NE;
+		case SLOPE_SE.base(): return DiagDirection::SE;
+		case SLOPE_SW.base(): return DiagDirection::SW;
+		case SLOPE_NW.base(): return DiagDirection::NW;
 		default: return DiagDirection::Invalid;
 	}
 }
@@ -274,7 +274,7 @@ inline Slope InclinedSlope(DiagDirection dir)
 static constexpr inline Slope HalftileSlope(Slope s, Corner corner)
 {
 	assert(IsValidCorner(corner));
-	return (Slope)(s | SLOPE_HALFTILE | (corner << 6));
+	return static_cast<Slope>(s.Set(Corner::HalfTile).Set(static_cast<Slope>(to_underlying(corner) << 6)));
 }
 
 
@@ -412,8 +412,34 @@ inline Foundation SpecialRailFoundation(Corner corner)
  */
 inline uint SlopeToSpriteOffset(Slope s)
 {
-	extern const uint8_t _slope_to_sprite_offset[32];
-	return _slope_to_sprite_offset[s];
+	/* landscape slope => sprite */
+	static constexpr TypedIndexContainer<std::array<uint8_t, 32>, Slope> slope_to_sprite_offset = {
+		0, 1, 2, 3, 4, 5, 6,  7, 8, 9, 10, 11, 12, 13, 14, 0,
+		0, 0, 0, 0, 0, 0, 0, 16, 0, 0,  0, 17,  0, 15, 18, 0,
+	};
+
+	return slope_to_sprite_offset[s];
+}
+
+/**
+ * Combine two foundations into one.
+ *
+ * @param f1 First foundation.
+ * @param f2 Second foundation.
+ * @return The combined foundation or #Foundation::Invalid if the two foundations can't be combined.
+ */
+static inline Foundation CombineFoundations(Foundation f1, Foundation f2)
+{
+	/* Normalise order of foundations. */
+	if (f1 > f2) std::swap(f1, f2);
+
+	if (f1 == Foundation::None || f1 == f2) return f2;
+	/* Leveled + anti-zig-zag -> leveled */
+	if (IsLeveledFoundation(f1) && IsSpecialRailFoundation(f2)) return Foundation::Leveled;
+	/* Lower steep slope raised or both raised + halftile -> upper and lower corner leveled */
+	if ((f1 == Foundation::SteepLower || f1 == Foundation::SteepBoth) && IsNonContinuousFoundation(f2)) return Foundation::SteepBoth;
+
+	return Foundation::Invalid; // Can't combine.
 }
 
 #endif /* SLOPE_FUNC_H */

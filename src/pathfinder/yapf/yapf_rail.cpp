@@ -54,7 +54,7 @@ private:
 	Trackdir res_fail_td; ///< The trackdir where the reservation failed
 	TileIndex origin_tile; ///< Tile our reservation will originate from
 
-	std::vector<std::pair<TileIndex, Trackdir>> signals_set_to_red; ///< List of signals turned red during a path reservation.
+	std::vector<std::pair<Tile, Trackdir>> signals_set_to_red; ///< List of signals turned red during a path reservation.
 
 	bool FindSafePositionProc(TileIndex tile, Trackdir td)
 	{
@@ -115,9 +115,9 @@ private:
 			}
 
 			/* Green path signal opposing the path? Turn to red. */
-			if (HasPbsSignalOnTrackdir(tile, rev_td) && GetSignalStateByTrackdir(tile, rev_td) == SignalState::Green) {
-				this->signals_set_to_red.emplace_back(tile, rev_td);
-				SetSignalStateByTrackdir(tile, rev_td, SignalState::Red);
+			if (Tile rail = Tile::GetByType(tile, TileType::Railway); HasPbsSignalOnTrackdir(rail, rev_td) && GetSignalStateByTrackdir(rail, rev_td) == SignalState::Green) {
+				SetSignalStateByTrackdir(rail, rev_td, SignalState::Red);
+				this->signals_set_to_red.emplace_back(std::move(rail), rev_td);
 				MarkTileDirtyByTile(tile);
 			}
 
@@ -216,7 +216,7 @@ public:
 				} while (fail_node != node && (fail_node = fail_node->parent) != nullptr);
 
 				/* Re-instate green path signals we turned to red. */
-				for (auto [sig_tile, td] : this->signals_set_to_red) {
+				for (const auto& [sig_tile, td] : this->signals_set_to_red) {
 					SetSignalStateByTrackdir(sig_tile, td, SignalState::Green);
 				}
 
@@ -365,7 +365,7 @@ public:
 			pf2.DisableCache(true);
 			result1 = pf2.FindNearestSafeTile(v, t1, td, override_railtype, false);
 			if (result1 != result2) {
-				Debug(desync, 2, "warning: FindSafeTile cache mismatch: {} vs {}", result2 ? "T" : "F", result1 ? "T" : "F");
+				Debug(desync, 2, "warning: FindSafeconst Tile &cache mismatch: {} vs {}", result2 ? "T" : "F", result1 ? "T" : "F");
 				DumpState(pf1, pf2);
 			}
 		}

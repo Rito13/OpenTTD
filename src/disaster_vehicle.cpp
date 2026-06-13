@@ -60,6 +60,17 @@ static void DisasterClearSquare(TileIndex tile)
 {
 	if (EnsureNoVehicleOnGround(tile).Failed()) return;
 
+	if (Tile rail_tile = Tile::GetByType(tile, TileType::Railway); rail_tile.IsValid()) {
+		if (Company::IsHumanID(GetTileOwner(rail_tile)) && !IsRailDepot(rail_tile)) {
+			AutoRestoreBackup cur_company(_current_company, OWNER_WATER);
+			Command<Commands::LandscapeClear>::Do(DoCommandFlag::Execute, tile);
+
+			/* update signals in buffer */
+			UpdateSignalsInBuffer();
+		}
+		return;
+	}
+
 	switch (GetTileType(tile)) {
 		case TileType::Railway:
 			if (Company::IsHumanID(GetTileOwner(tile)) && !IsRailDepot(tile)) {
@@ -77,7 +88,6 @@ static void DisasterClearSquare(TileIndex tile)
 			break;
 		}
 
-		case TileType::Trees:
 		case TileType::Clear:
 			DoClearSquare(tile);
 			break;
@@ -421,7 +431,7 @@ static bool DisasterTick_Ufo(DisasterVehicle *ufo)
 
 static void DestructIndustry(Industry *i)
 {
-	for (const auto tile : Map::Iterate()) {
+	for (const auto tile : Map::IterateIndex()) {
 		if (i->TileBelongsToIndustry(tile)) {
 			ResetIndustryConstructionStage(tile);
 			MarkTileDirtyByTile(tile);

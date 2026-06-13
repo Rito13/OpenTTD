@@ -23,12 +23,12 @@
  */
 TrackBits GetReservedTrackbits(TileIndex t)
 {
-	switch (GetTileType(t)) {
-		case TileType::Railway:
-			if (IsRailDepot(t)) return GetDepotReservationTrackBits(t);
-			if (IsPlainRail(t)) return GetRailReservationTrackBits(t);
-			break;
+	if (Tile rail = Tile::GetByType(t, TileType::Railway); rail.IsValid()) {
+			if (IsRailDepot(rail)) return GetDepotReservationTrackBits(rail);
+			if (IsPlainRail(rail)) return GetRailReservationTrackBits(rail);
+	}
 
+	switch (GetTileType(t)) {
 		case TileType::Road:
 			if (IsLevelCrossing(t)) return GetCrossingReservationTrackBits(t);
 			break;
@@ -90,18 +90,18 @@ bool TryReserveRailTrack(TileIndex tile, Track t, bool trigger_stations)
 		}
 	}
 
-	switch (GetTileType(tile)) {
-		case TileType::Railway:
-			if (IsPlainRail(tile)) return TryReserveTrack(tile, t);
-			if (IsRailDepot(tile)) {
-				if (!HasDepotReservation(tile)) {
-					SetDepotReservation(tile, true);
-					MarkTileDirtyByTile(tile); // some GRFs change their appearance when tile is reserved
-					return true;
-				}
+	if (Tile rail = Tile::GetByType(tile, TileType::Railway); rail.IsValid()) {
+		if (IsPlainRail(rail)) return TryReserveTrack(rail, t);
+		if (IsRailDepot(rail)) {
+			if (!HasDepotReservation(rail)) {
+				SetDepotReservation(rail, true);
+				MarkTileDirtyByTile(tile); // some GRFs change their appearance when tile is reserved
+				return true;
 			}
-			break;
-
+		}
+		return false;
+	}
+	switch (GetTileType(tile)) {
 		case TileType::Road:
 			if (IsLevelCrossing(tile) && !HasCrossingReservation(tile)) {
 				SetCrossingReservation(tile, true);
@@ -153,16 +153,16 @@ void UnreserveRailTrack(TileIndex tile, Track t)
 		}
 	}
 
+	if (Tile rail = Tile::GetByType(tile, TileType::Railway); rail.IsValid()) {
+		if (IsRailDepot(rail)) {
+			SetDepotReservation(rail, false);
+			MarkTileDirtyByTile(tile);
+		} else if (IsPlainRail(rail)) {
+			UnreserveTrack(rail, t);
+		}
+		return;
+	}
 	switch (GetTileType(tile)) {
-		case TileType::Railway:
-			if (IsRailDepot(tile)) {
-				SetDepotReservation(tile, false);
-				MarkTileDirtyByTile(tile);
-				break;
-			}
-			if (IsPlainRail(tile)) UnreserveTrack(tile, t);
-			break;
-
 		case TileType::Road:
 			if (IsLevelCrossing(tile)) {
 				SetCrossingReservation(tile, false);
@@ -307,7 +307,7 @@ PBSTileInfo FollowTrainReservation(const Train *consist, Vehicle **train_on_res)
 	TileIndex tile = moving_front->tile;
 	Trackdir trackdir = moving_front->GetVehicleTrackdir();
 
-	if (IsRailDepotTile(tile) && GetDepotReservationTrackBits(tile).None()) return PBSTileInfo(tile, trackdir, false);
+	if (IsRailDepotTile(tile) && GetDepotReservationTrackBits(GetDepotTile(tile)).None()) return PBSTileInfo(tile, trackdir, false);
 
 	FindTrainOnTrackInfo ftoti;
 	ftoti.res = FollowReservation(consist->owner, GetAllCompatibleRailTypes(consist->railtypes), tile, trackdir);
@@ -352,13 +352,14 @@ Train *GetTrainForReservation(TileIndex tile, Track track)
 	/* Follow the path from tile to both ends, one of the end tiles should
 	 * have a train on it. We need FollowReservation to ignore one-way signals
 	 * here, as one of the two search directions will be the "wrong" way. */
+	Tile rail_tile = Tile::GetByType(tile, TileType::Railway);
 	for (int i = 0; i < 2; ++i, trackdir = ReverseTrackdir(trackdir)) {
 		/* If the tile has a one-way block signal in the current trackdir, skip the
 		 * search in this direction as the reservation can't come from this side.*/
-		if (HasOnewaySignalBlockingTrackdir(tile, ReverseTrackdir(trackdir)) && !HasPbsSignalOnTrackdir(tile, trackdir)) continue;
+		if (HasOnewaySignalBlockingTrackdir(rail_tile, ReverseTrackdir(trackdir)) && !HasPbsSignalOnTrackdir(rail_tile, trackdir)) continue;
 
 		FindTrainOnTrackInfo ftoti;
-		ftoti.res = FollowReservation(GetTileOwner(tile), rts, tile, trackdir, true);
+		ftoti.res = FollowReservation(rail_tile.IsValid() ? GetTileOwner(rail_tile) : GetTileOwner(tile), rts, tile, trackdir, true);
 
 		CheckTrainsOnTrack(ftoti, ftoti.res.tile);
 		if (ftoti.best != nullptr) return ftoti.best;
@@ -415,11 +416,11 @@ bool IsSafeWaitingPosition(const Train *v, TileIndex tile, Trackdir trackdir, bo
 
 	if (ft.new_td_bits.Count() == 1) {
 		Trackdir td = FindFirstTrackdir(ft.new_td_bits);
+		Tile rail_tile = Tile::GetByType(ft.new_tile, TileType::Railway);
 		/* PBS signal on next trackdir? Safe position. */
-		if (HasPbsSignalOnTrackdir(ft.new_tile, td)) return true;
+		if (HasPbsSignalOnTrackdir(rail_tile, td)) return true;
 		/* One-way PBS signal against us? Safe if end-of-line is allowed. */
-		if (IsTileType(ft.new_tile, TileType::Railway) && HasSignalOnTrackdir(ft.new_tile, ReverseTrackdir(td)) &&
-				GetSignalType(ft.new_tile, TrackdirToTrack(td)) == SignalType::PathOneWay) {
+		if (rail_tile && HasSignalOnTrackdir(rail_tile, ReverseTrackdir(td)) && GetSignalType(rail_tile, TrackdirToTrack(td)) == SignalType::PathOneWay) {
 			return include_line_end;
 		}
 	}

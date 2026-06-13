@@ -13,7 +13,7 @@
 #include "water_map.h"
 #include "object_type.h"
 
-ObjectType GetObjectType(Tile t);
+ObjectType GetObjectType(const Tile &t);
 
 /**
  * Check whether the object on a tile is of a specific type.
@@ -22,7 +22,7 @@ ObjectType GetObjectType(Tile t);
  * @pre IsTileType(t, TileType::Object)
  * @return True if type matches.
  */
-inline bool IsObjectType(Tile t, ObjectType type)
+inline bool IsObjectType(const Tile &t, ObjectType type)
 {
 	return GetObjectType(t) == type;
 }
@@ -33,7 +33,7 @@ inline bool IsObjectType(Tile t, ObjectType type)
  * @param type Type to test.
  * @return True if type matches.
  */
-inline bool IsObjectTypeTile(Tile t, ObjectType type)
+inline bool IsObjectTypeTile(const Tile &t, ObjectType type)
 {
 	return IsTileType(t, TileType::Object) && GetObjectType(t) == type;
 }
@@ -44,7 +44,7 @@ inline bool IsObjectTypeTile(Tile t, ObjectType type)
  * @pre IsTileType(t, TileType::Object)
  * @return The ObjectID of the object.
  */
-inline ObjectID GetObjectIndex(Tile t)
+inline ObjectID GetObjectIndex(const Tile &t)
 {
 	assert(IsTileType(t, TileType::Object));
 	return ObjectID(t.m2() | t.m5() << 16);
@@ -56,7 +56,7 @@ inline ObjectID GetObjectIndex(Tile t)
  * @pre IsTileType(t, TileType::Object)
  * @return The random bits.
  */
-inline uint8_t GetObjectRandomBits(Tile t)
+inline uint8_t GetObjectRandomBits(const Tile &t)
 {
 	assert(IsTileType(t, TileType::Object));
 	return t.m3();
@@ -71,7 +71,7 @@ inline uint8_t GetObjectRandomBits(Tile t)
  * @param wc     Water class for this object.
  * @param random Random data to store on the tile
  */
-inline void MakeObject(Tile t, Owner o, ObjectID index, WaterClass wc, uint8_t random)
+inline void MakeObject(const Tile &t, Owner o, ObjectID index, WaterClass wc, uint8_t random)
 {
 	SetTileType(t, TileType::Object);
 	SetTileOwner(t, o);
@@ -82,7 +82,7 @@ inline void MakeObject(Tile t, Owner o, ObjectID index, WaterClass wc, uint8_t r
 	t.m5() = index.base() >> 16;
 	SB(t.m6(), 2, 6, 0);
 	t.m7() = 0;
-	t.m8() = 0;
+	t.ClearM8();
 }
 
 #endif /* OBJECT_MAP_H */

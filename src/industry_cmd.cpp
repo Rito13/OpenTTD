@@ -106,7 +106,7 @@ void ResetIndustries()
  * @pre IsTileType(tile, TileType::Industry)
  * @return general type for this industry, as defined in industry.h
  */
-IndustryType GetIndustryType(Tile tile)
+IndustryType GetIndustryType(const Tile &tile)
 {
 	assert(IsTileType(tile, TileType::Industry));
 
@@ -328,7 +328,7 @@ static IndustryDrawTileProc * const _industry_draw_tile_procs[5] = {
 };
 
 /** @copydoc DrawTileProc */
-static void DrawTile_Industry(TileInfo *ti)
+static BridgePillarFlags DrawTile_Industry(TileInfo *ti, [[maybe_unused]] bool draw_halftile, [[maybe_unused]] Corner halftile_corner)
 {
 	IndustryGfx gfx = GetIndustryGfx(ti->tile);
 	Industry *ind = Industry::GetByTile(ti->tile);
@@ -340,8 +340,8 @@ static void DrawTile_Industry(TileInfo *ti)
 		 * DrawNewIndustry will return false if ever the resolver could not
 		 * find any sprite to display.  So in this case, we will jump on the
 		 * substitute gfx instead. */
-		if (indts->grf_prop.HasSpriteGroups() && DrawNewIndustryTile(ti, ind, gfx, indts)) {
-			return;
+		if (indts->grf_prop.HasSpriteGroups() && DrawNewIndustryTile(ti, ind, gfx)) {
+			return {};
 		} else {
 			/* No sprite group (or no valid one) found, meaning no graphics associated.
 			 * Use the substitute one instead */
@@ -359,9 +359,6 @@ static void DrawTile_Industry(TileInfo *ti)
 
 	SpriteID image = dits->ground.sprite;
 
-	/* DrawFoundation() modifies ti->z and ti->tileh */
-	if (ti->tileh != SLOPE_FLAT) DrawFoundation(ti, Foundation::Leveled);
-
 	/* If the ground sprite is the default flat water sprite, draw also canal/river borders.
 	 * Do not do this if the tile's WaterClass is 'land'. */
 	if (image == SPR_FLAT_WATER_TILE && IsTileOnWater(ti->tile)) {
@@ -371,7 +368,7 @@ static void DrawTile_Industry(TileInfo *ti)
 	}
 
 	/* If industries are transparent and invisible, do not draw the upper part */
-	if (IsInvisibilitySet(TransparencyOption::Industries)) return;
+	if (IsInvisibilitySet(TransparencyOption::Industries)) return {};
 
 	/* Add industry on top of the ground? */
 	image = dits->building.sprite;
@@ -379,17 +376,18 @@ static void DrawTile_Industry(TileInfo *ti)
 		AddSortableSpriteToDraw(image, SpriteLayoutPaletteTransform(image, dits->building.pal, GetColourPalette(ind->random_colour)),
 			*ti, *dits, IsTransparencySet(TransparencyOption::Industries));
 
-		if (IsTransparencySet(TransparencyOption::Industries)) return;
+		if (IsTransparencySet(TransparencyOption::Industries)) return {};
 	}
 
 	{
 		int proc = dits->draw_proc - 1;
 		if (proc >= 0) _industry_draw_tile_procs[proc](ti);
 	}
+	return {};
 }
 
 /** @copydoc GetFoundationProc */
-static Foundation GetFoundation_Industry(TileIndex tile, Slope tileh)
+static Foundation GetFoundation_Industry(TileIndex index, const Tile &tile, Slope tileh)
 {
 	IndustryGfx gfx = GetIndustryGfx(tile);
 
@@ -400,7 +398,7 @@ static Foundation GetFoundation_Industry(TileIndex tile, Slope tileh)
 	if (gfx >= NEW_INDUSTRYTILEOFFSET) {
 		const IndustryTileSpec *indts = GetIndustryTileSpec(gfx);
 		if (indts->callback_mask.Test(IndustryTileCallbackMask::DrawFoundations)) {
-			uint32_t callback_res = GetIndustryTileCallback(CBID_INDTILE_DRAW_FOUNDATIONS, 0, 0, gfx, Industry::GetByTile(tile), tile);
+			uint32_t callback_res = GetIndustryTileCallback(CBID_INDTILE_DRAW_FOUNDATIONS, 0, 0, gfx, Industry::GetByTile(tile), index);
 			if (callback_res != CALLBACK_FAILED && !ConvertBooleanCallback(indts->grf_prop.grffile, CBID_INDTILE_DRAW_FOUNDATIONS, callback_res)) return Foundation::None;
 		}
 	}
@@ -408,7 +406,7 @@ static Foundation GetFoundation_Industry(TileIndex tile, Slope tileh)
 }
 
 /** @copydoc AddAcceptedCargoProc */
-static void AddAcceptedCargo_Industry(TileIndex tile, CargoArray &acceptance, CargoTypes &always_accepted)
+static void AddAcceptedCargo_Industry(TileIndex index, const Tile &tile, CargoArray &acceptance, CargoTypes &always_accepted)
 {
 	IndustryGfx gfx = GetIndustryGfx(tile);
 	const IndustryTileSpec *itspec = GetIndustryTileSpec(gfx);
@@ -434,7 +432,7 @@ static void AddAcceptedCargo_Industry(TileIndex tile, CargoArray &acceptance, Ca
 
 	if (itspec->callback_mask.Test(IndustryTileCallbackMask::AcceptCargo)) {
 		/* Try callback for accepts list, if success override all existing accepts */
-		uint16_t res = GetIndustryTileCallback(CBID_INDTILE_ACCEPT_CARGO, 0, 0, gfx, Industry::GetByTile(tile), tile);
+		uint16_t res = GetIndustryTileCallback(CBID_INDTILE_ACCEPT_CARGO, 0, 0, gfx, Industry::GetByTile(tile), index);
 		if (res != CALLBACK_FAILED) {
 			accepts_cargo.fill(INVALID_CARGO);
 			for (uint i = 0; i < INDUSTRY_ORIGINAL_NUM_INPUTS; i++) accepts_cargo[i] = GetCargoTranslation(GB(res, i * 5, 5), itspec->grf_prop.grffile);
@@ -443,7 +441,7 @@ static void AddAcceptedCargo_Industry(TileIndex tile, CargoArray &acceptance, Ca
 
 	if (itspec->callback_mask.Test(IndustryTileCallbackMask::CargoAcceptance)) {
 		/* Try callback for acceptance list, if success override all existing acceptance */
-		uint16_t res = GetIndustryTileCallback(CBID_INDTILE_CARGO_ACCEPTANCE, 0, 0, gfx, Industry::GetByTile(tile), tile);
+		uint16_t res = GetIndustryTileCallback(CBID_INDTILE_CARGO_ACCEPTANCE, 0, 0, gfx, Industry::GetByTile(tile), index);
 		if (res != CALLBACK_FAILED) {
 			cargo_acceptance.fill(0);
 			for (uint i = 0; i < INDUSTRY_ORIGINAL_NUM_INPUTS; i++) cargo_acceptance[i] = GB(res, i * 4, 4);
@@ -469,7 +467,7 @@ static void AddAcceptedCargo_Industry(TileIndex tile, CargoArray &acceptance, Ca
 }
 
 /** @copydoc GetTileDescProc */
-static void GetTileDesc_Industry(TileIndex tile, TileDesc &td)
+static void GetTileDesc_Industry([[maybe_unused]] TileIndex index, const Tile &tile, TileDesc &td)
 {
 	const Industry *i = Industry::GetByTile(tile);
 	const IndustrySpec *is = GetIndustrySpec(i->type);
@@ -487,7 +485,7 @@ static void GetTileDesc_Industry(TileIndex tile, TileDesc &td)
 }
 
 /** @copydoc ClearTileProc */
-static CommandCost ClearTile_Industry(TileIndex tile, DoCommandFlags flags)
+static std::tuple<CommandCost, bool> ClearTile_Industry([[maybe_unused]] TileIndex index, Tile &tile, DoCommandFlags flags)
 {
 	Industry *i = Industry::GetByTile(tile);
 	const IndustrySpec *indspec = GetIndustrySpec(i->type);
@@ -502,12 +500,12 @@ static CommandCost ClearTile_Industry(TileIndex tile, DoCommandFlags flags)
 			flags.Test(DoCommandFlag::Auto) ||
 			(_current_company == OWNER_WATER &&
 				(indspec->behaviour.Test(IndustryBehaviour::BuiltOnWater) ||
-				HasBit(GetIndustryTileSpec(GetIndustryGfx(tile))->slopes_refused, 5)))) {
+				GetIndustryTileSpec(GetIndustryGfx(tile))->slopes_refused.Test(Corner::HalfTile)))) {
 
 		if (flags.Test(DoCommandFlag::Auto)) {
-			return CommandCostWithParam(STR_ERROR_GENERIC_OBJECT_IN_THE_WAY, indspec->name);
+			return {CommandCostWithParam(STR_ERROR_GENERIC_OBJECT_IN_THE_WAY, indspec->name), false};
 		}
-		return CommandCost(INVALID_STRING_ID);
+		return {CommandCost(INVALID_STRING_ID), false};
 	}
 
 	if (flags.Test(DoCommandFlag::Execute)) {
@@ -515,7 +513,7 @@ static CommandCost ClearTile_Industry(TileIndex tile, DoCommandFlags flags)
 		Game::NewEvent(new ScriptEventIndustryClose(i->index));
 		delete i;
 	}
-	return CommandCost(ExpensesType::Construction, indspec->GetRemovalCost());
+	return {CommandCost(ExpensesType::Construction, indspec->GetRemovalCost()), false};
 }
 
 /**
@@ -549,115 +547,151 @@ static bool TransportIndustryGoods(TileIndex tile)
 	return moved_cargo;
 }
 
-static void AnimateSugarSieve(TileIndex tile)
+/**
+ * Animate tile with sugar sieve on it.
+ * @copydetails AnimateTileProc
+ */
+static void AnimateSugarSieve(TileIndex index, const Tile &tile)
 {
 	uint8_t m = GetAnimationFrame(tile) + 1;
 
 	if (_settings_client.sound.ambient) {
 		switch (m & 7) {
-			case 2: SndPlayTileFx(SND_2D_SUGAR_MINE_1, tile); break;
-			case 6: SndPlayTileFx(SND_29_SUGAR_MINE_2, tile); break;
+			case 2: SndPlayTileFx(SND_2D_SUGAR_MINE_1, index); break;
+			case 6: SndPlayTileFx(SND_29_SUGAR_MINE_2, index); break;
 		}
 	}
 
 	if (m >= 96) {
 		m = 0;
-		DeleteAnimatedTile(tile);
+		DeleteAnimatedTile(index);
 	}
 	SetAnimationFrame(tile, m);
 
-	MarkTileDirtyByTile(tile);
+	MarkTileDirtyByTile(index);
 }
 
-static void AnimateToffeeQuarry(TileIndex tile)
+/**
+ * Animate tile with toffee quarry on it.
+ * @copydetails AnimateTileProc
+ */
+static void AnimateToffeeQuarry(TileIndex index, const Tile &tile)
 {
 	uint8_t m = GetAnimationFrame(tile);
 
 	if (_industry_anim_offs_toffee[m] == 0xFF && _settings_client.sound.ambient) {
-		SndPlayTileFx(SND_30_TOFFEE_QUARRY, tile);
+		SndPlayTileFx(SND_30_TOFFEE_QUARRY, index);
 	}
 
 	if (++m >= 70) {
 		m = 0;
-		DeleteAnimatedTile(tile);
+		DeleteAnimatedTile(index);
 	}
 	SetAnimationFrame(tile, m);
 
-	MarkTileDirtyByTile(tile);
+	MarkTileDirtyByTile(index);
 }
 
-static void AnimateBubbleCatcher(TileIndex tile)
+/**
+ * Animate tile with bubble catcher on it.
+ * @copydetails AnimateTileProc
+ */
+static void AnimateBubbleCatcher(TileIndex index, const Tile &tile)
 {
 	uint8_t m = GetAnimationFrame(tile);
 
 	if (++m >= 40) {
 		m = 0;
-		DeleteAnimatedTile(tile);
+		DeleteAnimatedTile(index);
 	}
 	SetAnimationFrame(tile, m);
 
-	MarkTileDirtyByTile(tile);
+	MarkTileDirtyByTile(index);
 }
 
-static void AnimatePowerPlantSparks(TileIndex tile)
+/**
+ * Animate power plant sparks on given tile.
+ * @copydetails AnimateTileProc
+ */
+static void AnimatePowerPlantSparks(TileIndex index, const Tile &tile)
 {
 	uint8_t m = GetAnimationFrame(tile);
 	if (m == 6) {
 		SetAnimationFrame(tile, 0);
-		DeleteAnimatedTile(tile);
+		DeleteAnimatedTile(index);
 	} else {
 		SetAnimationFrame(tile, m + 1);
 	}
-	MarkTileDirtyByTile(tile);
+	MarkTileDirtyByTile(index);
 }
 
-static void AnimateToyFactory(TileIndex tile)
+/**
+ * Animate tile with toy factory on it.
+ * @copydetails AnimateTileProc
+ */
+static void AnimateToyFactory(TileIndex index, const Tile &tile)
 {
 	uint8_t m = GetAnimationFrame(tile) + 1;
 
 	switch (m) {
-		case  1: if (_settings_client.sound.ambient) SndPlayTileFx(SND_2C_TOY_FACTORY_1, tile); break;
-		case 23: if (_settings_client.sound.ambient) SndPlayTileFx(SND_2B_TOY_FACTORY_2, tile); break;
-		case 28: if (_settings_client.sound.ambient) SndPlayTileFx(SND_2A_TOY_FACTORY_3, tile); break;
+		case  1: if (_settings_client.sound.ambient) SndPlayTileFx(SND_2C_TOY_FACTORY_1, index); break;
+		case 23: if (_settings_client.sound.ambient) SndPlayTileFx(SND_2B_TOY_FACTORY_2, index); break;
+		case 28: if (_settings_client.sound.ambient) SndPlayTileFx(SND_2A_TOY_FACTORY_3, index); break;
 		default:
 			if (m >= 50) {
 				int n = GetIndustryAnimationLoop(tile) + 1;
 				m = 0;
 				if (n >= 8) {
 					n = 0;
-					DeleteAnimatedTile(tile);
+					DeleteAnimatedTile(index);
 				}
 				SetIndustryAnimationLoop(tile, n);
 			}
 	}
 
 	SetAnimationFrame(tile, m);
-	MarkTileDirtyByTile(tile);
+	MarkTileDirtyByTile(index);
 }
 
-static void AnimatePlasticFountain(TileIndex tile, IndustryGfx gfx)
+/**
+ * Animate tile with plastic fountain on it.
+ * @param gfx Currently shown industry graphics of given tile.
+ * @copydetails AnimateTileProc
+ * @see GetIndustryGfx
+ */
+static void AnimatePlasticFountain(TileIndex index, const Tile &tile, IndustryGfx gfx)
 {
 	gfx = (gfx < GFX_PLASTIC_FOUNTAIN_ANIMATED_8) ? gfx + 1 : GFX_PLASTIC_FOUNTAIN_ANIMATED_1;
 	SetIndustryGfx(tile, gfx);
-	MarkTileDirtyByTile(tile);
+	MarkTileDirtyByTile(index);
 }
 
-static void AnimateOilWell(TileIndex tile, IndustryGfx gfx)
+/**
+ * Animate tile with oil well on it.
+ * @param gfx Currently shown industry graphics of given tile.
+ * @copydetails AnimateTileProc
+ * @see GetIndustryGfx
+ */
+static void AnimateOilWell(TileIndex index, const Tile &tile, IndustryGfx gfx)
 {
 	bool b = Chance16(1, 7);
 	uint8_t m = GetAnimationFrame(tile) + 1;
 	if (m == 4 && (m = 0, ++gfx) == GFX_OILWELL_ANIMATED_3 + 1 && (gfx = GFX_OILWELL_ANIMATED_1, b)) {
 		SetIndustryGfx(tile, GFX_OILWELL_NOT_ANIMATED);
 		SetIndustryConstructionStage(tile, 3);
-		DeleteAnimatedTile(tile);
+		DeleteAnimatedTile(index);
 	} else {
 		SetAnimationFrame(tile, m);
 		SetIndustryGfx(tile, gfx);
 	}
-	MarkTileDirtyByTile(tile);
+	MarkTileDirtyByTile(index);
 }
 
-static void AnimateMineTower(TileIndex tile)
+/**
+ * Animate tile with mine tower on it.
+ * @copydetails AnimateTileProc
+ */
+static void AnimateMineTower(TileIndex index, const Tile &tile)
 {
 	int state = TimerGameTick::counter & 0x7FF;
 
@@ -668,7 +702,7 @@ static void AnimateMineTower(TileIndex tile)
 			uint8_t m = GetAnimationFrame(tile);
 			if (!(m & 0x40)) {
 				SetAnimationFrame(tile, m | 0x40);
-				if (_settings_client.sound.ambient) SndPlayTileFx(SND_0B_MINE, tile);
+				if (_settings_client.sound.ambient) SndPlayTileFx(SND_0B_MINE, index);
 			}
 			if (state & 7) return;
 		} else {
@@ -677,7 +711,7 @@ static void AnimateMineTower(TileIndex tile)
 		uint8_t m = (GetAnimationFrame(tile) + 1) | 0x40;
 		if (m > 0xC2) m = 0xC0;
 		SetAnimationFrame(tile, m);
-		MarkTileDirtyByTile(tile);
+		MarkTileDirtyByTile(index);
 	} else if (state >= 0x200 && state < 0x3A0) {
 		int i = (state < 0x220 || state >= 0x380) ? 7 : 3;
 		if (state & i) return;
@@ -685,58 +719,58 @@ static void AnimateMineTower(TileIndex tile)
 		uint8_t m = (GetAnimationFrame(tile) & 0xBF) - 1;
 		if (m < 0x80) m = 0x82;
 		SetAnimationFrame(tile, m);
-		MarkTileDirtyByTile(tile);
+		MarkTileDirtyByTile(index);
 	}
 }
 
 /** @copydoc AnimateTileProc */
-static void AnimateTile_Industry(TileIndex tile)
+static void AnimateTile_Industry(TileIndex index, const Tile &tile)
 {
 	IndustryGfx gfx = GetIndustryGfx(tile);
 
 	if (GetIndustryTileSpec(gfx)->animation.status != AnimationStatus::NoAnimation) {
-		AnimateNewIndustryTile(tile);
+		AnimateNewIndustryTile(index, tile);
 		return;
 	}
 
 	switch (gfx) {
 	case GFX_SUGAR_MINE_SIEVE:
-		if ((TimerGameTick::counter & 1) == 0) AnimateSugarSieve(tile);
+		if ((TimerGameTick::counter & 1) == 0) AnimateSugarSieve(index, tile);
 		break;
 
 	case GFX_TOFFEE_QUARRY:
-		if ((TimerGameTick::counter & 3) == 0) AnimateToffeeQuarry(tile);
+		if ((TimerGameTick::counter & 3) == 0) AnimateToffeeQuarry(index, tile);
 		break;
 
 	case GFX_BUBBLE_CATCHER:
-		if ((TimerGameTick::counter & 1) == 0) AnimateBubbleCatcher(tile);
+		if ((TimerGameTick::counter & 1) == 0) AnimateBubbleCatcher(index, tile);
 		break;
 
 	case GFX_POWERPLANT_SPARKS:
-		if ((TimerGameTick::counter & 3) == 0) AnimatePowerPlantSparks(tile);
+		if ((TimerGameTick::counter & 3) == 0) AnimatePowerPlantSparks(index, tile);
 		break;
 
 	case GFX_TOY_FACTORY:
-		if ((TimerGameTick::counter & 1) == 0) AnimateToyFactory(tile);
+		if ((TimerGameTick::counter & 1) == 0) AnimateToyFactory(index, tile);
 		break;
 
 	case GFX_PLASTIC_FOUNTAIN_ANIMATED_1: case GFX_PLASTIC_FOUNTAIN_ANIMATED_2:
 	case GFX_PLASTIC_FOUNTAIN_ANIMATED_3: case GFX_PLASTIC_FOUNTAIN_ANIMATED_4:
 	case GFX_PLASTIC_FOUNTAIN_ANIMATED_5: case GFX_PLASTIC_FOUNTAIN_ANIMATED_6:
 	case GFX_PLASTIC_FOUNTAIN_ANIMATED_7: case GFX_PLASTIC_FOUNTAIN_ANIMATED_8:
-		if ((TimerGameTick::counter & 3) == 0) AnimatePlasticFountain(tile, gfx);
+		if ((TimerGameTick::counter & 3) == 0) AnimatePlasticFountain(index, tile, gfx);
 		break;
 
 	case GFX_OILWELL_ANIMATED_1:
 	case GFX_OILWELL_ANIMATED_2:
 	case GFX_OILWELL_ANIMATED_3:
-		if ((TimerGameTick::counter & 7) == 0) AnimateOilWell(tile, gfx);
+		if ((TimerGameTick::counter & 7) == 0) AnimateOilWell(index, tile, gfx);
 		break;
 
 	case GFX_COAL_MINE_TOWER_ANIMATED:
 	case GFX_COPPER_MINE_TOWER_ANIMATED:
 	case GFX_GOLD_MINE_TOWER_ANIMATED:
-		AnimateMineTower(tile);
+		AnimateMineTower(index, tile);
 		break;
 	}
 }
@@ -833,45 +867,45 @@ static void TileLoopIndustry_BubbleGenerator(TileIndex tile)
 }
 
 /** @copydoc TileLoopProc */
-static void TileLoop_Industry(TileIndex tile)
+static bool TileLoop_Industry(TileIndex index, Tile &tile)
 {
-	if (IsTileOnWater(tile)) TileLoop_Water(tile);
+	if (IsTileOnWater(tile)) TileLoop_Water(index, tile);
 
 	/* Normally this doesn't happen, but if an industry NewGRF is removed
 	 * an industry that was previously build on water can now be flooded.
 	 * If this happens the tile is no longer an industry tile after
 	 * returning from TileLoop_Water. */
-	if (!IsTileType(tile, TileType::Industry)) return;
+	if (!IsTileType(tile, TileType::Industry)) return false;
 
-	TriggerIndustryTileRandomisation(tile, IndustryRandomTrigger::TileLoop);
+	TriggerIndustryTileRandomisation(index, IndustryRandomTrigger::TileLoop);
 
 	if (!IsIndustryCompleted(tile)) {
-		MakeIndustryTileBigger(tile);
-		return;
+		MakeIndustryTileBigger(index);
+		return false;
 	}
 
-	if (_game_mode == GameMode::Editor) return;
+	if (_game_mode == GameMode::Editor) return false;
 
-	if (TransportIndustryGoods(tile) && !TriggerIndustryAnimation(Industry::GetByTile(tile), IndustryAnimationTrigger::CargoDistributed)) {
+	if (TransportIndustryGoods(index) && !TriggerIndustryAnimation(Industry::GetByTile(tile), IndustryAnimationTrigger::CargoDistributed)) {
 		uint newgfx = GetIndustryTileSpec(GetIndustryGfx(tile))->anim_production;
 
 		if (newgfx != INDUSTRYTILE_NOANIM) {
 			ResetIndustryConstructionStage(tile);
 			SetIndustryCompleted(tile);
 			SetIndustryGfx(tile, newgfx);
-			MarkTileDirtyByTile(tile);
-			return;
+			MarkTileDirtyByTile(index);
+			return false;
 		}
 	}
 
-	if (TriggerIndustryTileAnimation(tile, IndustryAnimationTrigger::TileLoop)) return;
+	if (TriggerIndustryTileAnimation(index, IndustryAnimationTrigger::TileLoop)) return false;
 
 	IndustryGfx newgfx = GetIndustryTileSpec(GetIndustryGfx(tile))->anim_next;
 	if (newgfx != INDUSTRYTILE_NOANIM) {
 		ResetIndustryConstructionStage(tile);
 		SetIndustryGfx(tile, newgfx);
-		MarkTileDirtyByTile(tile);
-		return;
+		MarkTileDirtyByTile(index);
+		return false;
 	}
 
 	IndustryGfx gfx = GetIndustryGfx(tile);
@@ -887,7 +921,7 @@ static void TileLoop_Industry(TileIndex tile)
 			}
 			SetIndustryGfx(tile, gfx);
 			SetAnimationFrame(tile, 0x80);
-			AddAnimatedTile(tile);
+			AddAnimatedTile(index);
 		}
 		break;
 
@@ -895,7 +929,7 @@ static void TileLoop_Industry(TileIndex tile)
 		if (Chance16(1, 6)) {
 			SetIndustryGfx(tile, GFX_OILWELL_ANIMATED_1);
 			SetAnimationFrame(tile, 0);
-			AddAnimatedTile(tile);
+			AddAnimatedTile(index);
 		}
 		break;
 
@@ -911,20 +945,20 @@ static void TileLoop_Industry(TileIndex tile)
 			SetIndustryGfx(tile, gfx);
 			SetIndustryCompleted(tile);
 			SetIndustryConstructionStage(tile, 3);
-			DeleteAnimatedTile(tile);
-			MarkTileDirtyByTile(tile);
+			DeleteAnimatedTile(index);
+			MarkTileDirtyByTile(index);
 		}
 		break;
 
 	case GFX_POWERPLANT_SPARKS:
 		if (Chance16(1, 3)) {
-			if (_settings_client.sound.ambient) SndPlayTileFx(SND_0C_POWER_STATION, tile);
-			AddAnimatedTile(tile);
+			if (_settings_client.sound.ambient) SndPlayTileFx(SND_0C_POWER_STATION, index);
+			AddAnimatedTile(index);
 		}
 		break;
 
 	case GFX_COPPER_MINE_CHIMNEY:
-		CreateEffectVehicleAbove(TileX(tile) * TILE_SIZE + 6, TileY(tile) * TILE_SIZE + 6, 43, EV_COPPER_MINE_SMOKE);
+		CreateEffectVehicleAbove(TileX(index) * TILE_SIZE + 6, TileY(index) * TILE_SIZE + 6, 43, EV_COPPER_MINE_SMOKE);
 		break;
 
 
@@ -933,34 +967,36 @@ static void TileLoop_Industry(TileIndex tile)
 			if (i->was_cargo_delivered) {
 				i->was_cargo_delivered = false;
 				SetIndustryAnimationLoop(tile, 0);
-				AddAnimatedTile(tile);
+				AddAnimatedTile(index);
 			}
 		}
 		break;
 
 	case GFX_BUBBLE_GENERATOR:
-		TileLoopIndustry_BubbleGenerator(tile);
+		TileLoopIndustry_BubbleGenerator(index);
 		break;
 
 	case GFX_TOFFEE_QUARRY:
-		AddAnimatedTile(tile);
+		AddAnimatedTile(index);
 		break;
 
 	case GFX_SUGAR_MINE_SIEVE:
-		if (Chance16(1, 3)) AddAnimatedTile(tile);
+		if (Chance16(1, 3)) AddAnimatedTile(index);
 		break;
 	}
+
+	return false;
 }
 
 /** @copydoc ClickTileProc */
-static bool ClickTile_Industry(TileIndex tile)
+static bool ClickTile_Industry([[maybe_unused]] TileIndex index, const Tile &tile)
 {
 	ShowIndustryViewWindow(GetIndustryIndex(tile));
 	return true;
 }
 
 /** @copydoc ChangeTileOwnerProc */
-static void ChangeTileOwner_Industry(TileIndex tile, Owner old_owner, Owner new_owner)
+static bool ChangeTileOwner_Industry([[maybe_unused]] TileIndex index, Tile &tile, Owner old_owner, Owner new_owner)
 {
 	/* If the founder merges, the industry was created by the merged company */
 	Industry *i = Industry::GetByTile(tile);
@@ -968,6 +1004,8 @@ static void ChangeTileOwner_Industry(TileIndex tile, Owner old_owner, Owner new_
 
 	if (i->exclusive_supplier == old_owner) i->exclusive_supplier = new_owner;
 	if (i->exclusive_consumer == old_owner) i->exclusive_consumer = new_owner;
+
+	return false;
 }
 
 /**
@@ -1000,17 +1038,14 @@ static const uint8_t _plantfarmfield_type[] = {1, 1, 1, 1, 1, 3, 3, 4, 4, 4, 5, 
  */
 static bool IsSuitableForFarmField(TileIndex tile, bool allow_fields, bool allow_rough)
 {
-	switch (GetTileType(tile)) {
-		case TileType::Clear:
-			if (IsSnowTile(tile)) return false;
-			switch (GetClearGround(tile)) {
-				case ClearGround::Desert: return false;
-				case ClearGround::Rough: return allow_rough;
-				case ClearGround::Fields: return allow_fields;
-				default: return true;
-			}
-		case TileType::Trees: return GetTreeGround(tile) != TreeGround::Shore && (allow_rough || GetTreeGround(tile) != TreeGround::Rough);
-		default:       return false;
+	if (!IsTileType(tile, TileType::Clear)) return false;
+	if (IsSnowTile(tile)) return false;
+	if (Tile::HasType(tile, TileType::Railway)) return false;
+	switch (GetClearGround(tile)) {
+		case ClearGround::Desert: return false;
+		case ClearGround::Rough: return allow_rough;
+		case ClearGround::Fields: return allow_fields;
+		default: return true;
 	}
 }
 
@@ -1074,11 +1109,18 @@ static void PlantFarmField(TileIndex tile, IndustryID industry)
 	r = Random();
 	uint counter = GB(r, 5, 3);
 	uint field_type = GB(r, 8, 8) * 9 >> 8;
+	assert(((size_x * size_y) >> 5) <= 7); // Should read up to 7 bits.
+	uint tree_chance = GB(r, 16, (size_x * size_y) >> 5);
 
 	/* make field */
 	for (TileIndex cur_tile : ta) {
 		assert(cur_tile < Map::Size());
 		if (IsSuitableForFarmField(cur_tile, true, true)) {
+			if (Tile::HasType(cur_tile, TileType::Trees) && ((DistanceSquare(ta.GetCenterTile(), cur_tile) ^ tree_chance) & 0xB) == 0xA) {
+				tree_chance = ((~tree_chance) + (0x29)) & 0x7F;
+			} else {
+				DoClearSquare(cur_tile);
+			}
 			MakeField(cur_tile, field_type, industry);
 			SetClearCounter(cur_tile, counter);
 			MarkTileDirtyByTile(cur_tile);
@@ -1124,7 +1166,8 @@ static void ChopLumberMillTrees(Industry *i)
 	}
 
 	for (auto tile : SpiralTileSequence(i->location.tile, 40)) { // 40x40 tiles  to search.
-		if (!IsTileType(tile, TileType::Trees) || GetTreeGrowth(tile) < TreeGrowthStage::Grown) continue;
+		Tile tree_tile = Tile::GetByType(tile, TileType::Trees);
+		if (!tree_tile.IsValid() || GetTreeGrowth(tile) < TreeGrowthStage::Grown) continue;
 
 		/* found a tree */
 		_industry_sound_ctr = 1;
@@ -1453,10 +1496,10 @@ bool IsSlopeRefused(Slope current, Slope refused)
 
 		Slope t = ComplementSlope(current);
 
-		if ((refused & SLOPE_W) && (t & SLOPE_NW)) return true;
-		if ((refused & SLOPE_S) && (t & SLOPE_NE)) return true;
-		if ((refused & SLOPE_E) && (t & SLOPE_SW)) return true;
-		if ((refused & SLOPE_N) && (t & SLOPE_SE)) return true;
+		if (refused.Test(Corner::W) && t.Any(SLOPE_NW)) return true;
+		if (refused.Test(Corner::S) && t.Any(SLOPE_NE)) return true;
+		if (refused.Test(Corner::E) && t.Any(SLOPE_SW)) return true;
+		if (refused.Test(Corner::N) && t.Any(SLOPE_SE)) return true;
 	}
 
 	return false;
@@ -1494,10 +1537,10 @@ static CommandCost CheckIfIndustryTilesAreFree(TileIndex tile, const IndustryTil
 			const IndustryTileSpec *its = GetIndustryTileSpec(gfx);
 
 			/* Perform land/water check if not disabled */
-			if (!HasBit(its->slopes_refused, 5) && ((HasTileWaterClass(cur_tile) && IsTileOnWater(cur_tile)) != ind_behav.Test(IndustryBehaviour::BuiltOnWater))) return CommandCost(STR_ERROR_SITE_UNSUITABLE);
+			if (!its->slopes_refused.Test(Corner::HalfTile) && ((HasTileWaterClass(cur_tile) && IsTileOnWater(cur_tile)) != ind_behav.Test(IndustryBehaviour::BuiltOnWater))) return CommandCost(STR_ERROR_SITE_UNSUITABLE);
 
 			if (ind_behav.Any({IndustryBehaviour::OnlyInTown, IndustryBehaviour::Town1200More}) || // Tile must be a house
-					(ind_behav.Test(IndustryBehaviour::OnlyNearTown) && IsTileType(cur_tile, TileType::House))) { // Tile is allowed to be a house (and it is a house)
+					(ind_behav.Test(IndustryBehaviour::OnlyNearTown) && IsTileType(cur_tile, TileType::House))) { // const Tile &is allowed to be a house (and it is a house)
 				if (!IsTileType(cur_tile, TileType::House)) {
 					return CommandCost(STR_ERROR_CAN_ONLY_BE_BUILT_IN_TOWNS);
 				}
@@ -1594,7 +1637,7 @@ static bool CheckCanTerraformSurroundingTiles(TileIndex tile, uint height, int i
 	for (TileIndex tile_walk : ta) {
 		uint curh = TileHeight(tile_walk);
 		/* Is the tile clear? */
-		if ((GetTileType(tile_walk) != TileType::Clear) && (GetTileType(tile_walk) != TileType::Trees)) return false;
+		if (GetTileType(tile_walk) != TileType::Clear || Tile::HasType(tile_walk, TileType::Railway)) return false;
 
 		/* Don't allow too big of a change if this is the sub-tile check */
 		if (internal != 0 && Delta(curh, height) > 1) return false;
@@ -1660,7 +1703,7 @@ static bool CheckIfCanLevelIndustryPlatform(TileIndex tile, DoCommandFlags flags
 			}
 			/* This is not 100% correct check, but the best we can do without modifying the map.
 			 *  What is missing, is if the difference in height is more than 1.. */
-			if (ExtractCommandCost(Command<Commands::TerraformLand>::Do(DoCommandFlags{flags}.Reset(DoCommandFlag::Execute), tile_walk, SLOPE_N, curh <= h)).Failed()) {
+			if (ExtractCommandCost(Command<Commands::TerraformLand>::Do(DoCommandFlags{flags}.Reset(DoCommandFlag::Execute), tile_walk, Corner::N, curh <= h)).Failed()) {
 				return false;
 			}
 		}
@@ -1674,7 +1717,7 @@ static bool CheckIfCanLevelIndustryPlatform(TileIndex tile, DoCommandFlags flags
 				/* We give the terraforming for free here, because we can't calculate
 				 *  exact cost in the test-round, and as we all know, that will cause
 				 *  a nice assert if they don't match ;) */
-				Command<Commands::TerraformLand>::Do(flags, tile_walk, SLOPE_N, curh <= h);
+				Command<Commands::TerraformLand>::Do(flags, tile_walk, Corner::N, curh <= h);
 				curh += (curh > h) ? -1 : 1;
 			}
 		}
@@ -3226,7 +3269,7 @@ bool IndustrySpec::UsesOriginalEconomy() const
 }
 
 /** @copydoc TerraformTileProc */
-static CommandCost TerraformTile_Industry(TileIndex tile, DoCommandFlags flags, int z_new, Slope tileh_new)
+static CommandCost TerraformTile_Industry(TileIndex index, const Tile &tile, [[maybe_unused]] DoCommandFlags flags, int z_new, Slope tileh_new)
 {
 	if (AutoslopeEnabled()) {
 		/* We imitate here TTDP's behaviour:
@@ -3235,16 +3278,16 @@ static CommandCost TerraformTile_Industry(TileIndex tile, DoCommandFlags flags, 
 		 *  - Allow autoslope by default.
 		 *  - Disallow autoslope if callback succeeds and returns non-zero.
 		 */
-		Slope tileh_old = GetTileSlope(tile);
+		Slope tileh_old = GetTileSlope(index);
 		/* TileMaxZ must not be changed. Slopes must not be steep. */
-		if (!IsSteepSlope(tileh_old) && !IsSteepSlope(tileh_new) && (GetTileMaxZ(tile) == z_new + GetSlopeMaxZ(tileh_new))) {
+		if (!IsSteepSlope(tileh_old) && !IsSteepSlope(tileh_new) && (GetTileMaxZ(index) == z_new + GetSlopeMaxZ(tileh_new))) {
 			const IndustryGfx gfx = GetIndustryGfx(tile);
 			const IndustryTileSpec *itspec = GetIndustryTileSpec(gfx);
 
 			/* Call callback 3C 'disable autosloping for industry tiles'. */
 			if (itspec->callback_mask.Test(IndustryTileCallbackMask::Autoslope)) {
 				/* If the callback fails, allow autoslope. */
-				uint16_t res = GetIndustryTileCallback(CBID_INDTILE_AUTOSLOPE, 0, 0, gfx, Industry::GetByTile(tile), tile);
+				uint16_t res = GetIndustryTileCallback(CBID_INDTILE_AUTOSLOPE, 0, 0, gfx, Industry::GetByTile(tile), index);
 				if (res == CALLBACK_FAILED || !ConvertBooleanCallback(itspec->grf_prop.grffile, CBID_INDTILE_AUTOSLOPE, res)) return CommandCost(ExpensesType::Construction, _price[Price::BuildFoundation]);
 			} else {
 				/* allow autoslope */
@@ -3252,13 +3295,12 @@ static CommandCost TerraformTile_Industry(TileIndex tile, DoCommandFlags flags, 
 			}
 		}
 	}
-	return Command<Commands::LandscapeClear>::Do(flags, tile);
+	return CommandCost(INVALID_STRING_ID); // Dummy error
 }
 
 /** TileTypeProcs definitions for TileType::Industry tiles. */
 extern const TileTypeProcs _tile_type_industry_procs = {
 	.draw_tile_proc = DrawTile_Industry,
-	.get_slope_pixel_z_proc = [](TileIndex tile, uint, uint, bool) { return GetTileMaxPixelZ(tile); },
 	.clear_tile_proc = ClearTile_Industry,
 	.add_accepted_cargo_proc = AddAcceptedCargo_Industry,
 	.get_tile_desc_proc = GetTileDesc_Industry,
