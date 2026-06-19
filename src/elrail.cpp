@@ -387,8 +387,8 @@ static void DrawRailCatenaryRailway(const TileInfo *ti, bool draw_halftile, Corn
 		 * Remove those (simply by ANDing with allowed, since these markers are never allowed) */
 		if (ppp_allowed[i].Any(ppp_preferred[i])) ppp_allowed[i] &= ppp_preferred[i];
 
-		if (IsBridgeAbove(ti->tile)) {
-			Track bridgetrack = AxisToTrack(GetBridgeAxis(ti->tile));
+		if (IsBridgeAbove(ti->index)) {
+			Track bridgetrack = AxisToTrack(GetBridgeAxis(ti->index));
 			int height = GetBridgeHeight(GetNorthernBridgeEnd(ti->index));
 
 			if ((height <= GetTileMaxZ(ti->index) + 1) &&
@@ -427,7 +427,7 @@ static void DrawRailCatenaryRailway(const TileInfo *ti, bool draw_halftile, Corn
 	if (IsTunnelTile(ti->tile)) return;
 
 	/* Don't draw a wire under a low bridge */
-	if (IsBridgeAbove(ti->tile) && !IsTransparencySet(TransparencyOption::Bridges)) {
+	if (IsBridgeAbove(ti->index) && !IsTransparencySet(TransparencyOption::Bridges)) {
 		int height = GetBridgeHeight(GetNorthernBridgeEnd(ti->index));
 
 		if (height <= GetTileMaxZ(ti->index) + 1) return;
@@ -474,7 +474,7 @@ void DrawRailCatenaryOnBridge(const TileInfo *ti)
 	uint length = GetTunnelBridgeLength(start, end);
 	uint num = GetTunnelBridgeLength(ti->index, start) + 1;
 
-	Axis axis = GetBridgeAxis(ti->tile);
+	Axis axis = GetBridgeAxis(ti->index);
 	TileLocationGroup tlg = GetTileLocationGroup(ti->index);
 
 	RailCatenarySprite offset = (RailCatenarySprite)(axis == Axis::X ? 0 : WIRE_Y_FLAT_BOTH - WIRE_X_FLAT_BOTH);
