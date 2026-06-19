@@ -2452,7 +2452,7 @@ static void DrawTile_Rail(TileInfo *ti, bool draw_halftile, Corner halftile_corn
 			if (HasSignals(ti->tile)) DrawSignals(ti->index, rails, rti);
 		}
 
-		if (IsBridgeAbove(ti->tile)) {
+		if (IsBridgeAbove(ti->index)) {
 			if (rails.Any(TRACK_BIT_3WAY_NE)) blocked_pillars.Set(BridgePillarFlag::EdgeNE);
 			if (rails.Any(TRACK_BIT_3WAY_SE)) blocked_pillars.Set(BridgePillarFlag::EdgeSE);
 			if (rails.Any(TRACK_BIT_3WAY_SW)) blocked_pillars.Set(BridgePillarFlag::EdgeSW);

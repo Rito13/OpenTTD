@@ -1626,12 +1626,12 @@ void DrawBridgeMiddle(const TileInfo *ti, BridgePillarFlags blocked_pillars)
 	 *
 	 */
 
-	if (!IsBridgeAbove(ti->tile)) return;
+	if (!IsBridgeAbove(ti->index)) return;
 
 	TileIndex rampnorth = GetNorthernBridgeEnd(ti->index);
 	TileIndex rampsouth = GetSouthernBridgeEnd(ti->index);
 	TransportType transport_type = GetTunnelBridgeTransportType(rampsouth);
-	Axis axis = GetBridgeAxis(ti->tile);
+	Axis axis = GetBridgeAxis(ti->index);
 	BridgePillarFlags pillars;
 	bool is_custom_layout; // Set if rail/road bridge uses a custom layout.
 

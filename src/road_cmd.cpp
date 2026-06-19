@@ -1368,7 +1368,7 @@ static bool DrawRoadAsSnowOrDesert(bool snow_or_desert, Roadside roadside)
 void DrawRoadTypeCatenary(const TileInfo *ti, RoadType rt, RoadBits rb)
 {
 	/* Don't draw the catenary under a low bridge */
-	if (IsBridgeAbove(ti->tile) && !IsTransparencySet(TransparencyOption::Catenary)) {
+	if (IsBridgeAbove(ti->index) && !IsTransparencySet(TransparencyOption::Catenary)) {
 		int height = GetBridgeHeight(GetNorthernBridgeEnd(ti->index));
 		if (height <= GetTileMaxZ(ti->index) + 1) return;
 	}
@@ -1669,7 +1669,7 @@ static void DrawRoadBits(TileInfo *ti)
 
 	/* Do not draw details (street lights, trees) under low bridge */
 	Roadside roadside = GetRoadside(ti->tile);
-	if (IsBridgeAbove(ti->tile) && (roadside == Roadside::Trees || roadside == Roadside::StreetLights)) {
+	if (IsBridgeAbove(ti->index) && (roadside == Roadside::Trees || roadside == Roadside::StreetLights)) {
 		int height = GetBridgeHeight(GetNorthernBridgeEnd(ti->index));
 		int minz = GetTileMaxZ(ti->index) + 2;
 
@@ -1708,7 +1708,7 @@ static void DrawTile_Road(TileInfo *ti, [[maybe_unused]] bool draw_halftile, [[m
 		case RoadTileType::Normal:
 			DrawRoadBits(ti);
 
-			if (IsBridgeAbove(ti->tile)) {
+			if (IsBridgeAbove(ti->index)) {
 				RoadBits bits = GetAllRoadBits(ti->tile);
 				if (bits.Test(RoadBit::NE)) blocked_pillars.Set(BridgePillarFlag::EdgeNE);
 				if (bits.Test(RoadBit::SE)) blocked_pillars.Set(BridgePillarFlag::EdgeSE);

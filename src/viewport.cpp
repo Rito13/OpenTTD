@@ -1291,7 +1291,7 @@ static void ViewportAddLandscape()
 				/* Is tile with buildings visible? */
 				if (min_visible_height < MAX_TILE_EXTENT_TOP) tile_visible = true;
 
-				if (IsBridgeAbove(_cur_ti.tile)) {
+				if (IsBridgeAbove(_cur_ti.index)) {
 					/* Is the bridge visible? */
 					TileIndex bridge_tile = GetNorthernBridgeEnd(_cur_ti.index);
 					int bridge_height = ZOOM_BASE * (GetBridgePixelHeight(bridge_tile) - TilePixelHeight(_cur_ti.tile));

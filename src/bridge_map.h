@@ -42,9 +42,9 @@ inline bool IsBridgeTile(const Tile &t)
  * @param t The tile to analyze
  * @return true if a bridge is detected above
  */
-inline bool IsBridgeAbove(const Tile &t)
+inline bool IsBridgeAbove(TileIndex t)
 {
-	return GB(t.type(), 2, 2) != 0;
+	return GB(Tile(t).type(), 2, 2) != 0;
 }
 
 /**
@@ -65,10 +65,10 @@ inline BridgeType GetBridgeType(const Tile &t)
  * @pre IsBridgeAbove(t)
  * @return the above mentioned axis
  */
-inline Axis GetBridgeAxis(const Tile &t)
+inline Axis GetBridgeAxis(TileIndex t)
 {
 	assert(IsBridgeAbove(t));
-	return static_cast<Axis>(GB(t.type(), 2, 2) - 1);
+	return static_cast<Axis>(GB(Tile(t).type(), 2, 2) - 1);
 }
 
 TileIndex GetNorthernBridgeEnd(TileIndex t);
