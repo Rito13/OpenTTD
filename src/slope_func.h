@@ -422,8 +422,13 @@ inline Foundation SpecialRailFoundation(Corner corner)
  */
 inline uint SlopeToSpriteOffset(Slope s)
 {
-	extern const uint8_t _slope_to_sprite_offset[32];
-	return _slope_to_sprite_offset[s];
+	/* landscape slope => sprite */
+	static constexpr SlopeIndexArray<uint8_t, 32> slope_to_sprite_offset = {
+		0, 1, 2, 3, 4, 5, 6,  7, 8, 9, 10, 11, 12, 13, 14, 0,
+		0, 0, 0, 0, 0, 0, 0, 16, 0, 0,  0, 17,  0, 15, 18, 0,
+	};
+
+	return slope_to_sprite_offset[s];
 }
 
 #endif /* SLOPE_FUNC_H */

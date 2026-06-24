@@ -14,6 +14,7 @@
 #define SLOPE_TYPE_H
 
 #include "core/enum_type.hpp"
+#include "core/convertible_through_base.hpp"
 
 /**
  * Enumeration of tile corners
@@ -81,6 +82,14 @@ enum Slope : uint8_t {
 	SLOPE_HALFTILE_N = SLOPE_HALFTILE | (to_underlying(Corner::N) << 6), ///< the north halftile is leveled (non continuous slope)
 };
 DECLARE_ENUM_AS_BIT_SET(Slope)
+
+/**
+ * Array with \c Slope as index.
+ * @tparam T the type contained within the array.
+ * @tparam N The size of std::array.
+ */
+template <typename T, size_t N>
+using SlopeIndexArray = EnumClassIndexContainer<std::array<T, N>, Slope>;
 
 /**
  * Helper for creating a bitset of slopes.
