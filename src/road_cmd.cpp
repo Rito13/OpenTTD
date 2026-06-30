@@ -192,20 +192,20 @@ void UpdateCompanyRoadInfrastructure(RoadType rt, Owner o, int count)
 }
 
 /** Invalid RoadBits on slopes.  */
-static const RoadBits _invalid_tileh_slopes_road[2][15] = {
+static const std::array<SlopeIndexArray<RoadBits, 15>, 2> _invalid_tileh_slopes_road = {{
 	/* The inverse of the mixable RoadBits on a leveled slope */
-	{
+	{{{
 		{}, // SLOPE_FLAT
-		{RoadBit::NE, RoadBit::SE}, // SLOPE_W
-		{RoadBit::NE, RoadBit::NW}, // SLOPE_S
+		{RoadBit::NE, RoadBit::SE}, // Corner::W
+		{RoadBit::NE, RoadBit::NW}, // Corner::S
 
 		RoadBit::NE, // SLOPE_SW
-		{RoadBit::NW, RoadBit::SW}, // SLOPE_E
+		{RoadBit::NW, RoadBit::SW}, // Corner::E
 		{}, // SLOPE_EW
 
 		RoadBit::NW, // SLOPE_SE
 		{}, // SLOPE_WSE
-		{RoadBit::SE, RoadBit::SW}, // SLOPE_N
+		{RoadBit::SE, RoadBit::SW}, // Corner::N
 
 		RoadBit::SE, // SLOPE_NW
 		{}, // SLOPE_NS
@@ -214,21 +214,21 @@ static const RoadBits _invalid_tileh_slopes_road[2][15] = {
 		RoadBit::SW, // SLOPE_NE
 		{}, // SLOPE_SEN
 		{}, // SLOPE_NWS
-	},
+	}}},
 	/* The inverse of the allowed straight roads on a slope
 	 * (with and without a foundation). */
-	{
+	{{{
 		{}, // SLOPE_FLAT
-		{}, // SLOPE_W (Foundation)
-		{}, // SLOPE_S (Foundation)
+		{}, // Corner::W (Foundation)
+		{}, // Corner::S (Foundation)
 
 		ROAD_Y, // SLOPE_SW
-		{}, // SLOPE_E (Foundation)
+		{}, // Corner::E (Foundation)
 		ROAD_ALL, // SLOPE_EW
 
 		ROAD_X, // SLOPE_SE
 		ROAD_ALL, // SLOPE_WSE
-		{}, // SLOPE_N (Foundation)
+		{}, // Corner::N (Foundation)
 
 		ROAD_X, // SLOPE_NW
 		ROAD_ALL, // SLOPE_NS
@@ -237,8 +237,8 @@ static const RoadBits _invalid_tileh_slopes_road[2][15] = {
 		ROAD_Y, // SLOPE_NE
 		ROAD_ALL, // SLOPE_SEN
 		ROAD_ALL, // SLOPE_NW
-	}
-};
+	}}}
+}};
 
 static Foundation GetRoadFoundation(Slope tileh, RoadBits bits);
 
@@ -715,7 +715,7 @@ CommandCost CmdBuildRoad(DoCommandFlags flags, TileIndex tile, RoadBits pieces, 
 			}
 
 			/* Level crossings may only be built on these slopes */
-			if (!HasBit(VALID_LEVEL_CROSSING_SLOPES, tileh)) {
+			if (!HasBit(VALID_LEVEL_CROSSING_SLOPES, tileh.base())) {
 				return CommandCost(STR_ERROR_LAND_SLOPED_IN_WRONG_DIRECTION);
 			}
 
@@ -1307,7 +1307,9 @@ static Foundation GetRoadFoundation(Slope tileh, RoadBits bits)
 	return (bits == ROAD_X ? Foundation::InclinedX : Foundation::InclinedY);
 }
 
-const uint8_t _road_sloped_sprites[14] = {
+/** Lookup table to convert tile's slope into corresponding road sprite offset. */
+static constexpr SlopeIndexArray<uint8_t, 15> _road_sloped_sprites = {
+	0xFF, // Dummy value to prevent `index - 1` while accesing.
 	0,  0,  2,  0,
 	0,  1,  0,  0,
 	3,  0,  0,  0,
@@ -1323,11 +1325,11 @@ const uint8_t _road_sloped_sprites[14] = {
 static uint GetRoadSpriteOffset(Slope slope, RoadBits bits)
 {
 	if (slope != SLOPE_FLAT) {
-		switch (slope) {
-			case SLOPE_NE: return 11;
-			case SLOPE_SE: return 12;
-			case SLOPE_SW: return 13;
-			case SLOPE_NW: return 14;
+		switch (slope.base()) {
+			case SLOPE_NE.base(): return 11;
+			case SLOPE_SE.base(): return 12;
+			case SLOPE_SW.base(): return 13;
+			case SLOPE_NW.base(): return 14;
 			default: NOT_REACHED();
 		}
 	} else {
@@ -1401,8 +1403,8 @@ void DrawRoadTypeCatenary(const TileInfo *ti, RoadType rt, RoadBits rb)
 		if (front != 0) front += GetRoadSpriteOffset(ti->tileh, rb);
 		if (back != 0) back += GetRoadSpriteOffset(ti->tileh, rb);
 	} else if (ti->tileh != SLOPE_FLAT) {
-		back  = SPR_TRAMWAY_BACK_WIRES_SLOPED  + _road_sloped_sprites[ti->tileh - 1];
-		front = SPR_TRAMWAY_FRONT_WIRES_SLOPED + _road_sloped_sprites[ti->tileh - 1];
+		back = SPR_TRAMWAY_BACK_WIRES_SLOPED + _road_sloped_sprites[ti->tileh];
+		front = SPR_TRAMWAY_FRONT_WIRES_SLOPED + _road_sloped_sprites[ti->tileh];
 	} else {
 		back  = SPR_TRAMWAY_BASE + _road_backpole_sprites_1[rb.base()];
 		front = SPR_TRAMWAY_BASE + _road_frontwire_sprites_1[rb.base()];
@@ -1421,9 +1423,9 @@ void DrawRoadTypeCatenary(const TileInfo *ti, RoadType rt, RoadBits rb)
 		static const SubSprite west  = { -INF, -INF, -12, INF };
 		static const SubSprite north = {  -12, -INF,  12, INF };
 		static const SubSprite east  = {   12, -INF, INF, INF };
-		int8_t west_z = GetSlopePixelZInCorner(ti->tileh, CORNER_W);
-		int8_t north_z = GetSlopePixelZInCorner(ti->tileh, CORNER_N);
-		int8_t east_z = GetSlopePixelZInCorner(ti->tileh, CORNER_E);
+		int8_t west_z = GetSlopePixelZInCorner(ti->tileh, Corner::W);
+		int8_t north_z = GetSlopePixelZInCorner(ti->tileh, Corner::N);
+		int8_t east_z = GetSlopePixelZInCorner(ti->tileh, Corner::E);
 		AddSortableSpriteToDraw(back, pal, *ti, {{15, 0, west_z}, {1, 1, z_wires}, {-15, 0, static_cast<int8_t>(-west_z)}}, IsTransparencySet(TransparencyOption::Catenary), &west);
 		AddSortableSpriteToDraw(back, pal, *ti, {{0, 0, north_z}, {1, 1, z_wires}, {0, 0, static_cast<int8_t>(-north_z)}}, IsTransparencySet(TransparencyOption::Catenary), &north);
 		AddSortableSpriteToDraw(back, pal, *ti, {{0, 15, east_z}, {1, 1, z_wires}, {0, -15, static_cast<int8_t>(-east_z)}}, IsTransparencySet(TransparencyOption::Catenary), &east);
@@ -2378,7 +2380,7 @@ static CommandCost TerraformTile_Road(TileIndex tile, DoCommandFlags flags, int 
 	if (_settings_game.construction.build_on_slopes && AutoslopeEnabled()) {
 		switch (GetRoadTileType(tile)) {
 			case RoadTileType::Crossing:
-				if (!IsSteepSlope(tileh_new) && (GetTileMaxZ(tile) == z_new + GetSlopeMaxZ(tileh_new)) && HasBit(VALID_LEVEL_CROSSING_SLOPES, tileh_new)) return CommandCost(ExpensesType::Construction, _price[Price::BuildFoundation]);
+				if (!IsSteepSlope(tileh_new) && (GetTileMaxZ(tile) == z_new + GetSlopeMaxZ(tileh_new)) && HasBit(VALID_LEVEL_CROSSING_SLOPES, tileh_new.base())) return CommandCost(ExpensesType::Construction, _price[Price::BuildFoundation]);
 				break;
 
 			case RoadTileType::Depot:
