@@ -41,6 +41,7 @@
 #include "landscape_cmd.h"
 #include "pathfinder/water_regions.h"
 #include "town_type.h"
+#include "clear_func.h"
 
 #include "table/strings.h"
 
@@ -49,23 +50,23 @@
 /**
  * Describes from which directions a specific slope can be flooded (if the tile is floodable at all).
  */
-static const Directions _flood_from_dirs[] = {
+static const SlopeIndexArray<Directions, 15> _flood_from_dirs = {{{
 	{Direction::NW, Direction::SW, Direction::SE, Direction::NE}, // SLOPE_FLAT
-	{Direction::NE, Direction::SE}, // SLOPE_W
-	{Direction::NW, Direction::NE}, // SLOPE_S
+	{Direction::NE, Direction::SE}, // Corner::W
+	{Direction::NW, Direction::NE}, // Corner::S
 	{Direction::NE}, // SLOPE_SW
-	{Direction::NW, Direction::SW}, // SLOPE_E
+	{Direction::NW, Direction::SW}, // Corner::E
 	{}, // SLOPE_EW
 	{Direction::NW}, // SLOPE_SE
 	{Direction::N, Direction::NW, Direction::NE}, // SLOPE_WSE, SLOPE_STEEP_S
-	{Direction::SW, Direction::SE}, // SLOPE_N
+	{Direction::SW, Direction::SE}, // Corner::N
 	{Direction::SE}, // SLOPE_NW
 	{}, // SLOPE_NS
 	{Direction::E, Direction::NE, Direction::SE}, // SLOPE_NWS, SLOPE_STEEP_W
 	{Direction::SW}, // SLOPE_NE
 	{Direction::S, Direction::SW, Direction::SE}, // SLOPE_ENW, SLOPE_STEEP_N
 	{Direction::W, Direction::SW, Direction::NW}, // SLOPE_SEN, SLOPE_STEEP_E
-};
+}}};
 
 /**
  * Marks tile dirty if it is a canal or river tile.
@@ -172,11 +173,11 @@ CommandCost CmdBuildShipDepot(DoCommandFlags flags, TileIndex tile, Axis axis)
 
 /**
  * Check whether it is feasible that the given tile could be a docking tile.
- * @param t The tile to query.
+ * @param t The index of the tile to query.
  * @return \c true iff there is a chance the tile could be a docking tile.
  * @see CheckForDockingTile
  */
-bool IsPossibleDockingTile(Tile t)
+bool IsPossibleDockingTile(TileIndex t)
 {
 	assert(IsValidTile(t));
 	switch (GetTileType(t)) {
@@ -577,27 +578,27 @@ CommandCost CmdBuildCanal(DoCommandFlags flags, TileIndex tile, TileIndex start_
 
 
 /** @copydoc ClearTileProc */
-static CommandCost ClearTile_Water(TileIndex tile, DoCommandFlags flags)
+static std::tuple<CommandCost, bool> ClearTile_Water(TileIndex index, Tile &tile, DoCommandFlags flags)
 {
 	switch (GetWaterTileType(tile)) {
 		case WaterTileType::Clear: {
-			if (flags.Test(DoCommandFlag::NoWater)) return CommandCost(STR_ERROR_CAN_T_BUILD_ON_WATER);
+			if (flags.Test(DoCommandFlag::NoWater)) return {CommandCost(STR_ERROR_CAN_T_BUILD_ON_WATER), false};
 
 			Money base_cost = IsCanal(tile) ? _price[Price::ClearCanal] : _price[Price::ClearWater];
 			/* Make sure freeform edges are allowed or it's not an edge tile. */
-			if (!_settings_game.construction.freeform_edges && (!IsInsideMM(TileX(tile), 1, Map::MaxX() - 1) ||
-					!IsInsideMM(TileY(tile), 1, Map::MaxY() - 1))) {
-				return CommandCost(STR_ERROR_TOO_CLOSE_TO_EDGE_OF_MAP);
+			if (!_settings_game.construction.freeform_edges && (!IsInsideMM(TileX(index), 1, Map::MaxX() - 1) ||
+					!IsInsideMM(TileY(index), 1, Map::MaxY() - 1))) {
+				return {CommandCost(STR_ERROR_TOO_CLOSE_TO_EDGE_OF_MAP), false};
 			}
 
 			/* Make sure no vehicle is on the tile */
-			CommandCost ret = EnsureNoVehicleOnGround(tile);
-			if (ret.Failed()) return ret;
+			CommandCost ret = EnsureNoVehicleOnGround(index);
+			if (ret.Failed()) return {ret, false};
 
 			Owner owner = GetTileOwner(tile);
 			if (owner != OWNER_WATER && owner != OWNER_NONE) {
-				ret = CheckTileOwnership(tile);
-				if (ret.Failed()) return ret;
+				ret = CheckTileOwnership(index);
+				if (ret.Failed()) return {ret, false};
 			}
 
 			if (flags.Test(DoCommandFlag::Execute)) {
@@ -609,35 +610,39 @@ static CommandCost ClearTile_Water(TileIndex tile, DoCommandFlags flags)
 				/* Handle local authority impact */
 				if (IsRiver(tile)) {
 					if (Company::IsValidID(_current_company)) {
-						Town *town = ClosestTownFromTile(tile, _settings_game.economy.dist_local_authority);
+						Town *town = ClosestTownFromTile(index, _settings_game.economy.dist_local_authority);
 						if (town != nullptr) ChangeTownRating(town, RATING_WATER_RIVER_DOWN_STEP, RATING_WATER_MINIMUM, flags);
 					}
 				}
 
-				DoClearSquare(tile);
-				MarkCanalsAndRiversAroundDirty(tile);
-				ClearNeighbourNonFloodingStates(tile);
+				MakeClearGrass(index);
+				MarkTileDirtyByTile(index);
+				MarkCanalsAndRiversAroundDirty(index);
+				ClearNeighbourNonFloodingStates(index);
 			}
 
-			return CommandCost(ExpensesType::Construction, base_cost);
+			return {CommandCost(ExpensesType::Construction, base_cost), false};
 		}
 
 		case WaterTileType::Coast: {
-			Slope slope = GetTileSlope(tile);
+			Slope slope = GetTileSlope(index);
 
 			/* Make sure no vehicle is on the tile */
-			CommandCost ret = EnsureNoVehicleOnGround(tile);
-			if (ret.Failed()) return ret;
+			CommandCost ret = EnsureNoVehicleOnGround(index);
+			if (ret.Failed()) return {ret, false};
 
 			if (flags.Test(DoCommandFlag::Execute)) {
-				DoClearSquare(tile);
-				MarkCanalsAndRiversAroundDirty(tile);
-				ClearNeighbourNonFloodingStates(tile);
+				MakeClearGrass(index);
+				MarkTileDirtyByTile(index);
+				MarkCanalsAndRiversAroundDirty(index);
+				ClearNeighbourNonFloodingStates(index);
 			}
-			if (IsSlopeWithOneCornerRaised(slope)) {
-				return CommandCost(ExpensesType::Construction, _price[Price::ClearWater]);
+			if (Tile::HasType(index, TileType::Trees)) {
+				return {CommandCost(ExpensesType::Construction), false};
+			} else if (IsSlopeWithOneCornerRaised(slope)) {
+				return {CommandCost(ExpensesType::Construction, _price[Price::ClearWater]), false};
 			} else {
-				return CommandCost(ExpensesType::Construction, _price[Price::ClearRough]);
+				return {CommandCost(ExpensesType::Construction, _price[Price::ClearRough]), false};
 			}
 		}
 
@@ -649,15 +654,15 @@ static CommandCost ClearTile_Water(TileIndex tile, DoCommandFlags flags)
 				{{{ { 1,  0}, {0, -1}, {-1, 0}, {0,  1} }}}, // LockPart::Upper
 			}}};
 
-			if (flags.Test(DoCommandFlag::Auto)) return CommandCost(STR_ERROR_BUILDING_MUST_BE_DEMOLISHED);
-			if (_current_company == OWNER_WATER) return CMD_ERROR;
+			if (flags.Test(DoCommandFlag::Auto)) return {CommandCost(STR_ERROR_BUILDING_MUST_BE_DEMOLISHED), false};
+			if (_current_company == OWNER_WATER) return {CMD_ERROR, false};
 			/* move to the middle tile.. */
-			return RemoveLock(tile + ToTileIndexDiff(_lock_tomiddle_offs[GetLockPart(tile)][GetLockDirection(tile)]), flags);
+			return {RemoveLock(index + ToTileIndexDiff(_lock_tomiddle_offs[GetLockPart(tile)][GetLockDirection(tile)]), flags), false};
 		}
 
 		case WaterTileType::Depot:
-			if (flags.Test(DoCommandFlag::Auto)) return CommandCost(STR_ERROR_BUILDING_MUST_BE_DEMOLISHED);
-			return RemoveShipDepot(tile, flags);
+			if (flags.Test(DoCommandFlag::Auto)) return {CommandCost(STR_ERROR_BUILDING_MUST_BE_DEMOLISHED), false};
+			return {RemoveShipDepot(index, flags), false};
 
 		default:
 			NOT_REACHED();
@@ -682,27 +687,14 @@ bool IsWateredTile(TileIndex tile, Direction from)
 				case WaterTileType::Lock: return DiagDirToAxis(GetLockDirection(tile)) == DiagDirToAxis(DirToDiagDir(from));
 
 				case WaterTileType::Coast:
-					switch (GetTileSlope(tile)) {
-						case SLOPE_W: return (from == Direction::SE) || (from == Direction::E) || (from == Direction::NE);
-						case SLOPE_S: return (from == Direction::NE) || (from == Direction::N) || (from == Direction::NW);
-						case SLOPE_E: return (from == Direction::NW) || (from == Direction::W) || (from == Direction::SW);
-						case SLOPE_N: return (from == Direction::SW) || (from == Direction::S) || (from == Direction::SE);
-						default: return false;
-					}
+					Slope slope = GetTileSlope(tile);
+					if (slope.Count() != 1) return false;
+					if (slope.Test(Corner::W)) return (from == Direction::SE) || (from == Direction::E) || (from == Direction::NE);
+					if (slope.Test(Corner::S)) return (from == Direction::NE) || (from == Direction::N) || (from == Direction::NW);
+					if (slope.Test(Corner::E)) return (from == Direction::NW) || (from == Direction::W) || (from == Direction::SW);
+					if (slope.Test(Corner::N)) return (from == Direction::SW) || (from == Direction::S) || (from == Direction::SE);
+					return false;
 			}
-
-		case TileType::Railway:
-			if (GetRailGroundType(tile) == RailGroundType::HalfTileWater) {
-				assert(IsPlainRail(tile));
-				switch (GetTileSlope(tile)) {
-					case SLOPE_W: return (from == Direction::SE) || (from == Direction::E) || (from == Direction::NE);
-					case SLOPE_S: return (from == Direction::NE) || (from == Direction::N) || (from == Direction::NW);
-					case SLOPE_E: return (from == Direction::NW) || (from == Direction::W) || (from == Direction::SW);
-					case SLOPE_N: return (from == Direction::SW) || (from == Direction::S) || (from == Direction::SE);
-					default: return false;
-				}
-			}
-			return false;
 
 		case TileType::Station:
 			if (IsOilRig(tile)) {
@@ -811,7 +803,7 @@ static void DrawWaterEdges(bool canal, uint offset, TileIndex tile)
 }
 
 /** Draw a plain sea water tile with no edges */
-static void DrawSeaWater(TileIndex)
+static void DrawSeaWater()
 {
 	DrawGroundSprite(SPR_FLAT_WATER_TILE, PAL_NONE);
 }
@@ -852,7 +844,7 @@ static void DrawWaterTileStruct(const TileInfo *ti, std::span<const DrawTileSeqS
 
 	for (const DrawTileSeqStruct &dtss : seq) {
 		uint tile_offs = offset + dtss.image.sprite;
-		if (feature < CanalFeature::End) tile_offs = GetCanalSpriteOffset(feature, ti->tile, tile_offs);
+		if (feature < CanalFeature::End) tile_offs = GetCanalSpriteOffset(feature, ti->index, tile_offs);
 		AddSortableSpriteToDraw(base + tile_offs, palette, *ti, dtss, IsTransparencySet(TransparencyOption::Buildings));
 	}
 }
@@ -868,8 +860,7 @@ static void DrawWaterLock(const TileInfo *ti)
 
 	/* Draw ground sprite. */
 	SpriteID image = dts.ground.sprite;
-
-	SpriteID water_base = GetCanalSprite(CanalFeature::LockWaterSlope, ti->tile);
+	SpriteID water_base = GetCanalSprite(CanalFeature::LockWaterSlope, ti->index);
 	if (water_base == 0) {
 		/* Use default sprites. */
 		water_base = SPR_CANALS_BASE;
@@ -887,7 +878,7 @@ static void DrawWaterLock(const TileInfo *ti)
 
 	/* Draw structures. */
 	uint     zoffs = 0;
-	SpriteID base  = GetCanalSprite(CanalFeature::Locks, ti->tile);
+	SpriteID base = GetCanalSprite(CanalFeature::Locks, ti->index);
 
 	if (base == 0) {
 		/* If no custom graphics, use defaults. */
@@ -916,92 +907,100 @@ static void DrawRiverWater(const TileInfo *ti)
 	uint     edges_offset = 0;
 
 	if (ti->tileh != SLOPE_FLAT || _water_feature[CanalFeature::RiverSlope].flags.Test(CanalFeatureFlag::HasFlatSprite)) {
-		image = GetCanalSprite(CanalFeature::RiverSlope, ti->tile);
+		image = GetCanalSprite(CanalFeature::RiverSlope, ti->index);
 		if (image == 0) {
-			switch (ti->tileh) {
-				case SLOPE_NW: image = SPR_WATER_SLOPE_Y_DOWN; break;
-				case SLOPE_SW: image = SPR_WATER_SLOPE_X_UP;   break;
-				case SLOPE_SE: image = SPR_WATER_SLOPE_Y_UP;   break;
-				case SLOPE_NE: image = SPR_WATER_SLOPE_X_DOWN; break;
+			switch (ti->tileh.base()) {
+				case SLOPE_NW.base(): image = SPR_WATER_SLOPE_Y_DOWN; break;
+				case SLOPE_SW.base(): image = SPR_WATER_SLOPE_X_UP; break;
+				case SLOPE_SE.base(): image = SPR_WATER_SLOPE_Y_UP; break;
+				case SLOPE_NE.base(): image = SPR_WATER_SLOPE_X_DOWN; break;
 				default:       image = SPR_FLAT_WATER_TILE;    break;
 			}
 		} else {
 			/* Flag bit 0 indicates that the first sprite is flat water. */
 			offset = _water_feature[CanalFeature::RiverSlope].flags.Test(CanalFeatureFlag::HasFlatSprite) ? 1 : 0;
 
-			switch (ti->tileh) {
-				case SLOPE_SE:              edges_offset += 12; break;
-				case SLOPE_NE: offset += 1; edges_offset += 24; break;
-				case SLOPE_SW: offset += 2; edges_offset += 36; break;
-				case SLOPE_NW: offset += 3; edges_offset += 48; break;
+			switch (ti->tileh.base()) {
+				case SLOPE_SE.base(): edges_offset += 12; break;
+				case SLOPE_NE.base(): offset += 1; edges_offset += 24; break;
+				case SLOPE_SW.base(): offset += 2; edges_offset += 36; break;
+				case SLOPE_NW.base(): offset += 3; edges_offset += 48; break;
 				default:       offset  = 0; break;
 			}
 
-			offset = GetCanalSpriteOffset(CanalFeature::RiverSlope, ti->tile, offset);
+			offset = GetCanalSpriteOffset(CanalFeature::RiverSlope, ti->index, offset);
 		}
 	}
 
 	DrawGroundSprite(image + offset, PAL_NONE);
 
 	/* Draw river edges if available. */
-	DrawWaterEdges(false, edges_offset, ti->tile);
+	DrawWaterEdges(false, edges_offset, ti->index);
 }
 
-void DrawShoreTile(Slope tileh)
+/**
+ * Draws shore on a given tile.
+ * @copydetails DrawTileProc
+ */
+void DrawShoreTile(const TileInfo *ti, bool draw_halftile, Corner halftile_corner)
 {
 	/* Converts the enum Slope into an offset based on SPR_SHORE_BASE.
 	 * This allows to calculate the proper sprite to display for this Slope */
-	static const uint8_t tileh_to_shoresprite[32] = {
+	static constexpr SlopeIndexArray<uint8_t, 32> tileh_to_shoresprite = {
 		0, 1, 2, 3, 4, 16, 6, 7, 8, 9, 17, 11, 12, 13, 14, 0,
 		0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0,  5,  0, 10, 15, 0,
 	};
 
-	assert(!IsHalftileSlope(tileh)); // Halftile slopes need to get handled earlier.
-	assert(tileh != SLOPE_FLAT);     // Shore is never flat
+	if (!draw_halftile) {
+		assert(!IsHalftileSlope(ti->tileh)); // Halftile slopes need to get handled earlier.
+		assert(ti->tileh != SLOPE_FLAT);     // Shore is never flat
 
-	assert((tileh != SLOPE_EW) && (tileh != SLOPE_NS)); // No suitable sprites for current flooding behaviour
+		assert((ti->tileh != SLOPE_EW) && (ti->tileh != SLOPE_NS)); // No suitable sprites for current flooding behaviour
 
-	DrawGroundSprite(SPR_SHORE_BASE + tileh_to_shoresprite[tileh], PAL_NONE);
+		DrawGroundSprite(SPR_SHORE_BASE + tileh_to_shoresprite[ti->tileh], PAL_NONE);
+	} else {
+		/* Draw higher halftile-overlay using clear land graphics. */
+		DrawClearLandTile(ti, 3, draw_halftile, halftile_corner);
+	}
 }
 
 void DrawWaterClassGround(const TileInfo *ti)
 {
 	switch (GetWaterClass(ti->tile)) {
-		case WaterClass::Sea:   DrawSeaWater(ti->tile); break;
-		case WaterClass::Canal: DrawCanalWater(ti->tile); break;
+		case WaterClass::Sea: DrawSeaWater(); break;
+		case WaterClass::Canal: DrawCanalWater(ti->index); break;
 		case WaterClass::River: DrawRiverWater(ti); break;
 		default: NOT_REACHED();
 	}
 }
 
 /** @copydoc DrawTileProc */
-static void DrawTile_Water(TileInfo *ti)
+static BridgePillarFlags DrawTile_Water(TileInfo *ti, bool draw_halftile, Corner halftile_corner)
 {
 	switch (GetWaterTileType(ti->tile)) {
 		case WaterTileType::Clear:
 			DrawWaterClassGround(ti);
 			/* A plain water tile can be traversed in any direction, so setting blocked pillars here would mean all bridges
 			 * with edges would have no pillars above water. Instead prefer current behaviour of ships passing through. */
-			DrawBridgeMiddle(ti, {});
 			break;
 
-		case WaterTileType::Coast: {
-			DrawShoreTile(ti->tileh);
-			DrawBridgeMiddle(ti, {});
+		case WaterTileType::Coast:
+			DrawShoreTile(ti, draw_halftile, halftile_corner);
 			break;
-		}
 
 		case WaterTileType::Lock:
 			DrawWaterLock(ti);
-			DrawBridgeMiddle(ti, DiagDirToAxis(GetLockDirection(ti->tile)) == Axis::X
-				? BridgePillarFlags{BridgePillarFlag::EdgeNE, BridgePillarFlag::EdgeSW}
-				: BridgePillarFlags{BridgePillarFlag::EdgeNW, BridgePillarFlag::EdgeSE});
-			break;
+			if (DiagDirToAxis(GetLockDirection(ti->tile)) == Axis::X) {
+				return BridgePillarFlags{BridgePillarFlag::EdgeNE, BridgePillarFlag::EdgeSW};
+			}
+			return BridgePillarFlags{BridgePillarFlag::EdgeNW, BridgePillarFlag::EdgeSE};
 
 		case WaterTileType::Depot:
 			DrawWaterDepot(ti);
 			break;
 	}
+
+	return {};
 }
 
 void DrawShipDepotSprite(int x, int y, Axis axis, DepotPart part)
@@ -1012,17 +1011,8 @@ void DrawShipDepotSprite(int x, int y, Axis axis, DepotPart part)
 	DrawOrigTileSeqInGUI(x, y, &dts, GetCompanyPalette(_local_company));
 }
 
-
-/** @copydoc GetSlopePixelZProc */
-static int GetSlopePixelZ_Water(TileIndex tile, uint x, uint y, [[maybe_unused]] bool ground_vehicle)
-{
-	auto [tileh, z] = GetTilePixelSlope(tile);
-
-	return z + GetPartialPixelZ(x & 0xF, y & 0xF, tileh);
-}
-
 /** @copydoc GetTileDescProc */
-static void GetTileDesc_Water(TileIndex tile, TileDesc &td)
+static void GetTileDesc_Water([[maybe_unused]] TileIndex index, const Tile &tile, TileDesc &td)
 {
 	switch (GetWaterTileType(tile)) {
 		case WaterTileType::Clear:
@@ -1156,15 +1146,6 @@ FloodingBehaviour GetFloodingBehaviour(TileIndex tile)
 		case TileType::Object:
 			return GetWaterClass(tile) == WaterClass::Sea ? FloodingBehaviour::Active : FloodingBehaviour::None;
 
-		case TileType::Railway:
-			if (GetRailGroundType(tile) == RailGroundType::HalfTileWater) {
-				return IsSlopeWithOneCornerRaised(GetTileSlope(tile)) ? FloodingBehaviour::Active : FloodingBehaviour::DryOut;
-			}
-			return FloodingBehaviour::None;
-
-		case TileType::Trees:
-			return GetTreeGround(tile) == TreeGround::Shore ? FloodingBehaviour::DryOut : FloodingBehaviour::None;
-
 		case TileType::Void:
 			return FloodingBehaviour::Active;
 
@@ -1188,33 +1169,18 @@ static void DoFloodTile(TileIndex target)
 	Slope tileh = GetTileSlope(target);
 	if (tileh != SLOPE_FLAT) {
 		/* make coast.. */
-		switch (GetTileType(target)) {
-			case TileType::Railway: {
-				if (!IsPlainRail(target)) break;
+		if (Tile rail = Tile::GetByType(target, TileType::Railway); rail.IsValid()) {
+			if (IsPlainRail(rail)) {
 				FloodVehicles(target);
 				flooded = FloodHalftile(target);
-				break;
 			}
-
-			case TileType::Trees:
-				if (!IsSlopeWithOneCornerRaised(tileh)) {
-					SetTreeGroundDensity(target, TreeGround::Shore, 3);
-					MarkTileDirtyByTile(target);
-					flooded = true;
-					break;
-				}
-				[[fallthrough]];
-
-			case TileType::Clear:
-				if (Command<Commands::LandscapeClear>::Do(DoCommandFlag::Execute, target).Succeeded()) {
-					MakeShore(target);
-					MarkTileDirtyByTile(target);
-					flooded = true;
-				}
-				break;
-
-			default:
-				break;
+		} else if (IsTileType(target, TileType::Clear)) {
+			/* Don't clear trees on coastal tiles. */
+			if ((Tile::HasType(target, TileType::Trees) && !IsSlopeWithOneCornerRaised(tileh)) || Command<Commands::LandscapeClear>::Do(DoCommandFlag::Execute, target).Succeeded()) {
+				MakeShore(target);
+				MarkTileDirtyByTile(target);
+				flooded = true;
+			}
 		}
 	} else {
 		/* Flood vehicles */
@@ -1248,38 +1214,27 @@ static void DoDryUp(TileIndex tile)
 {
 	AutoRestoreBackup cur_company(_current_company, OWNER_WATER);
 
-	switch (GetTileType(tile)) {
-		case TileType::Railway:
-			assert(IsPlainRail(tile));
-			assert(GetRailGroundType(tile) == RailGroundType::HalfTileWater);
+	if (Tile rail = Tile::GetByType(tile, TileType::Railway); rail.IsValid()) {
+		assert(IsPlainRail(rail));
+		RailFence new_fences;
+		switch (TrackBitsToTrack(GetTrackBits(rail))) {
+			case Track::Upper: new_fences = RailFence::Horiz1; break;
+			case Track::Lower: new_fences = RailFence::Horiz2; break;
+			case Track::Left: new_fences = RailFence::Vert1; break;
+			case Track::Right: new_fences = RailFence::Vert2; break;
+			default: NOT_REACHED();
+		}
+		SetRailFence(rail, new_fences);
+		if (IsTileType(tile, TileType::Water)) MakeClear(tile, ClearGround::Grass, 3);
+		MarkTileDirtyByTile(tile);
+	} else if (IsTileType(tile, TileType::Water)) {
+		assert(IsCoast(tile));
 
-			RailGroundType new_ground;
-			switch (TrackBitsToTrack(GetTrackBits(tile))) {
-				case Track::Upper: new_ground = RailGroundType::FenceHoriz1; break;
-				case Track::Lower: new_ground = RailGroundType::FenceHoriz2; break;
-				case Track::Left: new_ground = RailGroundType::FenceVert1; break;
-				case Track::Right: new_ground = RailGroundType::FenceVert2; break;
-				default: NOT_REACHED();
-			}
-			SetRailGroundType(tile, new_ground);
+		/* Don't clear trees on coastal tiles. */
+		if (Tile::HasType(tile, TileType::Trees) || Command<Commands::LandscapeClear>::Do(DoCommandFlag::Execute, tile).Succeeded()) {
+			MakeClear(tile, ClearGround::Grass, 3);
 			MarkTileDirtyByTile(tile);
-			break;
-
-		case TileType::Trees:
-			SetTreeGroundDensity(tile, TreeGround::Grass, 3);
-			MarkTileDirtyByTile(tile);
-			break;
-
-		case TileType::Water:
-			assert(IsCoast(tile));
-
-			if (Command<Commands::LandscapeClear>::Do(DoCommandFlag::Execute, tile).Succeeded()) {
-				MakeClear(tile, ClearGround::Grass, 3);
-				MarkTileDirtyByTile(tile);
-			}
-			break;
-
-		default: NOT_REACHED();
+		}
 	}
 }
 
@@ -1289,18 +1244,18 @@ static void DoDryUp(TileIndex tile)
  * Let a water tile floods its diagonal adjoining tiles
  * called by #TileLoop_Industry, #TileLoop_Rail, #TileLoop_Station, #TileLoop_Object, #TileLoop_Trees and #TileLoop_Void.
  */
-void TileLoop_Water(TileIndex tile)
+bool TileLoop_Water(TileIndex index, Tile &tile)
 {
 	if (IsTileType(tile, TileType::Water)) {
-		AmbientSoundEffect(tile);
-		if (IsNonFloodingWaterTile(tile)) return;
+		AmbientSoundEffect(index);
+		if (IsNonFloodingWaterTile(tile)) return false;
 	}
 
-	switch (GetFloodingBehaviour(tile)) {
+	switch (GetFloodingBehaviour(index)) {
 		case FloodingBehaviour::Active: {
 			bool continue_flooding = false;
 			for (Direction dir : EnumRange(Direction::End)) {
-				TileIndex dest = AddTileIndexDiffCWrap(tile, TileIndexDiffCByDir(dir));
+				TileIndex dest = AddTileIndexDiffCWrap(index, TileIndexDiffCByDir(dir));
 				/* Contrary to drying up, flooding does not consider TileType::Void tiles. */
 				if (!IsValidTile(dest)) continue;
 				/* do not try to flood water tiles - increases performance a lot */
@@ -1311,9 +1266,6 @@ void TileLoop_Water(TileIndex tile)
 
 				/* This neighbour tile might be floodable later if the tile is cleared, so allow flooding to continue. */
 				continue_flooding = true;
-
-				/* TreeGround::Shore is the sign of a previous flood. */
-				if (IsTileType(dest, TileType::Trees) && GetTreeGround(dest) == TreeGround::Shore) continue;
 
 				auto [slope_dest, z_dest] = GetFoundationSlope(dest);
 				if (z_dest > 0) continue;
@@ -1327,42 +1279,44 @@ void TileLoop_Water(TileIndex tile)
 		}
 
 		case FloodingBehaviour::DryOut: {
-			Slope slope_here = RemoveHalftileSlope(RemoveSteepSlope(std::get<Slope>(GetFoundationSlope(tile))));
+			Slope slope_here = RemoveHalftileSlope(RemoveSteepSlope(std::get<Slope>(GetFoundationSlope(index))));
 			for (Direction dir : _flood_from_dirs[slope_here]) {
-				TileIndex dest = AddTileIndexDiffCWrap(tile, TileIndexDiffCByDir(dir));
+				TileIndex dest = AddTileIndexDiffCWrap(index, TileIndexDiffCByDir(dir));
 				/* Contrary to flooding, drying up does consider TileType::Void tiles. */
 				if (dest == INVALID_TILE) continue;
 
 				FloodingBehaviour dest_behaviour = GetFloodingBehaviour(dest);
-				if (dest_behaviour == FloodingBehaviour::Active || dest_behaviour == FloodingBehaviour::Passive) return;
+				if (dest_behaviour == FloodingBehaviour::Active || dest_behaviour == FloodingBehaviour::Passive) return false;
 			}
-			DoDryUp(tile);
+			DoDryUp(index);
 			break;
 		}
 
-		default: return;
+		default: break;
 	}
+
+	return false;
 }
 
 void ConvertGroundTilesIntoWaterTiles()
 {
-	for (const auto tile : Map::Iterate()) {
+	for (const auto tile : Map::IterateIndex()) {
 		auto [slope, z] = GetTileSlopeZ(tile);
 		if (IsTileType(tile, TileType::Clear) && z == 0) {
 			/* Make both water for tiles at level 0
 			 * and make shore, as that looks much better
 			 * during the generation. */
-			switch (slope) {
-				case SLOPE_FLAT:
+			switch (slope.Count()) {
+				case 0:
 					MakeSea(tile);
 					break;
 
-				case SLOPE_N:
-				case SLOPE_E:
-				case SLOPE_S:
-				case SLOPE_W:
-					MakeShore(tile);
-					break;
+				case 1:
+					if (!slope.Any({Corner::Steep, Corner::HalfTile})) {
+						MakeShore(tile);
+						break;
+					}
+					[[fallthrough]];
 
 				default:
 					for (Direction dir : _flood_from_dirs[RemoveSteepSlope(slope)]) {
@@ -1380,26 +1334,26 @@ void ConvertGroundTilesIntoWaterTiles()
 }
 
 /** @copydoc GetTileTrackStatusProc */
-static TrackStatus GetTileTrackStatus_Water(TileIndex tile, TransportType mode, [[maybe_unused]] RoadTramType sub_mode, [[maybe_unused]] DiagDirection side)
+static TrackStatus GetTileTrackStatus_Water(TileIndex index, const Tile &tile, TransportType mode, [[maybe_unused]] RoadTramType sub_mode, [[maybe_unused]] DiagDirection side)
 {
-	static const TrackBits coast_tracks[] = {{}, Track::Right, Track::Upper, {}, Track::Left, {}, {}, {}, Track::Lower, {}, {}, {}, {}, {}, {}, {}};
+	static constexpr SlopeIndexArray<TrackBits, 16> coast_tracks = {{{{}, Track::Right, Track::Upper, {}, Track::Left, {}, {}, {}, Track::Lower, {}, {}, {}, {}, {}, {}, {}}}};
 
 	TrackBits ts;
 
 	if (mode != TransportType::Water) return {};
 
 	switch (GetWaterTileType(tile)) {
-		case WaterTileType::Clear: ts = IsTileFlat(tile) ? TRACK_BIT_ALL : TrackBits{}; break;
-		case WaterTileType::Coast: ts = coast_tracks[GetTileSlope(tile) & 0xF]; break;
+		case WaterTileType::Clear: ts = IsTileFlat(index) ? TRACK_BIT_ALL : TrackBits{}; break;
+		case WaterTileType::Coast: ts = coast_tracks[GetTileSlope(index) & SLOPE_ELEVATED]; break;
 		case WaterTileType::Lock: ts = DiagDirToDiagTrack(GetLockDirection(tile)); break;
 		case WaterTileType::Depot: ts = AxisToTrack(GetShipDepotAxis(tile)); break;
 		default: return {};
 	}
-	if (TileX(tile) == 0) {
+	if (TileX(index) == 0) {
 		/* NE border: remove tracks that connects NE tile edge */
 		ts.Reset({Track::X, Track::Upper, Track::Right});
 	}
-	if (TileY(tile) == 0) {
+	if (TileY(index) == 0) {
 		/* NW border: remove tracks that connects NW tile edge */
 		ts.Reset({Track::Y, Track::Left, Track::Upper});
 	}
@@ -1407,19 +1361,19 @@ static TrackStatus GetTileTrackStatus_Water(TileIndex tile, TransportType mode, 
 }
 
 /** @copydoc ClickTileProc */
-static bool ClickTile_Water(TileIndex tile)
+static bool ClickTile_Water(TileIndex index, const Tile &tile)
 {
 	if (GetWaterTileType(tile) == WaterTileType::Depot) {
-		ShowDepotWindow(GetShipDepotNorthTile(tile), VehicleType::Ship);
+		ShowDepotWindow(GetShipDepotNorthTile(index), VehicleType::Ship);
 		return true;
 	}
 	return false;
 }
 
 /** @copydoc ChangeTileOwnerProc */
-static void ChangeTileOwner_Water(TileIndex tile, Owner old_owner, Owner new_owner)
+static bool ChangeTileOwner_Water(TileIndex index, Tile &tile, Owner old_owner, Owner new_owner)
 {
-	if (!IsTileOwner(tile, old_owner)) return;
+	if (!IsTileOwner(tile, old_owner)) return false;
 
 	bool is_lock_middle = IsLock(tile) && GetLockPart(tile) == LockPart::Middle;
 
@@ -1439,11 +1393,11 @@ static void ChangeTileOwner_Water(TileIndex tile, Owner old_owner, Owner new_own
 		}
 
 		SetTileOwner(tile, new_owner);
-		return;
+		return false;
 	}
 
 	/* Remove depot */
-	if (IsShipDepot(tile)) Command<Commands::LandscapeClear>::Do({DoCommandFlag::Execute, DoCommandFlag::Bankrupt}, tile);
+	if (IsShipDepot(tile)) Command<Commands::LandscapeClear>::Do({DoCommandFlag::Execute, DoCommandFlag::Bankrupt}, index);
 
 	/* Set owner of canals and locks ... and also canal under dock there was before.
 	 * Check if the new owner after removing depot isn't OWNER_WATER. */
@@ -1451,10 +1405,12 @@ static void ChangeTileOwner_Water(TileIndex tile, Owner old_owner, Owner new_own
 		if (GetWaterClass(tile) == WaterClass::Canal && !is_lock_middle) Company::Get(old_owner)->infrastructure.water--;
 		SetTileOwner(tile, OWNER_NONE);
 	}
+
+	return false;
 }
 
 /** @copydoc TerraformTileProc */
-static CommandCost TerraformTile_Water(TileIndex tile, DoCommandFlags flags, [[maybe_unused]] int z_new, [[maybe_unused]] Slope tileh_new)
+static CommandCost TerraformTile_Water([[maybe_unused]] TileIndex index, const Tile &tile, [[maybe_unused]] DoCommandFlags flags, [[maybe_unused]] int z_new, [[maybe_unused]] Slope tileh_new)
 {
 	/* Canals can't be terraformed */
 	if (IsWaterTile(tile) && IsCanal(tile)) return CommandCost(STR_ERROR_MUST_DEMOLISH_CANAL_FIRST);
@@ -1462,32 +1418,31 @@ static CommandCost TerraformTile_Water(TileIndex tile, DoCommandFlags flags, [[m
 	/* Rivers can't be terraformed */
 	if (IsWaterTile(tile) && IsRiver(tile)) return CommandCost(STR_ERROR_MUST_DEMOLISH_RIVER_FIRST);
 
-	return Command<Commands::LandscapeClear>::Do(flags, tile);
+	return CommandCost(INVALID_STRING_ID); // Dummy error
 }
 
 /** @copydoc CheckBuildAboveProc */
-static CommandCost CheckBuildAbove_Water(TileIndex tile, DoCommandFlags flags, [[maybe_unused]] Axis axis, int height)
+static std::tuple<CommandCost, bool> CheckBuildAbove_Water(TileIndex index, Tile &tile, DoCommandFlags flags, [[maybe_unused]] Axis axis, int height)
 {
-	if (IsWater(tile) || IsCoast(tile)) return CommandCost();
+	if (IsWater(tile) || IsCoast(tile)) return {CommandCost(), false};
 	if (IsLock(tile)) {
-		if (GetTileMaxZ(tile) + GetLockPartMinimalBridgeHeight(GetLockPart(tile)) <= height) return CommandCost();
-		int height_diff = (GetTileMaxZ(tile) + GetLockPartMinimalBridgeHeight(GetLockPart(tile)) - height) * TILE_HEIGHT_STEP;
-		return CommandCostWithParam(STR_ERROR_BRIDGE_TOO_LOW_FOR_LOCK, height_diff);
+		if (GetTileMaxZ(index) + GetLockPartMinimalBridgeHeight(GetLockPart(tile)) <= height) return {CommandCost(), false};
+		int height_diff = (GetTileMaxZ(index) + GetLockPartMinimalBridgeHeight(GetLockPart(tile)) - height) * TILE_HEIGHT_STEP;
+		return {CommandCostWithParam(STR_ERROR_BRIDGE_TOO_LOW_FOR_LOCK, height_diff), false};
 	}
-	return Command<Commands::LandscapeClear>::Do(flags, tile);
+	return ClearTile_Water(index, tile, flags);
 }
 
 /** TileTypeProcs definitions for TileType::Water tiles. */
 extern const TileTypeProcs _tile_type_water_procs = {
 	.draw_tile_proc = DrawTile_Water,
-	.get_slope_pixel_z_proc = GetSlopePixelZ_Water,
 	.clear_tile_proc = ClearTile_Water,
 	.get_tile_desc_proc = GetTileDesc_Water,
 	.get_tile_track_status_proc = GetTileTrackStatus_Water,
 	.click_tile_proc = ClickTile_Water,
 	.tile_loop_proc = TileLoop_Water,
 	.change_tile_owner_proc = ChangeTileOwner_Water,
-	.vehicle_enter_tile_proc = [](Vehicle *, TileIndex, int, int) -> VehicleEnterTileStates { return {}; },
+	.vehicle_enter_tile_proc = [](Vehicle *, TileIndex, const Tile&, int, int) -> VehicleEnterTileStates { return {}; },
 	.terraform_tile_proc = TerraformTile_Water,
 	.check_build_above_proc = CheckBuildAbove_Water,
 };

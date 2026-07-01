@@ -46,7 +46,7 @@ void FixOldMapArray()
 {
 	/* TTO/TTD/TTDP savegames could have buoys at tile 0
 	 * (without assigned station struct) */
-	MakeSea(0);
+	MakeSea(TileIndex(0));
 }
 
 static void FixTTDMapArray()
@@ -101,7 +101,8 @@ static void FixTTDMapArray()
 static void FixTTDDepots()
 {
 	for (const Depot *d : Depot::Iterate(252)) {
-		if (!IsDepotTile(d->xy) || GetDepotIndex(d->xy) != d->index) {
+		DepotTile tile = AsDepotTile(d->xy);
+		if (!IsDepotTile(tile) || GetDepotIndex(tile) != d->index) {
 			/** Workaround for SVXConverter bug, depots 252-255 could be invalid */
 			delete d;
 		}
@@ -525,7 +526,7 @@ static void ReadTTDPatchFlags(LoadgameState &ls)
 	}
 
 	/* TTDPatch misuses old map3 (now m3/m4) for flags.. read them! */
-	ls.vehicle_multiplier = Tile(0).m3();
+	ls.vehicle_multiplier = Tile(TileIndex(0)).m3();
 	/* Somehow.... there was an error in some savegames, so 0 becomes 1
 	 * and 1 becomes 2. The rest of the values are okay */
 	if (ls.vehicle_multiplier < 2) ls.vehicle_multiplier++;

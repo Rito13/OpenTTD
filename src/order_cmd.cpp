@@ -709,7 +709,7 @@ CommandCost CmdInsertOrder(DoCommandFlags flags, VehicleID veh, VehicleOrderID s
 
 					if (dp == nullptr) return CMD_ERROR;
 
-					ret = CheckOwnership(GetTileOwner(dp->xy));
+					ret = CheckOwnership(GetTileOwnerIfDepot(dp->xy));
 					if (ret.Failed()) return ret;
 
 					switch (v->type) {

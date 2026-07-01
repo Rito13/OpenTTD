@@ -35,7 +35,8 @@
 {
 	if (!::IsValidTile(tile)) return false;
 
-	return (::IsTileType(tile, TileType::Railway) && !::IsRailDepot(tile)) ||
+	::Tile rail_tile = ::Tile::GetByType(tile, TileType::Railway);
+	return (rail_tile.IsValid() && !::IsRailDepot(rail_tile)) ||
 			(::HasStationTileRail(tile) && !::IsStationTileBlocked(tile)) || ::IsLevelCrossingTile(tile);
 }
 
@@ -50,7 +51,7 @@
 {
 	if (!::IsValidTile(tile)) return false;
 
-	return ::IsRailDepotTile(tile);
+	return ::IsRailDepotTile(::Tile::GetByType(tile, TileType::Railway));
 }
 
 /* static */ bool ScriptRail::IsRailStationTile(TileIndex tile)
@@ -107,7 +108,7 @@
 {
 	if (!ScriptTile::HasTransportType(tile, ScriptTile::TRANSPORT_RAIL)) return RAILTYPE_INVALID;
 
-	return (RailType)::GetRailType(tile);
+	return (RailType)::GetTileRailType(tile);
 }
 
 /* static */ bool ScriptRail::ConvertRailType(TileIndex start_tile, TileIndex end_tile, ScriptRail::RailType convert_to)
@@ -124,7 +125,7 @@
 {
 	if (!IsRailDepotTile(depot)) return INVALID_TILE;
 
-	return depot + ::TileOffsByDiagDir(::GetRailDepotDirection(depot));
+	return depot + ::TileOffsByDiagDir(::GetRailDepotDirection(::GetRailDepotTile(depot)));
 }
 
 /* static */ ScriptRail::RailTrack ScriptRail::GetRailStationDirection(TileIndex tile)
@@ -239,7 +240,7 @@
 	if (IsRailStationTile(tile) || IsRailWaypointTile(tile)) return ::TrackBits{::GetRailStationTrack(tile)}.base();
 	if (IsLevelCrossingTile(tile)) return ::TrackBits{::GetCrossingRailTrack(tile)}.base();
 	if (IsRailDepotTile(tile)) return {};
-	return ::GetTrackBits(tile).base();
+	return ::GetTrackBits(::Tile::GetByType(tile, TileType::Railway)).base();
 }
 
 /* static */ bool ScriptRail::BuildRailTrack(TileIndex tile, RailTrack rail_track)
@@ -258,7 +259,7 @@
 {
 	EnforceCompanyModeValid(false);
 	EnforcePrecondition(false, ::IsValidTile(tile));
-	EnforcePrecondition(false, ::IsPlainRailTile(tile) || ::IsLevelCrossingTile(tile));
+	EnforcePrecondition(false, ::IsPlainRailTile(::Tile::GetByType(tile, TileType::Railway)) || ::IsLevelCrossingTile(tile));
 	EnforcePrecondition(false, GetRailTracks(tile) & rail_track);
 	EnforcePrecondition(false, KillFirstBit((uint)rail_track) == 0);
 
@@ -412,17 +413,18 @@ static const ScriptRailSignalData _possible_trackdirs[5][NUM_TRACK_DIRECTIONS] =
 /* static */ ScriptRail::SignalType ScriptRail::GetSignalType(TileIndex tile, TileIndex front)
 {
 	if (ScriptMap::DistanceManhattan(tile, front) != 1) return SIGNALTYPE_NONE;
-	if (!::IsTileType(tile, TileType::Railway) || !::HasSignals(tile)) return SIGNALTYPE_NONE;
+	Tile rail_tile = ::Tile::GetByType(tile, TileType::Railway);
+	if (!rail_tile || !::HasSignals(rail_tile)) return SIGNALTYPE_NONE;
 
 	int data_index = 2 + (::TileX(front) - ::TileX(tile)) + 2 * (::TileY(front) - ::TileY(tile));
 
 	for (int i = 0; i < NUM_TRACK_DIRECTIONS; i++) {
 		const Track &track = _possible_trackdirs[data_index][i].track;
 		if (!static_cast<::TrackBits>(GetRailTracks(tile)).Test(track)) continue;
-		if (!HasSignalOnTrack(tile, track)) continue;
-		if (!HasSignalOnTrackdir(tile, _possible_trackdirs[data_index][i].trackdir)) continue;
-		SignalType st = (SignalType)::GetSignalType(tile, track);
-		if (HasSignalOnTrackdir(tile, ::ReverseTrackdir(_possible_trackdirs[data_index][i].trackdir))) st = (SignalType)(st | SIGNALTYPE_TWOWAY);
+		if (!HasSignalOnTrack(rail_tile, track)) continue;
+		if (!HasSignalOnTrackdir(rail_tile, _possible_trackdirs[data_index][i].trackdir)) continue;
+		SignalType st = static_cast<SignalType>(::GetSignalType(rail_tile, track));
+		if (HasSignalOnTrackdir(rail_tile, ::ReverseTrackdir(_possible_trackdirs[data_index][i].trackdir))) st = static_cast<SignalType>(st | SIGNALTYPE_TWOWAY);
 		return st;
 	}
 
@@ -443,8 +445,10 @@ static bool IsValidSignalType(int signal_type)
 {
 	EnforceCompanyModeValid(false);
 	EnforcePrecondition(false, ScriptMap::DistanceManhattan(tile, front) == 1)
-	EnforcePrecondition(false, ::IsPlainRailTile(tile));
 	EnforcePrecondition(false, ::IsValidSignalType(signal));
+
+	Tile rail_tile = ::Tile::GetByType(tile, TileType::Railway);
+	EnforcePrecondition(false, ::IsPlainRailTile(rail_tile));
 
 	Track track = Track::Invalid;
 	uint signal_cycles = 0;
@@ -452,7 +456,7 @@ static bool IsValidSignalType(int signal_type)
 	int data_index = 2 + (::TileX(front) - ::TileX(tile)) + 2 * (::TileY(front) - ::TileY(tile));
 	for (int i = 0; i < NUM_TRACK_DIRECTIONS; i++) {
 		const Track &t = _possible_trackdirs[data_index][i].track;
-		if (!static_cast<::TrackBits>(GetRailTracks(tile)).Test(t)) continue;
+		if (!::GetTrackBits(rail_tile).Test(t)) continue;
 		track = t;
 		signal_cycles = _possible_trackdirs[data_index][i].signal_cycles;
 		break;

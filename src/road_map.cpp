@@ -18,7 +18,7 @@
  * @param t Tile to query.
  * @return true if tile can be queried about road/tram types.
  */
-bool MayHaveRoad(Tile t)
+bool MayHaveRoad(const Tile &t)
 {
 	switch (GetTileType(t)) {
 		case TileType::Road:
@@ -51,7 +51,7 @@ bool MayHaveRoad(Tile t)
  * @param straight_tunnel_bridge_entrance whether to return straight road bits for tunnels/bridges.
  * @return the road bits of the given tile
  */
-RoadBits GetAnyRoadBits(Tile tile, RoadTramType rtt, bool straight_tunnel_bridge_entrance)
+RoadBits GetAnyRoadBits(const Tile &tile, RoadTramType rtt, bool straight_tunnel_bridge_entrance)
 {
 	if (!MayHaveRoad(tile) || !HasTileRoadType(tile, rtt)) return {};
 

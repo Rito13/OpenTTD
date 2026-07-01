@@ -110,14 +110,8 @@
     </li>
    </ul>
   </li>
-  <li><span style="font-weight: bold;">m8:</span><br>
-   <a name="TramType"></a>
-   Tram roadtype. Used for all tiles with road (road, station, tunnelbridge).
-   <ul>
-    <li>
-     Bits 11..6: Tram roadtype, 0x3F for no tram.
-    </li>
-   </ul>
+  <li><span style="font-weight: bold;">m7:</span><br>
+   Animation frame/state. Used for houses, industries, objects and stations.
   </li>
   <li><span style="font-weight: bold;">m8:</span><br>
    <ul>
@@ -125,15 +119,40 @@
      <a name="RailType"></a>
      Bits 5..0: Railtype. Used for all tiles with rail (road, rail, station, tunnelbridge).
     </li>
+    <li>
+     <a name="TramType"></a>
+     Bits 11..6: Tram roadtype, 0x3F for no tram. Used for all tiles with road (road, station, tunnelbridge).
+    </li>
+    <li>
+     <a name="AssociatedFlag"></a>
+     Bit 14: Associated tile flag. Marks if the next tile is still part of this TileIndex.
+    </li>
    </ul>
-  </li>
-  <li><span style="font-weight: bold;">m7:</span><br>
-   Animation frame/state. Used for houses, industries, objects and stations.
   </li>
  </ul>
 
  <p>OTTD's class-specific periodic tile processing routine is called once every +256 ticks for each tile.</p>
 
+ <h3><a name="Subtile">Associated sub-tiles</a></h3>
+
+ <p>Some tile types only occur as associated sub-tiles of a main tile.</p>
+ <p></p>
+ <ul>
+  <li><a href="#Class1"><span style="font-weight: bold;">Railway tracks:</span></a><br>
+   <ul>
+    <li>Base tile is <a href="#Class0">Ground</a> or <a href="#Class6">Water</a>.</li>
+    <li>No other sub-tile is allowed.</li>
+   </ul>
+  </li>
+  <li><a href="#Class4"><span style="font-weight: bold;">Trees:</span></a><br>
+   <ul>
+    <li>Base tile is <a href="#Class0">Ground</a> or <a href="#Class6">Water</a>.</li>
+    <li>No other sub-tile is allowed.</li>
+   </ul>
+  </li>
+ </ul>
+
+ <h3><a name="Details">Details</a></h3>
  <table border=1 cellpadding=3>
   <tr bgcolor="#0099FF">
    <th align=left><font color="#FFFFFF">Class</font></th>
@@ -240,6 +259,7 @@
       </table>
      </li>
      <li>m6 bits 4..2: type of hedge on NW border of the tile</li>
+     <li>m8 bit 14: Next tile is associated with this tile</li>
     </ul>
    </td>
   </tr>
@@ -280,81 +300,61 @@
       </table>
      </li>
      <li>m4 bits 7..4: see signals</li>
-     <li>m4 bits 3..0: Ground type (values with fences are not valid for depots and checkpoints)
+     <li>m4 bits 3..0: Fence type (only "no fences" is valid for depots and checkpoints)
       <table>
        <tr>
         <td nowrap valign=top><tt>0</tt>&nbsp; </td>
-        <td align=left>on bare land</td>
+        <td align=left>no fences</td>
        </tr>
 
        <tr>
         <td nowrap valign=top><tt>1</tt>&nbsp; </td>
-        <td align=left>on grass, no fences</td>
-       </tr>
-
-       <tr>
-        <td nowrap valign=top><tt>2</tt>&nbsp; </td>
         <td align=left>fence on the NW side</td>
        </tr>
 
        <tr>
-        <td nowrap valign=top><tt>3</tt>&nbsp; </td>
+        <td nowrap valign=top><tt>2</tt>&nbsp; </td>
         <td align=left>fence on the SE side</td>
        </tr>
 
        <tr>
-        <td nowrap valign=top><tt>4</tt>&nbsp; </td>
+        <td nowrap valign=top><tt>3</tt>&nbsp; </td>
         <td align=left>fences on the NW and SE sides</td>
        </tr>
 
        <tr>
-        <td nowrap valign=top><tt>5</tt>&nbsp; </td>
+        <td nowrap valign=top><tt>4</tt>&nbsp; </td>
         <td align=left>fence on the NE side</td>
        </tr>
 
        <tr>
-        <td nowrap valign=top><tt>6</tt>&nbsp; </td>
+        <td nowrap valign=top><tt>5</tt>&nbsp; </td>
         <td align=left>fence on the SW side</td>
        </tr>
 
        <tr>
-        <td nowrap valign=top><tt>7</tt>&nbsp; </td>
+        <td nowrap valign=top><tt>6</tt>&nbsp; </td>
         <td align=left>fences on the NE and SW sides</td>
        </tr>
 
        <tr>
-        <td nowrap valign=top><tt>8</tt>&nbsp; </td>
+        <td nowrap valign=top><tt>7</tt>&nbsp; </td>
         <td align=left>fence on the E side (track in the W corner)</td>
        </tr>
 
        <tr>
-        <td nowrap valign=top><tt>9</tt>&nbsp; </td>
+        <td nowrap valign=top><tt>8</tt>&nbsp; </td>
         <td align=left>fence on the W side (track in the E corner)</td>
        </tr>
 
        <tr>
-        <td nowrap valign=top><tt>A</tt>&nbsp; </td>
+        <td nowrap valign=top><tt>9</tt>&nbsp; </td>
         <td align=left>fence on the S side (track in the N corner)</td>
        </tr>
 
        <tr>
-        <td nowrap valign=top><tt>B</tt>&nbsp; </td>
+        <td nowrap valign=top><tt>A</tt>&nbsp; </td>
         <td align=left>fence on the N side (track in the S corner)</td>
-       </tr>
-
-       <tr>
-        <td nowrap valign=top><tt>C</tt>&nbsp; </td>
-        <td align=left>on snow or desert</td>
-       </tr>
-
-       <tr>
-        <td nowrap valign=top><tt>D</tt>&nbsp; </td>
-        <td align=left>on grass with fence and shore or water on the free halftile</td>
-       </tr>
-
-       <tr>
-        <td nowrap valign=top><tt>E</tt>&nbsp; </td>
-        <td align=left>higher part on foundation with snow, lower without snow</td>
        </tr>
       </table>
      </li>
@@ -782,38 +782,6 @@
    <td valign=top nowrap>&nbsp;</td>
    <td>
     <ul>
-     <li>m1 bits 6..5: water class (sea or land)</li>
-     <li>m1 bits 4..0: <a href="#OwnershipInfo">owner</a> (normally <tt>10</tt>)</li>
-     <li>m2 bits 8..6: ground
-      <table>
-
-       <tr>
-        <td align=left><tt>0</tt>&nbsp; </td>
-        <td>on grass</td>
-       </tr>
-
-       <tr>
-        <td align=left><tt>1</tt>&nbsp; </td>
-        <td>on rough land (density must be 3)</td>
-       </tr>
-
-       <tr>
-        <td align=left><tt>2</tt>&nbsp; </td>
-        <td>on snow or desert</td>
-       </tr>
-
-       <tr>
-        <td align=left><tt>3</tt>&nbsp; </td>
-        <td>on shore (density must be 3)</td>
-       </tr>
-
-       <tr>
-        <td align=left><tt>4</tt>&nbsp; </td>
-        <td>on snow with rough land underneath</td>
-       </tr>
-      </table>
-     </li>
-     <li>m2 bits 5..4: ground density</li>
      <li>m3 bits 7..0: type of trees:
       <table>
        <tr>
@@ -1145,6 +1113,7 @@
        </tr>
       </table>
      </li>
+     <li>m8 bit 14: Next tile is associated with this tile</li>
     </ul>
    </td>
   </tr>

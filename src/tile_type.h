@@ -11,6 +11,7 @@
 #define TILE_TYPE_H
 
 #include "core/strong_typedef_type.hpp"
+#include "core/enum_type.hpp"
 
 static constexpr uint TILE_SIZE           = 16;                    ///< Tile size in world coordinates.
 static constexpr uint TILE_UNIT_MASK      = TILE_SIZE - 1;         ///< For masking in/out the inner-tile world coordinate units.
@@ -62,6 +63,9 @@ enum class TileType : uint8_t {
 };
 
 static_assert(TileType::End <= TileType::MaxSize);
+
+/** Bitset of \c TileType elements. */
+using TileTypes = EnumBitSet<TileType, uint16_t, TileType::End>;
 
 /**
  * Additional infos of a tile on a tropic game.

@@ -108,8 +108,10 @@ VehicleTypeIndexArray<const StringID> _send_to_depot_msg_table = {
  * @param client_id User
  * @return the cost of this operation + the new vehicle ID + the refitted capacity + the refitted mail capacity (aircraft) or an error
  */
-std::tuple<CommandCost, VehicleID, uint, uint16_t, CargoArray> CmdBuildVehicle(DoCommandFlags flags, TileIndex tile, EngineID eid, bool use_free_vehicles, CargoType cargo, ClientID client_id)
+std::tuple<CommandCost, VehicleID, uint, uint16_t, CargoArray> CmdBuildVehicle(DoCommandFlags flags, TileIndex index, EngineID eid, bool use_free_vehicles, CargoType cargo, ClientID client_id)
 {
+	DepotTile tile = AsDepotTile(index);
+
 	/* Elementary check for valid location. */
 	if (!IsDepotTile(tile) || !IsTileOwner(tile, _current_company)) return { CMD_ERROR, VehicleID::Invalid(), 0, 0, {} };
 
@@ -159,10 +161,10 @@ std::tuple<CommandCost, VehicleID, uint, uint16_t, CargoArray> CmdBuildVehicle(D
 
 	Vehicle *v = nullptr;
 	switch (type) {
-		case VehicleType::Train:    value.AddCost(CmdBuildRailVehicle(subflags, tile, e, &v)); break;
-		case VehicleType::Road:     value.AddCost(CmdBuildRoadVehicle(subflags, tile, e, &v)); break;
-		case VehicleType::Ship:     value.AddCost(CmdBuildShip       (subflags, tile, e, &v)); break;
-		case VehicleType::Aircraft: value.AddCost(CmdBuildAircraft   (subflags, tile, e, &v)); break;
+		case VehicleType::Train: value.AddCost(CmdBuildRailVehicle(subflags, index, tile, e, &v)); break;
+		case VehicleType::Road: value.AddCost(CmdBuildRoadVehicle(subflags, index, e, &v)); break;
+		case VehicleType::Ship: value.AddCost(CmdBuildShip(subflags, index, e, &v)); break;
+		case VehicleType::Aircraft: value.AddCost(CmdBuildAircraft(subflags, index, e, &v)); break;
 		default: NOT_REACHED(); // Safe due to IsDepotTile()
 	}
 
@@ -680,7 +682,7 @@ CommandCost CmdMassStartStopVehicle(DoCommandFlags flags, TileIndex tile, bool d
 	if (vehicle_list_window) {
 		if (!GenerateVehicleSortList(&list, vli)) return CMD_ERROR;
 	} else {
-		if (!IsDepotTile(tile) || !IsTileOwner(tile, _current_company)) return CMD_ERROR;
+		if (!IsTileOwnerIfDepot(tile, _current_company)) return CMD_ERROR;
 		/* Get the list of vehicles in the depot */
 		BuildDepotVehicleList(vli.vtype, tile, &list, nullptr);
 	}
@@ -711,7 +713,7 @@ CommandCost CmdDepotSellAllVehicles(DoCommandFlags flags, TileIndex tile, Vehicl
 	CommandCost cost(ExpensesType::NewVehicles);
 
 	if (!IsCompanyBuildableVehicleType(vehicle_type)) return CMD_ERROR;
-	if (!IsDepotTile(tile) || !IsTileOwner(tile, _current_company)) return CMD_ERROR;
+	if (!IsTileOwnerIfDepot(tile, _current_company)) return CMD_ERROR;
 
 	/* Get the list of vehicles in the depot */
 	BuildDepotVehicleList(vehicle_type, tile, &list, &list);
@@ -744,7 +746,7 @@ CommandCost CmdDepotMassAutoReplace(DoCommandFlags flags, TileIndex tile, Vehicl
 	CommandCost cost = CommandCost(ExpensesType::NewVehicles);
 
 	if (!IsCompanyBuildableVehicleType(vehicle_type)) return CMD_ERROR;
-	if (!IsDepotTile(tile) || !IsTileOwner(tile, _current_company)) return CMD_ERROR;
+	if (!IsTileOwnerIfDepot(tile, _current_company)) return CMD_ERROR;
 
 	/* Get the list of vehicles in the depot */
 	BuildDepotVehicleList(vehicle_type, tile, &list, &list, true);

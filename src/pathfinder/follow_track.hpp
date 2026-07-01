@@ -250,7 +250,7 @@ protected:
 	inline bool QueryNewTileTrackStatus()
 	{
 		if (IsRailTT() && IsPlainRailTile(this->new_tile)) {
-			this->new_td_bits = TrackBitsToTrackdirBits(GetTrackBits(this->new_tile));
+			this->new_td_bits = TrackBitsToTrackdirBits(GetTrackBits(Tile::GetByType(this->new_tile, TileType::Railway)));
 		} else if (IsRoadTT()) {
 			this->new_td_bits = GetTrackdirBitsForRoad(this->new_tile, this->IsTram() ? RoadTramType::Tram : RoadTramType::Road);
 		} else {
@@ -331,19 +331,22 @@ protected:
 				return false;
 			}
 		}
-		if (IsRailTT() && IsDepotTypeTile(this->new_tile, TT())) {
-			DiagDirection exitdir = GetRailDepotDirection(this->new_tile);
-			if (ReverseDiagDir(exitdir) != this->exitdir) {
+		if (IsRailTT()) {
+			Tile rail = Tile::GetByType(this->new_tile, TileType::Railway);
+			if (IsRailDepotTile(rail)) {
+				DiagDirection exitdir = GetRailDepotDirection(rail);
+				if (ReverseDiagDir(exitdir) != this->exitdir) {
+					this->err = ErrorCode::NoWay;
+					return false;
+				}
+			}
+
+			/* rail transport is possible only on tiles with the same owner as vehicle */
+			if ((rail ? GetTileOwner(rail) : GetTileOwner(this->new_tile)) != this->veh_owner) {
+				/* different owner */
 				this->err = ErrorCode::NoWay;
 				return false;
 			}
-		}
-
-		/* rail transport is possible only on tiles with the same owner as vehicle */
-		if (IsRailTT() && GetTileOwner(this->new_tile) != this->veh_owner) {
-			/* different owner */
-			this->err = ErrorCode::NoWay;
-			return false;
 		}
 
 		/* rail transport is possible only on compatible rail types */
@@ -413,7 +416,7 @@ protected:
 	{
 		/* rail and road depots cause reversing */
 		if (!IsWaterTT() && IsDepotTypeTile(this->old_tile, TT())) {
-			DiagDirection exitdir = IsRailTT() ? GetRailDepotDirection(this->old_tile) : GetRoadDepotDirection(this->old_tile);
+			DiagDirection exitdir = IsRailTT() ? GetRailDepotDirection(GetRailDepotTile(this->old_tile)) : GetRoadDepotDirection(this->old_tile);
 			if (exitdir != this->exitdir) {
 				/* reverse */
 				this->new_tile = this->old_tile;
@@ -486,7 +489,7 @@ public:
 		}
 		/* Check for speed limit imposed by railtype */
 		if (IsRailTT()) {
-			uint16_t rail_speed = GetRailTypeInfo(GetRailType(this->old_tile))->max_speed;
+			uint16_t rail_speed = GetRailTypeInfo(GetTileRailType(this->old_tile))->max_speed;
 			if (rail_speed > 0) max_speed = std::min<int>(max_speed, rail_speed);
 		}
 		if (IsRoadTT()) {

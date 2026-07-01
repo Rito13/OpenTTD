@@ -1569,7 +1569,7 @@ void VehicleEnterDepot(Vehicle *v)
 			Train *t = Train::From(v);
 			SetWindowClassesDirty(WindowClass::TrainList);
 			/* Clear path reservation */
-			SetDepotReservation(t->tile, false);
+			SetDepotReservation(GetRailDepotTile(t->tile), false);
 			if (_settings_client.gui.show_track_reservation) MarkTileDirtyByTile(t->tile);
 
 			UpdateSignalsOnSegment(t->tile, DiagDirection::Invalid, t->owner);
@@ -1862,7 +1862,16 @@ Direction GetDirectionTowards(const Vehicle *v, int x, int y)
  */
 VehicleEnterTileStates VehicleEnterTile(Vehicle *v, TileIndex tile, int x, int y)
 {
-	return _tile_type_procs[GetTileType(tile)]->vehicle_enter_tile_proc(v, tile, x, y);
+	VehicleEnterTileStates vets = {};
+
+	/* Loop through all associated tiles until we get a non-continue result. */
+	for (Tile t(tile); t.IsValid() && vets.None(); ++t) {
+		if (auto proc = _tile_type_procs[t.GetTileType()]->vehicle_enter_tile_proc; proc != nullptr) {
+			vets |= proc(v, tile, t, x, y);
+		}
+	}
+
+	return vets;
 }
 
 /**
@@ -2891,7 +2900,7 @@ void Vehicle::ShowVisualEffect() const
 		if (effect_model == VisualEffectSpawnModel::None ||
 				v->vehstatus.Test(VehState::Hidden) ||
 				IsBridgeAboveVehicle(v) ||
-				IsDepotTile(v->tile) ||
+				IsDepotTile(AsDepotTile(v->tile)) ||
 				IsTunnelTile(v->tile) ||
 				(v->type == VehicleType::Train &&
 				!HasPowerOnRail(Train::From(v)->railtypes, GetTileRailType(v->tile)))) {

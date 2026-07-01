@@ -479,7 +479,7 @@ static void DrawTileLayout(const TileInfo *ti, const DrawTileSpriteSpan &dts, ui
 	const HouseSpec *hs = HouseSpec::Get(house_id);
 	PaletteID palette = GetColourPalette(hs->random_colour[TileHash2Bit(ti->x, ti->y)]);
 	if (hs->callback_mask.Test(HouseCallbackMask::Colour)) {
-		uint16_t callback = GetHouseCallback(CBID_HOUSE_COLOUR, 0, 0, house_id, Town::GetByTile(ti->tile), ti->tile);
+		uint16_t callback = GetHouseCallback(CBID_HOUSE_COLOUR, 0, 0, house_id, Town::GetByTile(ti->index), ti->index);
 		if (callback != CALLBACK_FAILED) {
 			/* If bit 14 is set, we should use a 2cc colour map, else use the callback value. */
 			palette = HasBit(callback, 14) ? GB(callback, 0, 8) + SPR_2CCMAP_BASE : callback;
@@ -501,20 +501,7 @@ static void DrawTileLayout(const TileInfo *ti, const DrawTileSpriteSpan &dts, ui
 
 void DrawNewHouseTile(TileInfo *ti, HouseID house_id)
 {
-	const HouseSpec *hs = HouseSpec::Get(house_id);
-
-	if (ti->tileh != SLOPE_FLAT) {
-		bool draw_old_one = true;
-		if (hs->callback_mask.Test(HouseCallbackMask::DrawFoundations)) {
-			/* Called to determine the type (if any) of foundation to draw for the house tile */
-			uint32_t callback_res = GetHouseCallback(CBID_HOUSE_DRAW_FOUNDATIONS, 0, 0, house_id, Town::GetByTile(ti->tile), ti->tile);
-			if (callback_res != CALLBACK_FAILED) draw_old_one = ConvertBooleanCallback(hs->grf_prop.grffile, CBID_HOUSE_DRAW_FOUNDATIONS, callback_res);
-		}
-
-		if (draw_old_one) DrawFoundation(ti, Foundation::Leveled);
-	}
-
-	HouseResolverObject object(house_id, ti->tile, Town::GetByTile(ti->tile));
+	HouseResolverObject object(house_id, ti->index, Town::GetByTile(ti->index));
 
 	const auto *group = object.Resolve<TileLayoutSpriteGroup>();
 	if (group != nullptr) {
@@ -581,12 +568,12 @@ struct HouseAnimationBase : public AnimationBase<HouseAnimationBase, HouseSpec, 
 	static constexpr HouseCallbackMask cbm_animation_next_frame = HouseCallbackMask::AnimationNextFrame;
 };
 
-void AnimateNewHouseTile(TileIndex tile)
+void AnimateNewHouseTile(TileIndex index, const Tile &tile)
 {
 	const HouseSpec *hs = HouseSpec::Get(GetHouseType(tile));
 	if (hs == nullptr) return;
 
-	HouseAnimationBase::AnimateTile(hs, Town::GetByTile(tile), tile, hs->extra_flags.Test(HouseExtraFlag::Callback1ARandomBits));
+	HouseAnimationBase::AnimateTile(hs, Town::GetByTile(tile), index, tile, hs->extra_flags.Test(HouseExtraFlag::Callback1ARandomBits));
 }
 
 void TriggerHouseAnimation_ConstructionStageChanged(TileIndex tile, bool first_call)
@@ -594,11 +581,18 @@ void TriggerHouseAnimation_ConstructionStageChanged(TileIndex tile, bool first_c
 	const HouseSpec *hs = HouseSpec::Get(GetHouseType(tile));
 
 	if (hs->callback_mask.Test(HouseCallbackMask::AnimationTriggerConstructionStageChanged)) {
-		HouseAnimationBase::ChangeAnimationFrame(CBID_HOUSE_ANIMATION_TRIGGER_CONSTRUCTION_STAGE_CHANGED, hs, Town::GetByTile(tile), tile, Random(), first_call ? 1 : 0);
+		HouseAnimationBase::ChangeAnimationFrame(CBID_HOUSE_ANIMATION_TRIGGER_CONSTRUCTION_STAGE_CHANGED, hs, Town::GetByTile(tile), tile, Tile(tile), Random(), first_call ? 1 : 0);
 	}
 }
 
-bool CanDeleteHouse(TileIndex tile)
+/**
+ * Check if the house on given tile can be deleted by current actor.
+ * Uses `_current_company` to define the actor.
+ * @param index The tile that the house is built on.
+ * @param tile The tile that contains the house data.
+ * @return \c true iff the house can be deleted by current actor.
+ */
+bool CanDeleteHouse(TileIndex index, const Tile &tile)
 {
 	const HouseSpec *hs = HouseSpec::Get(GetHouseType(tile));
 
@@ -609,7 +603,7 @@ bool CanDeleteHouse(TileIndex tile)
 	}
 
 	if (hs->callback_mask.Test(HouseCallbackMask::DenyDestruction)) {
-		uint16_t callback_res = GetHouseCallback(CBID_HOUSE_DENY_DESTRUCTION, 0, 0, GetHouseType(tile), Town::GetByTile(tile), tile);
+		uint16_t callback_res = GetHouseCallback(CBID_HOUSE_DENY_DESTRUCTION, 0, 0, GetHouseType(tile), Town::GetByTile(tile), index);
 		return (callback_res == CALLBACK_FAILED || !ConvertBooleanCallback(hs->grf_prop.grffile, CBID_HOUSE_DENY_DESTRUCTION, callback_res));
 	} else {
 		return !IsHouseProtected(tile);
@@ -630,7 +624,7 @@ static void TriggerHouseAnimation_TileLoop(TileIndex tile, bool sync, uint16_t r
 	if (hs->callback_mask.Test(HouseCallbackMask::AnimationTriggerTileLoop) &&
 			hs->extra_flags.Test(HouseExtraFlag::SynchronisedCallback1B) == sync) {
 		uint32_t param = sync ? (GB(Random(), 0, 16) | random_bits << 16) : Random();
-		HouseAnimationBase::ChangeAnimationFrame(CBID_HOUSE_ANIMATION_TRIGGER_TILE_LOOP, hs, Town::GetByTile(tile), tile, param, 0);
+		HouseAnimationBase::ChangeAnimationFrame(CBID_HOUSE_ANIMATION_TRIGGER_TILE_LOOP, hs, Town::GetByTile(tile), tile, Tile(tile), param, 0);
 	}
 }
 
@@ -737,7 +731,7 @@ static void DoTriggerHouseAnimation_WatchedCargoAccepted(TileIndex tile, TileInd
 {
 	TileIndexDiffC diff = TileIndexToTileIndexDiffC(origin, tile);
 	uint32_t cb_info = random << 16 | (uint8_t)diff.y << 8 | (uint8_t)diff.x;
-	HouseAnimationBase::ChangeAnimationFrame(CBID_HOUSE_ANIMATION_TRIGGER_WATCHED_CARGO_ACCEPTED, HouseSpec::Get(GetHouseType(tile)), Town::GetByTile(tile), tile, 0, cb_info, trigger_cargoes);
+	HouseAnimationBase::ChangeAnimationFrame(CBID_HOUSE_ANIMATION_TRIGGER_WATCHED_CARGO_ACCEPTED, HouseSpec::Get(GetHouseType(tile)), Town::GetByTile(tile), tile, Tile(tile), 0, cb_info, trigger_cargoes);
 }
 
 /**

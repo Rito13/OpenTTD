@@ -36,12 +36,11 @@ RailType RailTypeInfo::Index() const
  * @param tile An arbitrary tile.
  * @return The rail type, or \c INVALID_RAILTYPE.
  */
-RailType GetTileRailType(Tile tile)
+RailType GetTileRailType(TileIndex tile)
 {
-	switch (GetTileType(tile)) {
-		case TileType::Railway:
-			return GetRailType(tile);
+	if (Tile rail = Tile::GetByType(tile, TileType::Railway); rail.IsValid()) return GetRailType(rail);
 
+	switch (GetTileType(tile)) {
 		case TileType::Road:
 			/* rail/road crossing */
 			if (IsLevelCrossing(tile)) return GetRailType(tile);
