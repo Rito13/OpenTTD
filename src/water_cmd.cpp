@@ -119,7 +119,7 @@ CommandCost CmdBuildShipDepot(DoCommandFlags flags, TileIndex tile, Axis axis)
 		return CommandCost(STR_ERROR_MUST_BE_BUILT_ON_WATER);
 	}
 
-	for (Tile t : {tile, tile2}) {
+	for (TileIndex t : {tile, tile2}) {
 		if (IsBridgeAbove(t)) {
 			int height_diff = GetTileMaxZ(t) + MINIMAL_DEPOT_BRIDGE_HEIGHT - GetBridgeHeight(GetSouthernBridgeEnd(t));
 			if (height_diff > 0) return CommandCostWithParam(STR_ERROR_BRIDGE_TOO_LOW_FOR_SHIP_DEPOT, height_diff * TILE_HEIGHT_STEP);
