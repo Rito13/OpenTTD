@@ -40,10 +40,10 @@ static constexpr DiagDirectionIndexArray<TrackBits> _enterdir_to_trackbits{
 
 /** Accessible TrackdirBits from a given enter direction. */
 static constexpr DiagDirectionIndexArray<TrackdirBits> _enterdir_to_trackdirbits{{{
-	{Trackdir::X_SW, Trackdir::Upper_W, Trackdir::Right_S},
-	{Trackdir::Y_NW, Trackdir::Lower_W, Trackdir::Right_N},
-	{Trackdir::X_NE, Trackdir::Lower_E, Trackdir::Left_N},
-	{Trackdir::Y_SE, Trackdir::Upper_E, Trackdir::Left_S},
+	{{Trackdir::X_SW, Trackdir::Upper_W, Trackdir::Right_S}},
+	{{Trackdir::Y_NW, Trackdir::Lower_W, Trackdir::Right_N}},
+	{{Trackdir::X_NE, Trackdir::Lower_E, Trackdir::Left_N}},
+	{{Trackdir::Y_SE, Trackdir::Upper_E, Trackdir::Left_S}},
 }}};
 
 /**
