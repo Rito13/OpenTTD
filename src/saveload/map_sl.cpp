@@ -151,31 +151,31 @@ struct MAPSChunkHandler : ChunkHandler {
 };
 
 struct MAPRChunkHandler : ChunkHandler {
-	MAPRChunkHandler() : ChunkHandler('MAPR', CH_RIFF) {}
+	MAPRChunkHandler() : ChunkHandler("MAPR", ChunkType::Riff) {}
 
 	void Load() const override
 	{
 		std::vector<uint> buf(Map::SizeY());
 
 		/* Resize each map line to the final length. */
-		SlCopy(buf.data(), Map::SizeY(), SLE_UINT);
+		SlCopy(buf.data(), Map::SizeY(), VarTypes::U32);
 		for (uint i = 0; i < Map::SizeY(); i++) Map::base_tiles[i].resize(buf[i]);
 
 		/* Load offset table. */
-		SlCopy(Map::offsets.data(), Map::Size(), SLE_UINT16);
+		SlCopy(Map::offsets.data(), Map::Size(), VarTypes::U16);
 	}
 
 	void Save() const override
 	{
-		SlSetLength(SlVarSize(SLE_UINT) * Map::SizeY() + SlVarSize(SLE_UINT16) * Map::Size());
+		SlSetLength(SlVarSize(VarMemType::U32) * Map::SizeY() + SlVarSize(VarMemType::U16) * Map::Size());
 
 		/* Save length of each map line. */
 		std::vector<uint> buf(Map::SizeY());
 		for (uint i = 0; i < Map::SizeY(); i++) buf[i] = static_cast<uint>(Map::base_tiles[i].size());
-		SlCopy(buf.data(), Map::SizeY(), SLE_UINT);
+		SlCopy(buf.data(), Map::SizeY(), VarTypes::U32);
 
 		/* Save offset table. */
-		SlCopy(Map::offsets.data(), Map::Size(), SLE_UINT16);
+		SlCopy(Map::offsets.data(), Map::Size(), VarTypes::U16);
 	}
 };
 
