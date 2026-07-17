@@ -46,6 +46,17 @@ public:
 		return static_cast<Timpl&>(*this);
 	}
 
+protected:
+	/**
+	 * Set the value-th bit.
+	 * @param value Bit to set.
+	 */
+	inline constexpr void SetNoReturn(Tvalue_type value)
+	{
+		this->data |= (1ULL << Timpl::DecayValueType(value));
+	}
+public:
+
 	/**
 	 * Set the value-th bit.
 	 * @param value Bit to set.
@@ -53,7 +64,7 @@ public:
 	 */
 	inline constexpr Timpl &Set(Tvalue_type value)
 	{
-		this->data |= (1ULL << Timpl::DecayValueType(value));
+		this->SetNoReturn(value);
 		return static_cast<Timpl&>(*this);
 	}
 

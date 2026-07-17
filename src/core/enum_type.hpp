@@ -304,7 +304,7 @@ public:
 	using EnumType = BaseClass::ValueType;
 
 	constexpr EnumBitSet() : BaseClass() {}
-	constexpr EnumBitSet(Tenum value) : BaseClass() { this->Set(value); }
+	constexpr EnumBitSet(Tenum value) : BaseClass() { this->SetNoReturn(value); }
 	explicit constexpr EnumBitSet(Tstorage data) : BaseClass(data) {}
 
 	/**
@@ -314,7 +314,7 @@ public:
 	constexpr EnumBitSet(std::initializer_list<const Tenum> values) : BaseClass()
 	{
 		for (const Tenum &value : values) {
-			this->Set(value);
+			this->SetNoReturn(value);
 		}
 	}
 
