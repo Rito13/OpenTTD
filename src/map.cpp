@@ -27,6 +27,7 @@
 /* static */ std::vector<std::vector<Map::TileBase>> Map::base_tiles{};
 /* static */ std::vector<std::vector<Map::TileExtended>> Map::extended_tiles;
 /* static */ std::vector<MapOffsetType> Map::offsets{};
+/* static */ std::forward_list<Tile *> Tile::tile_tracker{};
 
 /**
  * (Re)allocates a map with the given dimension
@@ -93,6 +94,61 @@
 TileIndex TileVirtXYClampedToMap(int x, int y)
 {
 	return TileIndex{(static_cast<uint>(Clamp<int>(y / static_cast<int>(TILE_SIZE), 0, Map::MaxY())) << Map::LogX()) + static_cast<uint>(Clamp<int>(x / static_cast<int>(TILE_SIZE), 0, Map::MaxX()))};
+}
+
+/**
+ * Create the tile wrapper from raw pointers.
+ * @param tile Pointer to a tile inside the map array.
+ * @param tile_extended Pointer to the same tile but inside the map extended array.
+ * @param previous_tile_in_tracker Iterator to previous tile in tracker.
+ */
+Tile::Tile(Map::TileBase *tile, Map::TileExtended *tile_extended, TrackerIterator previous_tile_in_tracker) noexcept : tile(tile), tile_extended(tile_extended), previous_tile_in_tracker(previous_tile_in_tracker)
+{
+	if (this->previous_tile_in_tracker == this->tile_tracker.end()) return;
+	TrackerIterator next_tile_in_tracker = this->previous_tile_in_tracker;
+	++next_tile_in_tracker;
+	TrackerIterator us = this->tile_tracker.insert_after(this->previous_tile_in_tracker, this);
+	if (next_tile_in_tracker != this->tile_tracker.end()) (*next_tile_in_tracker)->previous_tile_in_tracker = us;
+}
+
+/**
+ * Move the tile wrapper.
+ * @param other The wrapper to move.
+ */
+Tile::Tile(Tile &&other) noexcept : tile(std::move(other.tile)), tile_extended(std::move(other.tile_extended)), previous_tile_in_tracker(std::move(other.previous_tile_in_tracker))
+{
+	*(++other.previous_tile_in_tracker) = this;
+	other.previous_tile_in_tracker = this->tile_tracker.end();
+}
+
+/** Destructs the tile wrapper. */
+Tile::~Tile() noexcept
+{
+	if (this->previous_tile_in_tracker == this->tile_tracker.end()) return;
+	TrackerIterator next_tile_in_tracker = this->tile_tracker.erase_after(this->previous_tile_in_tracker);
+	if (next_tile_in_tracker != this->tile_tracker.end()) (*next_tile_in_tracker)->previous_tile_in_tracker = this->previous_tile_in_tracker;
+}
+
+/**
+ * Copy the tile wrapper.
+ * @param other The wrapper to copy.
+ */
+Tile& Tile::operator=(const Tile& other) noexcept
+{
+	this->tile = other.tile;
+	this->tile_extended = other.tile_extended;
+	return *this;
+}
+
+/**
+ * Move the tile wrapper.
+ * @param other The wrapper to move.
+ */
+Tile& Tile::operator=(Tile&& other) noexcept
+{
+	this->tile = std::move(other.tile);
+	this->tile_extended = std::move(other.tile_extended);
+	return *this;
 }
 
 /**

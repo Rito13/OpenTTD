@@ -329,42 +329,45 @@ TileIndex TileVirtXYClampedToMap(int x, int y);
  * with low optimization levels except when completely disabling it.
  */
 class Tile {
-private:
 	friend struct RawMapIterator;
+	using TrackerIterator = std::forward_list<Tile *>::iterator;
+	static std::forward_list<Tile *> tile_tracker; ///< Holds a pointer to each currently valid Tile object.
 
 	Map::TileBase *tile; ///< The tile to access the map data for.
 	Map::TileExtended *tile_extended; ///< The tile to access the map extended data for.
+	TrackerIterator previous_tile_in_tracker; ///< Iterator to element before us in the tile_tracker.
 
-	/**
-	 * Create the tile wrapper from raw pointers.
-	 * @param tile Pointer to a tile inside the map array.
-	 * @param tile_extended Pointer to the same tile but inside the map extended array.
-	 */
-	Tile(Map::TileBase *tile, Map::TileExtended *tile_extended) : tile(tile), tile_extended(tile_extended) {}
+	Tile(Map::TileBase *tile, Map::TileExtended *tile_extended, TrackerIterator previous_tile_in_tracker = Tile::tile_tracker.before_begin()) noexcept;
+
 public:
 	/** Create an invalid tile wrapper. */
-	[[debug_inline]] inline Tile() : tile(nullptr), tile_extended(nullptr) {}
+	[[debug_inline]] inline Tile() : Tile(nullptr, nullptr, Tile::tile_tracker.end()) {}
 
 	/**
 	 * Create the tile wrapper for the given tile.
 	 * @param tile_index The tile to access the map for.
 	 */
-	Tile(TileIndex::BaseType tile_index)
-	{
-		if (tile_index < Map::Size()) {
-			this->tile = &Map::base_tiles[tile_index >> LOG_2_OF_TILE_INDEXES_PER_CHUNK][Map::offsets[tile_index]];
-			this->tile_extended = &Map::extended_tiles[tile_index >> LOG_2_OF_TILE_INDEXES_PER_CHUNK][Map::offsets[tile_index]];
-		} else {
-			this->tile = nullptr;
-			this->tile_extended = nullptr;
-		}
-	}
+	Tile(TileIndex::BaseType tile_index) : Tile(
+			tile_index < Map::Size() ? &Map::base_tiles[tile_index >> LOG_2_OF_TILE_INDEXES_PER_CHUNK][Map::offsets[tile_index]] : nullptr,
+			tile_index < Map::Size() ? &Map::extended_tiles[tile_index >> LOG_2_OF_TILE_INDEXES_PER_CHUNK][Map::offsets[tile_index]] : nullptr
+		) {}
 
 	/**
 	 * Create the tile wrapper for the given tile.
 	 * @param tile The tile to access the map for.
 	 */
 	[[debug_inline]] inline Tile(TileIndex tile) : Tile(tile.base()) {}
+
+	/**
+	 * Duplicate the tile wrapper.
+	 * @param other The wrapper to duplicate.
+	 */
+	Tile(const Tile &other) noexcept : Tile(other.tile, other.tile_extended) {}
+
+	Tile(Tile &&other) noexcept;
+	~Tile() noexcept;
+	Tile& operator=(const Tile& other) noexcept;
+	Tile& operator=(Tile&& other) noexcept;
 
 	/**
 	 * Check if the tile reference is a valid on-map tile.
