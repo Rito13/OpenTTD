@@ -26,7 +26,7 @@ struct RawMapIterator {
 	 */
 	static RawMapIterator begin()
 	{
-		return RawMapIterator(Map::base_tiles.begin(), Map::base_tiles.front().begin(), Map::extended_tiles.begin(), Map::extended_tiles.front().begin());
+		return RawMapIterator(0, 0);
 	}
 
 	/**
@@ -35,7 +35,7 @@ struct RawMapIterator {
 	 */
 	static RawMapIterator end()
 	{
-		return RawMapIterator(Map::base_tiles.end(), std::vector<Map::TileBase>::iterator(), Map::extended_tiles.end(), std::vector<Map::TileExtended>::iterator());
+		return RawMapIterator(Map::base_tiles.size(), 0);
 	}
 
 	/**
@@ -43,7 +43,7 @@ struct RawMapIterator {
 	 * @param rhs The other iterator to compare to.
 	 * @return \c true iff the tile of both iterators is the same.
 	 */
-	bool operator ==(const RawMapIterator &rhs) const { return this->y == rhs.y && this->tile == rhs.tile && this->y_extended == rhs.y_extended && this->tile_extended == rhs.tile_extended; }
+	bool operator ==(const RawMapIterator &rhs) const { return this->chunk == rhs.chunk && this->tile == rhs.tile; }
 
 	/**
 	 * Inequality comparison.
@@ -56,7 +56,10 @@ struct RawMapIterator {
 	 * Get the tile we are currently at.
 	 * @return The tile we are at.
 	 */
-	Tile operator *() { return Tile(&(*tile), &(*tile_extended)); }
+	Tile operator *()
+	{
+		return Tile(this->chunk << LOG_2_OF_TILE_INDEXES_PER_CHUNK, this->tile);
+	}
 
 	/**
 	 * Prefix increment. Increments this iterator by one to the next tile.
@@ -64,13 +67,9 @@ struct RawMapIterator {
 	 */
 	RawMapIterator &operator ++()
 	{
-		if (++tile == y->end()) {
-			++y;
-			tile = y == Map::base_tiles.end() ? std::vector<Map::TileBase>::iterator() : y->begin();
-		}
-		if (++tile_extended == y_extended->end()) {
-			++y_extended;
-			tile_extended = y_extended == Map::extended_tiles.end() ? std::vector<Map::TileExtended>::iterator() : y_extended->begin();
+		if (++this->tile == Map::base_tiles[this->chunk].size()) {
+			++this->chunk;
+			this->tile = 0;
 		}
 		return *this;
 	}
@@ -86,11 +85,8 @@ struct RawMapIterator {
 		return old;
 	}
 private:
-	std::vector<std::vector<Map::TileBase>>::iterator y; ///< Low level iterator to the chunk of the map array.
-	std::vector<Map::TileBase>::iterator tile; ///< Low level iterator to the tile inside the chunk of the map array.
-
-	std::vector<std::vector<Map::TileExtended>>::iterator y_extended; ///< Low level iterator to the chunk of the extended map array.
-	std::vector<Map::TileExtended>::iterator tile_extended; ///< Low level iterator to the tile inside the chunk of the extended map array.
+	TileIndex::BaseType chunk;
+	MapOffsetType tile;
 
 	/**
 	 * Creates new raw iterator for map storage.
@@ -99,9 +95,7 @@ private:
 	 * @param y_extended @copydoc RawMapIterator::y_extended
 	 * @param tile_extended @copydoc RawMapIterator::tile_extended
 	 */
-	RawMapIterator(std::vector<std::vector<Map::TileBase>>::iterator &&y, std::vector<Map::TileBase>::iterator &&tile,
-			std::vector<std::vector<Map::TileExtended>>::iterator &&y_extended, std::vector<Map::TileExtended>::iterator &&tile_extended
-			) : y(y), tile(tile), y_extended(y_extended), tile_extended(tile_extended) { }
+	RawMapIterator(TileIndex::BaseType chunk, MapOffsetType tile) : chunk(chunk), tile(tile) {}
 };
 
 static uint32_t _map_dim_x;

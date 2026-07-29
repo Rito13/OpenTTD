@@ -27,7 +27,6 @@
 /* static */ std::vector<std::vector<Map::TileBase>> Map::base_tiles{};
 /* static */ std::vector<std::vector<Map::TileExtended>> Map::extended_tiles;
 /* static */ std::vector<MapOffsetType> Map::offsets{};
-/* static */ size_t Tile::counter = 0;
 
 /**
  * (Re)allocates a map with the given dimension
