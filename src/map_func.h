@@ -328,43 +328,29 @@ TileIndex TileVirtXYClampedToMap(int x, int y);
  * The wrapper is expected to be fully optimized away by the compiler, even
  * with low optimization levels except when completely disabling it.
  */
-class Tile {
-private:
+class Tile : TileIndex {
 	friend struct RawMapIterator;
 
-	Map::TileBase *tile; ///< The tile to access the map data for.
-	Map::TileExtended *tile_extended; ///< The tile to access the map extended data for.
+	MapOffsetType sub_tile = 0;
 
-	/**
-	 * Create the tile wrapper from raw pointers.
-	 * @param tile Pointer to a tile inside the map array.
-	 * @param tile_extended Pointer to the same tile but inside the map extended array.
-	 */
-	Tile(Map::TileBase *tile, Map::TileExtended *tile_extended) : tile(tile), tile_extended(tile_extended) {}
-public:
-	/** Create an invalid tile wrapper. */
-	[[debug_inline]] inline Tile() : tile(nullptr), tile_extended(nullptr) {}
+	Tile(TileIndex::BaseType tile_index, MapOffsetType sub_tile) : TileIndex(tile_index), sub_tile(sub_tile) {}
 
-	/**
-	 * Create the tile wrapper for the given tile.
-	 * @param tile_index The tile to access the map for.
-	 */
-	Tile(TileIndex::BaseType tile_index)
+	[[debug_inline]] inline Map::TileBase &GetTileBase() const
 	{
-		if (tile_index < Map::Size()) {
-			this->tile = &Map::base_tiles[tile_index >> LOG_2_OF_TILE_INDEXES_PER_CHUNK][Map::offsets[tile_index]];
-			this->tile_extended = &Map::extended_tiles[tile_index >> LOG_2_OF_TILE_INDEXES_PER_CHUNK][Map::offsets[tile_index]];
-		} else {
-			this->tile = nullptr;
-			this->tile_extended = nullptr;
-		}
+		return Map::base_tiles[this->value >> LOG_2_OF_TILE_INDEXES_PER_CHUNK][Map::offsets[this->value] + this->sub_tile];
 	}
 
-	/**
-	 * Create the tile wrapper for the given tile.
-	 * @param tile The tile to access the map for.
-	 */
-	[[debug_inline]] inline Tile(TileIndex tile) : Tile(tile.base()) {}
+	[[debug_inline]] inline Map::TileExtended &GetTileExtended() const
+	{
+		return Map::extended_tiles[this->value >> LOG_2_OF_TILE_INDEXES_PER_CHUNK][Map::offsets[this->value] + this->sub_tile];
+	}
+
+public:
+	/** Create an invalid tile wrapper. */
+	[[debug_inline]] inline Tile() : Tile(Map::Size(), 0) {}
+
+	[[debug_inline]] inline Tile(const TileIndex &other) : TileIndex(other.value) {}
+	[[debug_inline]] inline Tile(const TileIndex::BaseType &value) : TileIndex(value) {}
 
 	/**
 	 * Check if the tile reference is a valid on-map tile.
@@ -372,7 +358,7 @@ public:
 	 */
 	[[debug_inline]] inline bool IsValid() const
 	{
-		return this->tile != nullptr && this->tile_extended != nullptr;
+		return this->value < Map::Size();
 	}
 
 	/**
@@ -383,7 +369,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &type() const
 	{
-		return this->tile->type;
+		return this->GetTileBase().type;
 	}
 
 	/**
@@ -394,7 +380,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &height() const
 	{
-		return this->tile->height;
+		return this->GetTileBase().height;
 	}
 
 	/**
@@ -405,7 +391,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &m1() const
 	{
-		return this->tile->m1;
+		return this->GetTileBase().m1;
 	}
 
 	/**
@@ -416,7 +402,7 @@ public:
 	 */
 	[[debug_inline]] inline uint16_t &m2() const
 	{
-		return this->tile->m2;
+		return this->GetTileBase().m2;
 	}
 
 	/**
@@ -427,7 +413,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &m3() const
 	{
-		return this->tile->m3;
+		return this->GetTileBase().m3;
 	}
 
 	/**
@@ -438,7 +424,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &m4() const
 	{
-		return this->tile->m4;
+		return this->GetTileBase().m4;
 	}
 
 	/**
@@ -449,7 +435,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &m5() const
 	{
-		return this->tile->m5;
+		return this->GetTileBase().m5;
 	}
 
 	/**
@@ -460,7 +446,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &m6() const
 	{
-		return this->tile_extended->m6;
+		return this->GetTileExtended().m6;
 	}
 
 	/**
@@ -471,7 +457,7 @@ public:
 	 */
 	[[debug_inline]] inline uint8_t &m7() const
 	{
-		return this->tile_extended->m7;
+		return this->GetTileExtended().m7;
 	}
 
 	/**
@@ -482,7 +468,7 @@ public:
 	 */
 	[[debug_inline]] inline uint16_t &m8() const
 	{
-		return this->tile_extended->m8;
+		return this->GetTileExtended().m8;
 	}
 
 	/** Clear m8 part of the storage. Preserves the state of the associated tile flag. */
@@ -530,11 +516,10 @@ public:
 	Tile &operator ++()
 	{
 		if (this->IsValid() && this->HasAssociated()) {
-			++this->tile;
-			++this->tile_extended;
+			++this->sub_tile;
 		} else {
-			this->tile = nullptr;
-			this->tile_extended = nullptr;
+			this->value = Map::Size();
+			this->sub_tile = 0; // Does not affect the invalid state, however it makes the comparision with a default constructed invalid tile correct.
 		}
 		return *this;
 	}
@@ -545,7 +530,7 @@ public:
 	 */
 	Tile operator ++(int)
 	{
-		Tile old(this->tile, this->tile_extended);
+		Tile old(this->value, this->sub_tile);
 		this->operator++();
 		return old;
 	}
@@ -555,7 +540,7 @@ public:
 	 * @param other The other #Tile to compare to.
 	 * @return \c true iff both tiles point to the same place in map array.
 	 */
-	constexpr bool operator ==(const Tile &other) const noexcept { return this->tile == other.tile && this->tile_extended == other.tile_extended; }
+	constexpr bool operator ==(const Tile &other) const noexcept { return this->value == other.value && this->sub_tile == other.sub_tile; }
 
 	/** Bool conversion operator. Converts this tile into a boolean. */
 	explicit operator bool() const { return this->IsValid(); }
