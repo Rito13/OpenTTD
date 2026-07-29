@@ -56,7 +56,7 @@ struct RawMapIterator {
 	 * Get the tile we are currently at.
 	 * @return The tile we are at.
 	 */
-	Tile operator *() { return Tile(&(*tile), &(*tile_extended), Tile::tile_tracker.end()); }
+	Tile operator *() { return Tile(&(*tile), &(*tile_extended)); }
 
 	/**
 	 * Prefix increment. Increments this iterator by one to the next tile.

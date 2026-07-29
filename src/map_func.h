@@ -330,18 +330,21 @@ TileIndex TileVirtXYClampedToMap(int x, int y);
  */
 class Tile {
 	friend struct RawMapIterator;
-	using TrackerIterator = std::forward_list<Tile *>::iterator;
-	static std::forward_list<Tile *> tile_tracker; ///< Holds a pointer to each currently valid Tile object.
+	static size_t counter; ///< Counts how many Tile objects are currently in memory.
 
 	Map::TileBase *tile; ///< The tile to access the map data for.
 	Map::TileExtended *tile_extended; ///< The tile to access the map extended data for.
-	TrackerIterator previous_tile_in_tracker; ///< Iterator to element before us in the tile_tracker.
 
-	Tile(Map::TileBase *tile, Map::TileExtended *tile_extended, TrackerIterator previous_tile_in_tracker = Tile::tile_tracker.before_begin()) noexcept;
+	/**
+	 * Create the tile wrapper from raw pointers.
+	 * @param tile Pointer to a tile inside the map array.
+	 * @param tile_extended Pointer to the same tile but inside the map extended array.
+	 */
+	Tile(Map::TileBase *tile, Map::TileExtended *tile_extended) noexcept : tile(tile), tile_extended(tile_extended) { ++this->counter; }
 
 public:
 	/** Create an invalid tile wrapper. */
-	[[debug_inline]] inline Tile() : Tile(nullptr, nullptr, Tile::tile_tracker.end()) {}
+	[[debug_inline]] inline Tile() : Tile(nullptr, nullptr) {}
 
 	/**
 	 * Create the tile wrapper for the given tile.
@@ -364,10 +367,17 @@ public:
 	 */
 	Tile(const Tile &other) noexcept : Tile(other.tile, other.tile_extended) {}
 
-	Tile(Tile &&other) noexcept;
-	~Tile() noexcept;
-	Tile& operator=(const Tile& other) noexcept;
-	Tile& operator=(Tile&& other) noexcept;
+	/**
+	 * Move the tile wrapper.
+	 * @param other The wrapper to move.
+	 */
+	Tile(Tile &&other) noexcept : tile(std::move(other.tile)), tile_extended(std::move(other.tile_extended)) { ++this->counter; }
+
+	/** Destructs the tile wrapper. */
+	~Tile() noexcept { --this->counter; }
+
+	Tile& operator=(const Tile& other) noexcept = default;
+	Tile& operator=(Tile&& other) noexcept = default;
 
 	/**
 	 * Check if the tile reference is a valid on-map tile.
