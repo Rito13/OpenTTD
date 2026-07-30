@@ -19,6 +19,43 @@
 
 #include "safeguards.h"
 
+/**
+ * Variable 0x45 of road-/tram-/rail-types to query track types on a tile (rail part).
+ *
+ * Format: 22RRttrr
+ * - rr: Translated roadtype.
+ * - tt: Translated tramtype.
+ * - RR: Translated railtype.
+ * - 22: Same as RR but for the opposite tile corner, available only for diagonal tracks.
+ *
+ * Special values for rr, tt, RR, 22:
+ * - 0xFF: Track not present on tile.
+ * - 0xFE: Track present, but no matching entry in translation table.
+ * @param tile The tile to consider.
+ * @param railtype The appropriate value of RR for the context where it's called from.
+ * @param grffile The NewGRF the types are for.
+ * @return The track types.
+ */
+uint32_t GetTrackTypesRail(TileIndex tile, RailType railtype, const GRFFile *grffile)
+{
+	uint8_t rail1 = 0xFF;
+	uint8_t rail2 = 0xFF;
+	for (DiagDirection dir : EnumRange(DiagDirection::End)) {
+		if (auto tt = GetTileRailType(tile, dir); tt != INVALID_RAILTYPE) {
+			rail2 = GetReverseRailTypeTranslation(tt, grffile);
+			if (rail2 == 0xFF) rail2 = 0xFE;
+			tt = GetTileRailType(tile, ReverseDiagDir(dir));
+			if (tt != INVALID_RAILTYPE) {
+				rail1 = GetReverseRailTypeTranslation(tt, grffile);
+				if (rail1 == 0xFF) rail1 = 0xFE;
+			}
+			if (tt == INVALID_RAILTYPE || tt != railtype) std::swap(rail1, rail2);
+			break;
+		}
+	}
+	return rail1 << 16 | rail2 << 24;
+}
+
 /* virtual */ uint32_t RailTypeScopeResolver::GetRandomBits() const
 {
 	uint tmp = CountBits(this->tile.base() + (TileX(this->tile) + TileY(this->tile)) * TILE_SIZE);
@@ -34,12 +71,7 @@
 			case 0x42: return 0;
 			case 0x43: return TimerGameCalendar::date.base();
 			case 0x44: return to_underlying(HouseZone::TownEdge);
-			case 0x45: {
-				RailType rt = this->rti->Index();
-				uint8_t local = GetReverseRailTypeTranslation(rt, this->ro.grffile);
-				if (local == 0xFF) local = 0xFE;
-				return 0xFFFF | local << 16;
-			}
+			case 0x45: return 0xFFFF | GetTrackTypesRail(this->tile, this->rti->Index(), this->ro.grffile);
 		}
 	}
 
@@ -48,19 +80,22 @@
 		case 0x41: return 0;
 		case 0x42: return IsLevelCrossingTile(this->tile) && IsCrossingBarred(this->tile);
 		case 0x43:
-			if (IsRailDepotTile(this->tile)) return Depot::GetByTile(this->tile)->build_date.base();
+			if (Tile rail = Tile::GetByType(this->tile, TileType::Railway); IsRailDepotTile(rail)) return Depot::GetByTile(rail)->build_date.base();
 			return TimerGameCalendar::date.base();
 		case 0x44: {
 			const Town *t = nullptr;
-			if (IsRailDepotTile(this->tile)) {
-				t = Depot::GetByTile(this->tile)->town;
+			if (Tile rail = Tile::GetByType(this->tile, TileType::Railway); IsRailDepotTile(rail)) {
+				t = Depot::GetByTile(rail)->town;
 			} else if (IsLevelCrossingTile(this->tile)) {
 				t = ClosestTownFromTile(this->tile, UINT_MAX);
 			}
 			return to_underlying(t != nullptr ? GetTownRadiusGroup(t, this->tile) : HouseZone::TownEdge);
 		}
-		case 0x45:
-			return GetTrackTypes(this->tile, ro.grffile);
+		case 0x45: {
+			uint32_t result = GetTrackTypesRail(this->tile, this->rti != nullptr ? this->rti->Index() : INVALID_RAILTYPE, this->ro.grffile);
+			result |= GetTrackTypesRoad(this->tile, this->ro.grffile);
+			return result;
+		}
 	}
 
 	Debug(grf, 1, "Unhandled rail type tile variable 0x{:X}", variable);

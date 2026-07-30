@@ -7,6 +7,7 @@
 
 /** @file newgrf_roadtype.cpp NewGRF handling of road types. */
 
+#include "direction_type.h"
 #include "stdafx.h"
 #include "core/container_func.hpp"
 #include "debug.h"
@@ -20,21 +21,22 @@
 #include "safeguards.h"
 
 /**
- * Variable 0x45 of road-/tram-/rail-types to query track types on a tile.
+ * Variable 0x45 of road-/tram-/rail-types to query track types on a tile (road/tram parts).
  *
- * Format: __RRttrr
+ * Format: 22RRttrr
  * - rr: Translated roadtype.
  * - tt: Translated tramtype.
  * - RR: Translated railtype.
+ * - 22: Same as RR but for the opposite tile corner, available only for diagonal tracks.
  *
- * Special values for rr, tt, RR:
+ * Special values for rr, tt, RR, 22:
  * - 0xFF: Track not present on tile.
  * - 0xFE: Track present, but no matching entry in translation table.
  * @param tile The tile to consider.
  * @param grffile The NewGRF the types are for.
  * @return The track types.
  */
-uint32_t GetTrackTypes(TileIndex tile, const GRFFile *grffile)
+uint32_t GetTrackTypesRoad(TileIndex tile, const GRFFile *grffile)
 {
 	uint8_t road = 0xFF;
 	uint8_t tram = 0xFF;
@@ -48,12 +50,7 @@ uint32_t GetTrackTypes(TileIndex tile, const GRFFile *grffile)
 			if (tram == 0xFF) tram = 0xFE;
 		}
 	}
-	uint8_t rail = 0xFF;
-	if (auto tt = GetTileRailType(tile); tt != INVALID_RAILTYPE) {
-		rail = GetReverseRailTypeTranslation(tt, grffile);
-		if (rail == 0xFF) rail = 0xFE;
-	}
-	return road | tram << 8 | rail << 16;
+	return road | tram << 8;
 }
 
 /* virtual */ uint32_t RoadTypeScopeResolver::GetRandomBits() const
@@ -100,8 +97,11 @@ uint32_t GetTrackTypes(TileIndex tile, const GRFFile *grffile)
 			}
 			return to_underlying(t != nullptr ? GetTownRadiusGroup(t, this->tile) : HouseZone::TownEdge);
 		}
-		case 0x45:
-			return GetTrackTypes(this->tile, ro.grffile);
+		case 0x45: {
+			uint32_t result = GetTrackTypesRoad(this->tile, this->ro.grffile);
+			result |= GetTrackTypesRail(this->tile, INVALID_RAILTYPE, this->ro.grffile);
+			return result;
+		}
 	}
 
 	Debug(grf, 1, "Unhandled road type tile variable 0x{:X}", variable);
@@ -242,7 +242,7 @@ void ConvertRoadTypes()
 	}
 	if (!needs_conversion) return;
 
-	for (TileIndex t : Map::Iterate()) {
+	for (TileIndex t : Map::IterateIndex()) {
 		switch (GetTileType(t)) {
 			case TileType::Road:
 				if (RoadType rt = GetRoadTypeRoad(t); rt != INVALID_ROADTYPE) SetRoadTypeRoad(t, roadtype_conversion_map[rt]);

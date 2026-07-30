@@ -40,6 +40,7 @@
 #include "station_func.h"
 #include "pathfinder/water_regions.h"
 #include "pathfinder/yapf/yapf_river_builder.h"
+#include "tunnelbridge.h"
 
 #include "table/strings.h"
 #include "table/sprites.h"
@@ -91,6 +92,22 @@ extern const SlopeIndexArray<uint8_t> _slope_to_sprite_offset = {
 	0, 1, 2, 3, 4, 5, 6,  7, 8, 9, 10, 11, 12, 13, 14, 0,
 	0, 0, 0, 0, 0, 0, 0, 16, 0, 0,  0, 17,  0, 15, 18,
 };
+
+static constexpr int INF = 1000; ///< Big number compared to tilesprite size.
+/** SubSprite for drawing the track halftile of 'three-corners-raised'-sloped rail sprites. @see _halftile_sub_sprite_offset */
+extern const CornerIndexArray<SubSprite> _halftile_sub_sprite = {{{
+	{-INF, -INF, 32 - 33, INF}, // Corner::W, clip 33 pixels from right.
+	{-INF, 0 + 7, INF, INF}, // Corner::S, clip 7 pixels from top.
+	{-31 + 33, -INF, INF, INF}, // Corner::E, clip 33 pixels from left.
+	{-INF, -INF, INF, 30 - 23} // Corner::N, clip 23 pixels from bottom.
+}}};
+/** Same as #_halftile_sub_sprite but for sprites that are offset by -TILE_HEIGHT, for example track sprites. */
+extern const CornerIndexArray<SubSprite> _halftile_sub_sprite_offset = {{{
+	{-INF, -INF, 32 - 33, INF}, // Corner::W, clip 33 pixels from right.
+	{-INF, 0 + 15, INF, INF}, // Corner::S, clip 15 pixels from top.
+	{-31 + 33, -INF, INF, INF}, // Corner::E, clip 33 pixels from left.
+	{-INF, -INF, INF, 30 - 15}, // Corner::N, clip 15 pixels from bottom.
+}}};
 
 static const uint TILE_UPDATE_FREQUENCY_LOG = 8;  ///< The logarithm of how many ticks it takes between tile updates (log base 2).
 static const uint TILE_UPDATE_FREQUENCY = 1 << TILE_UPDATE_FREQUENCY_LOG;  ///< How many ticks it takes between tile updates (has to be a power of 2).
@@ -181,7 +198,7 @@ uint ApplyFoundationToSlope(Foundation f, Slope &s)
 {
 	if (!IsFoundation(f)) return 0;
 
-	if (IsLeveledFoundation(f)) {
+	if (IsLeveledFoundation(f) || f == Foundation::Special) {
 		uint dz = 1 + (IsSteepSlope(s) ? 1 : 0);
 		s = SLOPE_FLAT;
 		return dz;
@@ -261,39 +278,39 @@ uint GetPartialPixelZ(int x, int y, Slope corners)
 		}
 	}
 
-	switch (RemoveHalftileSlope(corners)) {
-		case SLOPE_FLAT: return 0;
+	switch (RemoveHalftileSlope(corners).base()) {
+		case SLOPE_FLAT.base(): return 0;
 
 		/* One corner is up.*/
-		case SLOPE_N: return x + y <= (int)TILE_SIZE ? (TILE_SIZE - x - y)     >> 1 : 0;
-		case SLOPE_E: return y >= x                  ? (1 + y - x)             >> 1 : 0;
-		case SLOPE_S: return x + y >= (int)TILE_SIZE ? (1 + x + y - TILE_SIZE) >> 1 : 0;
-		case SLOPE_W: return x >= y                  ? (x - y)                 >> 1 : 0;
+		case Slope{Corner::N}.base(): return x + y <= static_cast<int>(TILE_SIZE) ? (TILE_SIZE - x - y) >> 1 : 0;
+		case Slope{Corner::E}.base(): return y >= x ? (1 + y - x) >> 1 : 0;
+		case Slope{Corner::S}.base(): return x + y >= static_cast<int>(TILE_SIZE) ? (1 + x + y - TILE_SIZE) >> 1 : 0;
+		case Slope{Corner::W}.base(): return x >= y ? (x - y) >> 1 : 0;
 
 		/* Two corners next to each other are up. */
-		case SLOPE_NE: return (TILE_SIZE - x) >> 1;
-		case SLOPE_SE: return (y + 1) >> 1;
-		case SLOPE_SW: return (x + 1) >> 1;
-		case SLOPE_NW: return (TILE_SIZE - y) >> 1;
+		case SLOPE_NE.base(): return (TILE_SIZE - x) >> 1;
+		case SLOPE_SE.base(): return (y + 1) >> 1;
+		case SLOPE_SW.base(): return (x + 1) >> 1;
+		case SLOPE_NW.base(): return (TILE_SIZE - y) >> 1;
 
 		/* Three corners are up on the same level. */
-		case SLOPE_ENW: return x + y >= (int)TILE_SIZE ? TILE_HEIGHT - ((1 + x + y - TILE_SIZE) >> 1) : TILE_HEIGHT;
-		case SLOPE_SEN: return y < x                   ? TILE_HEIGHT - ((x - y)                 >> 1) : TILE_HEIGHT;
-		case SLOPE_WSE: return x + y <= (int)TILE_SIZE ? TILE_HEIGHT - ((TILE_SIZE - x - y)     >> 1) : TILE_HEIGHT;
-		case SLOPE_NWS: return x < y                   ? TILE_HEIGHT - ((1 + y - x)             >> 1) : TILE_HEIGHT;
+		case SLOPE_ENW.base(): return x + y >= static_cast<int>(TILE_SIZE) ? TILE_HEIGHT - ((1 + x + y - TILE_SIZE) >> 1) : TILE_HEIGHT;
+		case SLOPE_SEN.base(): return y < x ? TILE_HEIGHT - ((x - y) >> 1) : TILE_HEIGHT;
+		case SLOPE_WSE.base(): return x + y <= static_cast<int>(TILE_SIZE) ? TILE_HEIGHT - ((TILE_SIZE - x - y) >> 1) : TILE_HEIGHT;
+		case SLOPE_NWS.base(): return x < y ? TILE_HEIGHT - ((1 + y - x) >> 1) : TILE_HEIGHT;
 
 		/* Two corners at opposite sides are up. */
-		case SLOPE_NS: return x + y < (int)TILE_SIZE ? (TILE_SIZE - x - y) >> 1 : (1 + x + y - TILE_SIZE) >> 1;
-		case SLOPE_EW: return x >= y ? (x - y) >> 1 : (1 + y - x) >> 1;
+		case SLOPE_NS.base(): return x + y < static_cast<int>(TILE_SIZE) ? (TILE_SIZE - x - y) >> 1 : (1 + x + y - TILE_SIZE) >> 1;
+		case SLOPE_EW.base(): return x >= y ? (x - y) >> 1 : (1 + y - x) >> 1;
 
 		/* Very special cases. */
-		case SLOPE_ELEVATED: return TILE_HEIGHT;
+		case SLOPE_ELEVATED.base(): return TILE_HEIGHT;
 
 		/* Steep slopes. The top is at 2 * TILE_HEIGHT. */
-		case SLOPE_STEEP_N: return (TILE_SIZE - x + TILE_SIZE - y) >> 1;
-		case SLOPE_STEEP_E: return (TILE_SIZE + 1 + y - x) >> 1;
-		case SLOPE_STEEP_S: return (1 + x + y) >> 1;
-		case SLOPE_STEEP_W: return (TILE_SIZE + x - y) >> 1;
+		case SLOPE_STEEP_N.base(): return (TILE_SIZE - x + TILE_SIZE - y) >> 1;
+		case SLOPE_STEEP_E.base(): return (TILE_SIZE + 1 + y - x) >> 1;
+		case SLOPE_STEEP_S.base(): return (1 + x + y) >> 1;
+		case SLOPE_STEEP_W.base(): return (TILE_SIZE + x - y) >> 1;
 
 		default: NOT_REACHED();
 	}
@@ -313,8 +330,13 @@ uint GetPartialPixelZ(int x, int y, Slope corners)
 int GetSlopePixelZ(int x, int y, bool ground_vehicle)
 {
 	TileIndex tile = TileVirtXY(x, y);
+	if (IsTileType(tile, TileType::TunnelBridge)) {
+		/* Special case for bridge/tunnel tiles as vehicles don't follow the landscape there. */
+		return GetTunnelBridgeSlopePixelZ(tile, x, y, ground_vehicle);
+	}
 
-	return _tile_type_procs[GetTileType(tile)]->get_slope_pixel_z_proc(tile, x, y, ground_vehicle);
+	auto [tileh, z] = GetFoundationPixelSlope(tile);
+	return z + GetPartialPixelZ(x & 0xF, y & 0xF, tileh);
 }
 
 /**
@@ -330,7 +352,8 @@ int GetSlopePixelZOutsideMap(int x, int y)
 	if (IsInsideBS(x, 0, Map::SizeX() * TILE_SIZE) && IsInsideBS(y, 0, Map::SizeY() * TILE_SIZE)) {
 		return GetSlopePixelZ(x, y, false);
 	} else {
-		return _tile_type_procs[TileType::Void]->get_slope_pixel_z_proc(INVALID_TILE, x, y, false);
+		auto [tileh, z] = GetTilePixelSlopeOutsideMap(x >> 4, y >> 4);
+		return z + GetPartialPixelZ(x & 0xF, y & 0xF, tileh);
 	}
 }
 
@@ -346,7 +369,7 @@ int GetSlopePixelZOutsideMap(int x, int y)
 int GetSlopeZInCorner(Slope tileh, Corner corner)
 {
 	assert(!IsHalftileSlope(tileh));
-	return ((tileh & SlopeWithOneCornerRaised(corner)) != 0 ? 1 : 0) + (tileh == SteepSlope(corner) ? 1 : 0);
+	return (tileh.Any(SlopeWithOneCornerRaised(corner)) ? 1 : 0) + (tileh == SteepSlope(corner) ? 1 : 0);
 }
 
 /**
@@ -366,10 +389,10 @@ std::tuple<int, int> GetSlopePixelZOnEdge(Slope tileh, DiagDirection edge, int z
 	static const DiagDirectionIndexArray<std::array<Slope, 4>> corners{{{
 		/*    corner     |          steep slope
 		 *  z1      z2   |       z1             z2        */
-		{SLOPE_E, SLOPE_N, SLOPE_STEEP_E, SLOPE_STEEP_N}, // DiagDirection::NE, z1 = E, z2 = N
-		{SLOPE_S, SLOPE_E, SLOPE_STEEP_S, SLOPE_STEEP_E}, // DiagDirection::SE, z1 = S, z2 = E
-		{SLOPE_S, SLOPE_W, SLOPE_STEEP_S, SLOPE_STEEP_W}, // DiagDirection::SW, z1 = S, z2 = W
-		{SLOPE_W, SLOPE_N, SLOPE_STEEP_W, SLOPE_STEEP_N}, // DiagDirection::NW, z1 = W, z2 = N
+		{Corner::E, Corner::N, SLOPE_STEEP_E, SLOPE_STEEP_N}, // DiagDirection::NE, z1 = E, z2 = N
+		{Corner::S, Corner::E, SLOPE_STEEP_S, SLOPE_STEEP_E}, // DiagDirection::SE, z1 = S, z2 = E
+		{Corner::S, Corner::W, SLOPE_STEEP_S, SLOPE_STEEP_W}, // DiagDirection::SW, z1 = S, z2 = W
+		{Corner::W, Corner::N, SLOPE_STEEP_W, SLOPE_STEEP_N}, // DiagDirection::NW, z1 = W, z2 = N
 	}}};
 
 	int z1 = z;
@@ -379,8 +402,8 @@ std::tuple<int, int> GetSlopePixelZOnEdge(Slope tileh, DiagDirection edge, int z
 	if (halftile_test == corners[edge][0]) z2 += TILE_HEIGHT; // The slope is non-continuous in z2. z2 is on the upper side.
 	if (halftile_test == corners[edge][1]) z1 += TILE_HEIGHT; // The slope is non-continuous in z1. z1 is on the upper side.
 
-	if ((tileh & corners[edge][0]) != 0) z1 += TILE_HEIGHT; // z1 is raised
-	if ((tileh & corners[edge][1]) != 0) z2 += TILE_HEIGHT; // z2 is raised
+	if (tileh.Any(corners[edge][0])) z1 += TILE_HEIGHT; // z1 is raised
+	if (tileh.Any(corners[edge][1])) z2 += TILE_HEIGHT; // z2 is raised
 	if (RemoveHalftileSlope(tileh) == corners[edge][2]) z1 += TILE_HEIGHT; // z1 is highest corner of a steep slope
 	if (RemoveHalftileSlope(tileh) == corners[edge][3]) z2 += TILE_HEIGHT; // z2 is highest corner of a steep slope
 
@@ -397,7 +420,14 @@ std::tuple<int, int> GetSlopePixelZOnEdge(Slope tileh, DiagDirection edge, int z
 std::tuple<Slope, int> GetFoundationSlope(TileIndex tile)
 {
 	auto [tileh, z] = GetTileSlopeZ(tile);
-	Foundation f = _tile_type_procs[GetTileType(tile)]->get_foundation_proc(tile, tileh);
+
+	/* Get the foundations of the tile. */
+	Foundation f = Foundation::None;
+	for (Tile t = tile; t.IsValid(); ++t) {
+		f = CombineFoundations(f, _tile_type_procs[t.GetTileType()]->get_foundation_proc(tile, t, tileh));
+	}
+	assert(f != Foundation::Invalid);
+
 	z += ApplyFoundationToSlope(f, tileh);
 	return {tileh, z};
 }
@@ -421,6 +451,19 @@ static bool HasFoundation(TileIndex tile, Slope slope_here, uint z_here, DiagDir
 }
 
 /**
+ * @copydoc GetFoundationSpriteBlock(TileIndex)
+ * @param slope The slope on top of the foundation.
+ * @param z The z of the foundation slope.
+ */
+static uint GetFoundationSpriteBlock(TileIndex tile, Slope slope, int z)
+{
+	uint block = 0;
+	if (!HasFoundation(tile, slope, z, DiagDirection::NW)) block += 1;
+	if (!HasFoundation(tile, slope, z, DiagDirection::NE)) block += 2;
+	return block;
+}
+
+/**
  * Get the sprite block to use for a foundation.
  * @param tile Tile to draw a foundation on.
  * @return The needed block of foundations sprites.
@@ -432,10 +475,7 @@ static bool HasFoundation(TileIndex tile, Slope slope_here, uint z_here, DiagDir
 uint GetFoundationSpriteBlock(TileIndex tile)
 {
 	auto [slope, z] = GetFoundationPixelSlope(tile);
-	uint block = 0;
-	if (!HasFoundation(tile, slope, z, DiagDirection::NW)) block += 1;
-	if (!HasFoundation(tile, slope, z, DiagDirection::NE)) block += 2;
-	return block;
+	return GetFoundationSpriteBlock(tile, slope, z);
 }
 
 /**
@@ -450,7 +490,9 @@ void DrawFoundation(TileInfo *ti, Foundation f)
 	/* Two part foundations must be drawn separately */
 	assert(f != Foundation::SteepBoth);
 
-	uint sprite_block = GetFoundationSpriteBlock(ti->tile);
+	Slope slope = ti->tileh;
+	int z = ti->z + ApplyFoundationToSlope(f, slope);
+	uint sprite_block = GetFoundationSpriteBlock(ti->index, slope, z);
 
 	/* Use the original slope sprites if NW and NE borders should be visible */
 	SpriteID leveled_base = (sprite_block == 0 ? (int)SPR_FOUNDATION_BASE : (SPR_SLOPES_VIRTUAL_BASE + sprite_block * TRKFOUND_BLOCK_SIZE));
@@ -461,7 +503,7 @@ void DrawFoundation(TileInfo *ti, Foundation f)
 		if (!IsNonContinuousFoundation(f)) {
 			/* Lower part of foundation */
 			static constexpr SpriteBounds bounds{{}, {TILE_SIZE, TILE_SIZE, TILE_HEIGHT - 1}, {}};
-			AddSortableSpriteToDraw(leveled_base + RemoveSteepSlope(ti->tileh), PAL_NONE, *ti, bounds);
+			AddSortableSpriteToDraw(leveled_base + RemoveSteepSlope(ti->tileh).base(), PAL_NONE, *ti, bounds);
 		}
 
 		Corner highest_corner = GetHighestSlopeCorner(ti->tileh);
@@ -478,7 +520,7 @@ void DrawFoundation(TileInfo *ti, Foundation f)
 			OffsetGroundSprite(0, 0);
 		} else if (IsLeveledFoundation(f)) {
 			static constexpr SpriteBounds bounds{{0, 0, -(int)TILE_HEIGHT}, {TILE_SIZE, TILE_SIZE, TILE_HEIGHT - 1}, {}};
-			AddSortableSpriteToDraw(leveled_base + SlopeWithOneCornerRaised(highest_corner), PAL_NONE, *ti, bounds);
+			AddSortableSpriteToDraw(leveled_base + SlopeWithOneCornerRaised(highest_corner).base(), PAL_NONE, *ti, bounds);
 			OffsetGroundSprite(0, -(int)TILE_HEIGHT);
 		} else if (f == Foundation::SteepLower) {
 			/* one corner raised */
@@ -499,7 +541,7 @@ void DrawFoundation(TileInfo *ti, Foundation f)
 		if (IsLeveledFoundation(f)) {
 			/* leveled foundation */
 			static constexpr SpriteBounds bounds{{}, {TILE_SIZE, TILE_SIZE, TILE_HEIGHT - 1}, {}};
-			AddSortableSpriteToDraw(leveled_base + ti->tileh, PAL_NONE, *ti, bounds);
+			AddSortableSpriteToDraw(leveled_base + ti->tileh.base(), PAL_NONE, *ti, bounds);
 			OffsetGroundSprite(0, -(int)TILE_HEIGHT);
 		} else if (IsNonContinuousFoundation(f)) {
 			/* halftile foundation */
@@ -518,7 +560,7 @@ void DrawFoundation(TileInfo *ti, Foundation f)
 			SpriteID spr;
 			if (ti->tileh == SLOPE_NS || ti->tileh == SLOPE_EW) {
 				/* half of leveled foundation under track corner */
-				spr = leveled_base + SlopeWithThreeCornersRaised(GetRailFoundationCorner(f));
+				spr = leveled_base + SlopeWithThreeCornersRaised(GetRailFoundationCorner(f)).base();
 			} else {
 				/* tile-slope = sloped along X/Y, foundation-slope = three corners raised */
 				spr = inclined_base + 2 * to_underlying(GetRailFoundationCorner(f)) + ((ti->tileh == SLOPE_SW || ti->tileh == SLOPE_NE) ? 1 : 0);
@@ -540,18 +582,93 @@ void DrawFoundation(TileInfo *ti, Foundation f)
 	}
 }
 
-void DoClearSquare(TileIndex tile)
+/**
+ * Draw a tile and its appropriate foundations.
+ * @param ti The tile to draw.
+ */
+void DrawTile(TileInfo *ti)
 {
-	/* If the tile can have animation and we clear it, delete it from the animated tile list. */
-	if (MayAnimateTile(tile)) DeleteAnimatedTile(tile, true);
+	/* Get the foundations of the tile. */
+	Tile t(ti->index);
+	Foundation f = Foundation::None;
+	do {
+		TileType tt = t ? t.GetTileType() : TileType::Void;
+		f = CombineFoundations(f, _tile_type_procs[tt]->get_foundation_proc(ti->index, t, ti->tileh));
+	} while (++t);
+	assert(f != Foundation::Invalid);
 
-	bool remove = IsDockingTile(tile);
+	Corner halftile_corner = Corner::Invalid;
+	if (IsNonContinuousFoundation(f)) {
+		/* Save halftile corner. */
+		halftile_corner = (f == Foundation::SteepBoth ? GetHighestSlopeCorner(ti->tileh) : GetHalftileFoundationCorner(f));
+		/* Draw lower part first. */
+		f = (f == Foundation::SteepBoth ? Foundation::SteepLower : Foundation::None);
+	}
+
+	/* Draw foundation and landscape of lower part */
+	if (f != Foundation::Special) DrawFoundation(ti, f); // Modifies ti.
+
+	BridgePillarFlags blocked_pillars;
+	do {
+		TileType tt = ti->tile ? ti->tile.GetTileType() : TileType::Void;
+		blocked_pillars.Set(_tile_type_procs[tt]->draw_tile_proc(ti, false, halftile_corner));
+	} while (++ti->tile);
+
+	/* Draw upper halftile part if present. */
+	if (IsValidCorner(halftile_corner)) {
+		ti->tile = ti->index; // Restart at the first associated tile.
+
+		DrawFoundation(ti, HalftileFoundation(halftile_corner));
+		do {
+			TileType tt = ti->tile ? ti->tile.GetTileType() : TileType::Void;
+			blocked_pillars.Set(_tile_type_procs[tt]->draw_tile_proc(ti, true, halftile_corner));
+		} while (++ti->tile);
+	}
+
+	if (ti->index != INVALID_TILE) {
+		ti->tile = ti->index;
+		DrawBridgeMiddle(ti, blocked_pillars);
+	}
+}
+
+/**
+ * Make a clear tile with grass ground.
+ * @param tile The tile to make a clear grass tile.
+ */
+void MakeClearGrass(const Tile &tile)
+{
 	MakeClear(tile, ClearGround::Grass, _generating_world ? 3 : 0);
-	MarkTileDirtyByTile(tile);
-	if (remove) RemoveDockingTile(tile);
+}
 
-	ClearNeighbourNonFloodingStates(tile);
-	InvalidateWaterRegion(tile);
+/**
+ * Clear whole storage of given tile and make it bare ground.
+ * @param index The tile to clear.
+ */
+void DoClearSquare(TileIndex index)
+{
+	Tile tile = index;
+	bool is_docking = IsDockingTile(tile);
+	bool can_animate = MayAnimateTile(tile);
+
+	/* Remove all associated tiles. */
+	++tile;
+	while (tile) {
+		can_animate |= MayAnimateTile(tile);
+		is_docking |= IsDockingTile(tile);
+		tile = Tile::Remove(index, std::move(tile));
+	}
+
+	/* If the tile can have animation and we clear it, delete it from the animated tile list. */
+	if (can_animate) DeleteAnimatedTile(index, true);
+
+	tile = index; // Map might have re-allocated.
+	MakeClear(tile, ClearGround::Grass, _generating_world ? 3 : 0);
+	tile.SetAssociated(false);
+	MarkTileDirtyByTile(index);
+	if (is_docking) RemoveDockingTile(index);
+
+	ClearNeighbourNonFloodingStates(index);
+	InvalidateWaterRegion(index);
 }
 
 /**
@@ -566,7 +683,13 @@ void DoClearSquare(TileIndex tile)
  */
 TrackStatus GetTileTrackStatus(TileIndex tile, TransportType mode, RoadTramType sub_mode, DiagDirection side)
 {
-	return _tile_type_procs[GetTileType(tile)]->get_tile_track_status_proc(tile, mode, sub_mode, side);
+	TrackStatus result{};
+	for (Tile t(tile); t.IsValid(); ++t) {
+		TrackStatus ts = _tile_type_procs[t.GetTileType()]->get_tile_track_status_proc(tile, t, mode, sub_mode, side);
+		result.trackdirs |= ts.trackdirs;
+		result.signals |= ts.signals;
+	}
+	return result;
 }
 
 /**
@@ -577,12 +700,22 @@ TrackStatus GetTileTrackStatus(TileIndex tile, TransportType mode, RoadTramType 
  */
 void ChangeTileOwner(TileIndex tile, Owner old_owner, Owner new_owner)
 {
-	_tile_type_procs[GetTileType(tile)]->change_tile_owner_proc(tile, old_owner, new_owner);
+	Tile t(tile);
+	while (t.IsValid()) {
+		bool deleted = _tile_type_procs[t.GetTileType()]->change_tile_owner_proc(tile, t, old_owner, new_owner); // Modifies t if tile was deleted.
+		if (!deleted) ++t;
+	}
 }
 
-void GetTileDesc(TileIndex tile, TileDesc &td)
+/**
+ * Get description for the given tile.
+ * @param index The TileIndex under which the tile is stored.
+ * @param tile The tile to get the description for.
+ * @param[out] td The reference to the storage for the description.
+ */
+void GetTileDesc(TileIndex index, const Tile &tile, TileDesc &td)
 {
-	_tile_type_procs[GetTileType(tile)]->get_tile_desc_proc(tile, td);
+	_tile_type_procs[GetTileType(tile)]->get_tile_desc_proc(index, tile, td);
 }
 
 /**
@@ -716,7 +849,13 @@ CommandCost CmdLandscapeClear(DoCommandFlags flags, TileIndex tile)
 			return CommandCost(STR_ERROR_CAN_T_BUILD_ON_WATER);
 		}
 	} else {
-		cost.AddCost(_tile_type_procs[GetTileType(tile)]->clear_tile_proc(tile, flags));
+		/* Get costs from all associated tiles. */
+		Tile cur = tile;
+		while (cur) {
+			auto [tile_cost, deleted] = _tile_type_procs[GetTileType(cur)]->clear_tile_proc(tile, cur, flags); // Modifies cur if tile was deleted.
+			cost.AddCost(std::move(tile_cost)); // Also copies error.
+			if (!deleted) ++cur;
+		}
 	}
 
 	if (flags.Test(DoCommandFlag::Execute)) {
@@ -800,6 +939,21 @@ std::tuple<CommandCost, Money> CmdClearArea(DoCommandFlags flags, TileIndex tile
 TileIndex _cur_tileloop_tile;
 
 /**
+ * Call the tile loop proc for all tile associated with a given tile index.
+ * @param index Tile index.
+ */
+static inline void CallTileLoopProc(TileIndex index)
+{
+	Tile tile(index);
+	do {
+		if (!_tile_type_procs[tile.GetTileType()]->tile_loop_proc(index, tile)) { // Can modify tile.
+			/* Current tile was not deleted, see if there's something more. */
+			++tile;
+		}
+	} while (tile);
+}
+
+/**
  * Gradually iterate over all tiles on the map, calling their TileLoopProcs once every TILE_UPDATE_FREQUENCY ticks.
  */
 void RunTileLoop()
@@ -828,12 +982,12 @@ void RunTileLoop()
 
 	/* Manually update tile 0 every TILE_UPDATE_FREQUENCY ticks - the LFSR never iterates over it itself.  */
 	if (TimerGameTick::counter % TILE_UPDATE_FREQUENCY == 0) {
-		_tile_type_procs[GetTileType(0)]->tile_loop_proc(TileIndex{});
+		CallTileLoopProc(TileIndex{});
 		count--;
 	}
 
 	while (count--) {
-		_tile_type_procs[GetTileType(tile)]->tile_loop_proc(tile);
+		CallTileLoopProc(tile);
 
 		/* Get the next tile in sequence using a Galois LFSR. */
 		tile = TileIndex{(tile.base() >> 1) ^ (-(int32_t)(tile.base() & 1) & feedback)};
@@ -986,8 +1140,8 @@ static void CreateDesertOrRainForest(uint desert_tropic_line)
 {
 	uint update_freq = Map::Size() / 4;
 
-	for (const auto tile : Map::Iterate()) {
-		if ((tile % update_freq) == 0) IncreaseGeneratingWorldProgress(GenWorldProgress::Landscape);
+	for (const auto tile : Map::IterateIndex()) {
+		if ((tile.base() % update_freq) == 0) IncreaseGeneratingWorldProgress(GenWorldProgress::Landscape);
 
 		if (!IsValidTile(tile)) continue;
 
@@ -1006,8 +1160,8 @@ static void CreateDesertOrRainForest(uint desert_tropic_line)
 		RunTileLoop();
 	}
 
-	for (const auto tile : Map::Iterate()) {
-		if ((tile % update_freq) == 0) IncreaseGeneratingWorldProgress(GenWorldProgress::Landscape);
+	for (const auto tile : Map::IterateIndex()) {
+		if ((tile.base() % update_freq) == 0) IncreaseGeneratingWorldProgress(GenWorldProgress::Landscape);
 
 		if (!IsValidTile(tile)) continue;
 
@@ -1259,7 +1413,8 @@ void RiverMakeWider(TileIndex tile, TileIndex origin_tile)
 			}
 
 			/* Get the corners which are different between the current and desired slope. */
-			Slope to_change = cur_slope ^ desired_slope;
+			Slope to_change = cur_slope;
+			to_change.Flip(desired_slope);
 
 			/* Lower unwanted corners first. If only one corner is raised, no corners need lowering. */
 			if (!IsSlopeWithOneCornerRaised(cur_slope)) {
@@ -1270,7 +1425,7 @@ void RiverMakeWider(TileIndex tile, TileIndex origin_tile)
 			/* Now check the match and raise any corners needed. */
 			cur_slope = GetTileSlope(tile);
 			if (cur_slope != desired_slope && IsSlopeWithOneCornerRaised(cur_slope)) {
-				to_change = cur_slope ^ desired_slope;
+				to_change = cur_slope.Flip(desired_slope);
 				Command<Commands::TerraformLand>::Do({DoCommandFlag::Execute, DoCommandFlag::Auto}, tile, to_change, true);
 			}
 		}
@@ -1537,7 +1692,7 @@ static uint CalculateCoverageLine(uint coverage, uint edge_multiplier)
 	std::array<int, MAX_TILE_HEIGHT + 1> edge_histogram = {};
 
 	/* Build a histogram of the map height. */
-	for (const auto tile : Map::Iterate()) {
+	for (const auto tile : Map::IterateIndex()) {
 		uint h = TileHeight(tile);
 		histogram[h]++;
 

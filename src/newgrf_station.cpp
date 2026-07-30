@@ -300,9 +300,9 @@ TownScopeResolver *StationResolverObject::GetTown()
 					if (parameter != 0) tile = GetNearbyTile(parameter, tile, true, this->axis); // only perform if it is required
 
 					Slope tileh = GetTileSlope(tile);
-					bool swap = (this->axis == Axis::Y && HasBit(tileh, to_underlying(Corner::W)) != HasBit(tileh, to_underlying(Corner::E)));
+					bool swap = (this->axis == Axis::Y && tileh.Test(Corner::W) != tileh.Test(Corner::E));
 
-					return GetNearbyTileInformation(tile, this->ro.grffile->grf_version >= 8) ^ (swap ? SLOPE_EW : 0);
+					return GetNearbyTileInformation(tile, this->ro.grffile->grf_version >= 8) ^ (swap ? SLOPE_EW.base() : 0);
 				}
 				break;
 
@@ -361,9 +361,9 @@ TownScopeResolver *StationResolverObject::GetTown()
 			if (parameter != 0) tile = GetNearbyTile(parameter, tile); // only perform if it is required
 
 			Slope tileh = GetTileSlope(tile);
-			bool swap = (axis == Axis::Y && HasBit(tileh, to_underlying(Corner::W)) != HasBit(tileh, to_underlying(Corner::E)));
+			bool swap = (axis == Axis::Y && tileh.Test(Corner::W) != tileh.Test(Corner::E));
 
-			return GetNearbyTileInformation(tile, this->ro.grffile->grf_version >= 8) ^ (swap ? SLOPE_EW : 0);
+			return GetNearbyTileInformation(tile, this->ro.grffile->grf_version >= 8) ^ (swap ? SLOPE_EW.base() : 0);
 		}
 
 		case 0x68: { // Station info of nearby tiles
@@ -700,7 +700,7 @@ CommandCost PerformStationTileSlopeCheck(TileIndex north_tile, TileIndex cur_til
 	Slope slope = GetTileSlope(cur_tile);
 
 	StationResolverObject object(statspec, nullptr, cur_tile, CBID_STATION_LAND_SLOPE_CHECK,
-			(slope << 4) | (slope ^ (axis == Axis::Y && HasBit(slope, to_underlying(Corner::W)) != HasBit(slope, to_underlying(Corner::E)) ? SLOPE_EW : 0)),
+			(slope.base() << 4) | Slope(slope).Flip(axis == Axis::Y && slope.Test(Corner::W) != slope.Test(Corner::E) ? SLOPE_EW : SLOPE_FLAT).base(),
 			(numtracks << 24) | (plat_len << 16) | (axis == Axis::Y ? TileX(diff) << 8 | TileY(diff) : TileY(diff) << 8 | TileX(diff)));
 	object.station_scope.axis = axis;
 
@@ -888,8 +888,12 @@ bool DrawStationTile(int x, int y, RailType railtype, Axis axis, StationClassID 
 	return true;
 }
 
-
-const StationSpec *GetStationSpec(TileIndex t)
+/**
+ * Get specification of station built on given tile.
+ * @param t The tile that station is built on.
+ * @return Specification of that station.
+ */
+const StationSpec *GetStationSpec(const Tile &t)
 {
 	if (!IsCustomStationSpecIndex(t)) return nullptr;
 
@@ -922,12 +926,12 @@ struct StationAnimationBase : public AnimationBase<StationAnimationBase, Station
 	static constexpr StationCallbackMask cbm_animation_next_frame = StationCallbackMask::AnimationNextFrame;
 };
 
-void AnimateStationTile(TileIndex tile)
+void AnimateStationTile(TileIndex index, const Tile &tile)
 {
 	const StationSpec *ss = GetStationSpec(tile);
 	if (ss == nullptr) return;
 
-	StationAnimationBase::AnimateTile(ss, BaseStation::GetByTile(tile), tile, ss->flags.Test(StationSpecFlag::Cb141RandomBits));
+	StationAnimationBase::AnimateTile(ss, BaseStation::GetByTile(tile), index, tile, ss->flags.Test(StationSpecFlag::Cb141RandomBits));
 }
 
 void TriggerStationAnimation(BaseStation *st, TileIndex trigger_tile, StationAnimationTrigger trigger, CargoType cargo_type)
@@ -963,7 +967,7 @@ void TriggerStationAnimation(BaseStation *st, TileIndex trigger_tile, StationAni
 				if (IsValidCargoType(cargo_type)) {
 					var18_extra |= ss->grf_prop.grffile->cargo_map[cargo_type] << 8;
 				}
-				StationAnimationBase::ChangeAnimationFrame(CBID_STATION_ANIMATION_TRIGGER, ss, st, tile, (random_bits << 16) | GB(Random(), 0, 16), to_underlying(trigger) | var18_extra);
+				StationAnimationBase::ChangeAnimationFrame(CBID_STATION_ANIMATION_TRIGGER, ss, st, tile, Tile(tile), (random_bits << 16) | GB(Random(), 0, 16), to_underlying(trigger) | var18_extra);
 			}
 		}
 	}

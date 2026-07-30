@@ -49,7 +49,7 @@ AirportTileOverrideManager _airporttile_mngr(NEW_AIRPORTTILE_OFFSET, NUM_AIRPORT
  * @param tile The airport tile.
  * @return A pointer to the corresponding AirportTileSpec.
  */
-/* static */ const AirportTileSpec *AirportTileSpec::GetByTile(TileIndex tile)
+/* static */ const AirportTileSpec *AirportTileSpec::GetByTile(const Tile &tile)
 {
 	return AirportTileSpec::Get(GetAirportGfx(tile));
 }
@@ -257,20 +257,20 @@ static void AirportDrawTileLayout(const TileInfo *ti, const DrawTileSpriteSpan &
 	DrawNewGRFTileSeq(ti, &dts, TransparencyOption::Buildings, 0, GetColourPalette(colour));
 }
 
-bool DrawNewAirportTile(TileInfo *ti, Station *st, const AirportTileSpec *airts)
+bool HasNewAirportTileDefaultFoundation(TileIndex tile, Station *st, const AirportTileSpec *airts)
 {
-	if (ti->tileh != SLOPE_FLAT) {
-		bool draw_old_one = true;
-		if (airts->callback_mask.Test(AirportTileCallbackMask::DrawFoundations)) {
-			/* Called to determine the type (if any) of foundation to draw */
-			uint32_t callback_res = GetAirportTileCallback(CBID_AIRPTILE_DRAW_FOUNDATIONS, 0, 0, airts, st, ti->tile);
-			if (callback_res != CALLBACK_FAILED) draw_old_one = ConvertBooleanCallback(airts->grf_prop.grffile, CBID_AIRPTILE_DRAW_FOUNDATIONS, callback_res);
-		}
-
-		if (draw_old_one) DrawFoundation(ti, Foundation::Leveled);
+	if (airts->callback_mask.Test(AirportTileCallbackMask::DrawFoundations)) {
+		/* Called to determine the type (if any) of foundation to draw */
+		uint32_t callback_res = GetAirportTileCallback(CBID_AIRPTILE_DRAW_FOUNDATIONS, 0, 0, airts, st, tile);
+		if (callback_res != CALLBACK_FAILED) return ConvertBooleanCallback(airts->grf_prop.grffile, CBID_AIRPTILE_DRAW_FOUNDATIONS, callback_res);
 	}
 
-	AirportTileResolverObject object(airts, ti->tile, st);
+	return true;
+}
+
+bool DrawNewAirportTile(TileInfo *ti, Station *st, const AirportTileSpec *airts)
+{
+	AirportTileResolverObject object(airts, ti->index, st);
 	const auto *group = object.Resolve<TileLayoutSpriteGroup>();
 	if (group == nullptr) {
 		return false;
@@ -297,12 +297,16 @@ struct AirportTileAnimationBase : public AnimationBase<AirportTileAnimationBase,
 	static constexpr AirportTileCallbackMask cbm_animation_next_frame = AirportTileCallbackMask::AnimationNextFrame;
 };
 
-void AnimateAirportTile(TileIndex tile)
+/**
+ * Animate tile that is part of an airport.
+ * @copydetails AnimateTileProc
+ */
+void AnimateAirportTile(TileIndex index, const Tile &tile)
 {
 	const AirportTileSpec *ats = AirportTileSpec::GetByTile(tile);
 	if (ats == nullptr) return;
 
-	AirportTileAnimationBase::AnimateTile(ats, Station::GetByTile(tile), tile, HasBit(ats->animation_special_flags, 0));
+	AirportTileAnimationBase::AnimateTile(ats, Station::GetByTile(tile), index, tile, HasBit(ats->animation_special_flags, 0));
 }
 
 static bool DoTriggerAirportTileAnimation(Station *st, TileIndex tile, AirportAnimationTrigger trigger, uint32_t random, uint32_t var18_extra = 0)
@@ -310,7 +314,7 @@ static bool DoTriggerAirportTileAnimation(Station *st, TileIndex tile, AirportAn
 	const AirportTileSpec *ats = AirportTileSpec::GetByTile(tile);
 	if (!ats->animation.triggers.Test(trigger)) return false;
 
-	AirportTileAnimationBase::ChangeAnimationFrame(CBID_AIRPTILE_ANIMATION_TRIGGER, ats, st, tile, random, to_underlying(trigger) | var18_extra);
+	AirportTileAnimationBase::ChangeAnimationFrame(CBID_AIRPTILE_ANIMATION_TRIGGER, ats, st, tile, Tile(tile), random, to_underlying(trigger) | var18_extra);
 	return true;
 }
 

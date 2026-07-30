@@ -20,7 +20,7 @@
  * @pre IsTileType(t, TileType::TunnelBridge)
  * @return true if and only if this tile is a tunnel (entrance)
  */
-inline bool IsTunnel(Tile t)
+inline bool IsTunnel(const Tile &t)
 {
 	assert(IsTileType(t, TileType::TunnelBridge));
 	return !HasBit(t.m5(), 7);
@@ -31,7 +31,7 @@ inline bool IsTunnel(Tile t)
  * @param t the tile that might be a tunnel
  * @return true if and only if this tile is a tunnel (entrance)
  */
-inline bool IsTunnelTile(Tile t)
+inline bool IsTunnelTile(const Tile &t)
 {
 	return IsTileType(t, TileType::TunnelBridge) && IsTunnel(t);
 }
@@ -48,7 +48,7 @@ bool IsTunnelInWayDir(TileIndex tile, int z, DiagDirection dir);
  * @param road_rt The road type used in the tunnel.
  * @param tram_rt The tram type used in the tunnel.
  */
-inline void MakeRoadTunnel(Tile t, Owner o, DiagDirection d, RoadType road_rt, RoadType tram_rt)
+inline void MakeRoadTunnel(const Tile &t, Owner o, DiagDirection d, RoadType road_rt, RoadType tram_rt)
 {
 	SetTileType(t, TileType::TunnelBridge);
 	SetTileOwner(t, o);
@@ -58,7 +58,7 @@ inline void MakeRoadTunnel(Tile t, Owner o, DiagDirection d, RoadType road_rt, R
 	t.m5() = to_underlying(TransportType::Road) << 2 | to_underlying(d);
 	SB(t.m6(), 2, 6, 0);
 	t.m7() = 0;
-	t.m8() = 0;
+	t.ClearM8();
 	SetRoadOwner(t, RoadTramType::Road, o);
 	if (o != OWNER_TOWN) SetRoadOwner(t, RoadTramType::Tram, o);
 	SetRoadTypes(t, road_rt, tram_rt);
@@ -71,7 +71,7 @@ inline void MakeRoadTunnel(Tile t, Owner o, DiagDirection d, RoadType road_rt, R
  * @param d the direction facing out of the tunnel
  * @param r the rail type used in the tunnel
  */
-inline void MakeRailTunnel(Tile t, Owner o, DiagDirection d, RailType r)
+inline void MakeRailTunnel(const Tile &t, Owner o, DiagDirection d, RailType r)
 {
 	SetTileType(t, TileType::TunnelBridge);
 	SetTileOwner(t, o);
@@ -81,7 +81,7 @@ inline void MakeRailTunnel(Tile t, Owner o, DiagDirection d, RailType r)
 	t.m5() = to_underlying(TransportType::Rail) << 2 | to_underlying(d);
 	SB(t.m6(), 2, 6, 0);
 	t.m7() = 0;
-	t.m8() = 0;
+	t.ClearM8();
 	SetRailType(t, r);
 }
 

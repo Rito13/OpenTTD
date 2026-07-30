@@ -32,16 +32,13 @@ RailType RailTypeInfo::Index() const
 }
 
 /**
- * Return the rail type of tile, or INVALID_RAILTYPE if this is no rail tile.
+ * Helper for #GetTileRailType.
  * @param tile An arbitrary tile.
  * @return The rail type, or \c INVALID_RAILTYPE.
  */
-RailType GetTileRailType(Tile tile)
+static inline RailType GetTileRailTypeCommon(Tile tile)
 {
 	switch (GetTileType(tile)) {
-		case TileType::Railway:
-			return GetRailType(tile);
-
 		case TileType::Road:
 			/* rail/road crossing */
 			if (IsLevelCrossing(tile)) return GetRailType(tile);
@@ -59,6 +56,32 @@ RailType GetTileRailType(Tile tile)
 			break;
 	}
 	return INVALID_RAILTYPE;
+}
+
+/**
+ * Return the rail type of tile, or INVALID_RAILTYPE if this is no rail on tile.
+ * @param tile Tile to query.
+ * @param track Get rail type of this track.
+ * @return The rail type or INVALID_RAILTYPE if no rail present.
+ */
+RailType GetTileRailType(TileIndex tile, Track track)
+{
+	if (Tile rail = GetRailTileFromTrack(tile, track); rail.IsValid()) return GetRailType(rail);
+
+	return GetTileRailTypeCommon(tile);
+}
+
+/**
+ * Return the rail type of tile, or INVALID_RAILTYPE if this is no rail on tile.
+ * @param tile Tile to query.
+ * @param diagdir Get rail type of tracks reachable by entering in this direction.
+ * @return The rail type or INVALID_RAILTYPE if no rail present.
+ */
+RailType GetTileRailType(TileIndex tile, DiagDirection diagdir)
+{
+	if (Tile rail = GetRailTileFromDiagDir(tile, diagdir); rail.IsValid()) return GetRailType(rail);
+
+	return GetTileRailTypeCommon(tile);
 }
 
 /**

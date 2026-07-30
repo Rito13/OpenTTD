@@ -12,7 +12,8 @@
 
 #include "tile_cmd.h"
 
-void DrawRoughLandTile(const TileInfo *ti);
-void DrawClearLandTile(const TileInfo *ti, uint8_t density);
+void DrawRoughLandTile(const TileInfo *ti, bool draw_halftile, Corner halftile_corner);
+void DrawClearLandTile(const TileInfo *ti, uint8_t density, bool draw_halftile, Corner halftile_corner);
+uint GetSnowRequiredDensity(TileIndex tile);
 
 #endif /* CLEAR_FUNC_H */

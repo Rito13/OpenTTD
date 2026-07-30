@@ -299,7 +299,7 @@ struct DepotWindow : Window {
 		this->SetupWidgetData(type);
 		this->FinishInitNested(tile);
 
-		this->owner = GetTileOwner(tile);
+		this->owner = GetTileOwnerIfDepot(tile);
 		OrderBackup::Reset();
 	}
 
@@ -786,7 +786,7 @@ struct DepotWindow : Window {
 
 		/* Setup disabled buttons. */
 		TileIndex tile(this->window_number);
-		this->SetWidgetsDisabledState(!IsTileOwner(tile, _local_company),
+		this->SetWidgetsDisabledState(!IsTileOwnerIfDepot(tile, _local_company),
 			WID_D_STOP_ALL,
 			WID_D_START_ALL,
 			WID_D_SELL,
@@ -862,7 +862,7 @@ struct DepotWindow : Window {
 				break;
 
 			case WID_D_VEHICLE_LIST:
-				ShowVehicleListWindow(GetTileOwner(this->window_number), this->type, TileIndex(this->window_number));
+				ShowVehicleListWindow(GetTileOwnerIfDepot(TileIndex(this->window_number)), this->type, TileIndex(this->window_number));
 				break;
 
 			case WID_D_AUTOREPLACE:
@@ -1165,7 +1165,7 @@ struct DepotWindow : Window {
 	 */
 	inline DestinationID GetDestinationIndex() const
 	{
-		return GetDepotDestinationIndex(this->window_number);
+		return GetDepotDestinationIndex(GetDepotTile(static_cast<TileIndex>(this->window_number)));
 	}
 };
 
