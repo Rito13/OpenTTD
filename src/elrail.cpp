@@ -113,7 +113,7 @@ static TrackBits GetRailTrackBitsUniversalHelper(TileIndex t, DiagDirections *ov
  */
 static TrackBits GetSingleRailTrackBitsUniversal(TileIndex t, const Tile &rail, DiagDirections *override)
 {
-	if (IsTileType(rail, TileType::railway)) {
+	if (IsTileType(rail, TileType::Railway)) {
 		if (!IsPlainRail(rail) || !HasRailCatenary(GetRailType(rail))) return {};
 		return GetTrackBits(rail);
 	}

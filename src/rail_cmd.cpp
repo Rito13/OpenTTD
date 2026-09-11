@@ -767,8 +767,7 @@ CommandCost CmdRemoveSingleRail(DoCommandFlags flags, TileIndex tile, Track trac
  */
 bool FloodHalftile(TileIndex t)
 {
-	Tile rail = Tile::GetByType(t, TileType::Railway);
-	assert(IsPlainRailTile(rail)); // If one associated tile is plain rail, all tiles will be, so no need to check more.
+	assert(IsPlainRailTile(Tile::GetByType(t, TileType::Railway))); // If one associated tile is plain rail, all tiles will be, so no need to check more.
 
 	bool flooded = false;
 
@@ -2572,7 +2571,7 @@ static bool TileLoop_Rail(TileIndex index, Tile &tile)
 
 			/* Try to find a rail tile reachable from our tile. If no such tile exists, try for any rail tile. */
 			Tile rail2 = GetRailTileFromDiagDir(index2, d);
-			if (!rail2) rail2 = Tile::GetByType(index2, MP_RAILWAY);
+			if (!rail2) rail2 = Tile::GetByType(index2, TileType::Railway);
 
 			/* Show fences if it's a house, industry, object, road, tunnelbridge or not owned by us. */
 			if (!IsValidTile(tile2) || IsTileType(tile2, TileType::House) || IsTileType(tile2, TileType::Industry) ||

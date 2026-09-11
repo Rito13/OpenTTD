@@ -202,7 +202,7 @@ inline Tile GetRailDepotTile(TileIndex index)
 
 /**
  * Get the track bits of any rail tile.
- * @pre IsTileType(t, MP_RAILWAY)
+ * @pre IsTileType(t, TileType::Railway)
  * @param t The tile
  * @return The track bits of the tile
  */
@@ -591,8 +591,8 @@ inline bool HasPbsSignalOnTrackdir(const Tile &tile, Trackdir td)
 /** @copydoc HasPbsSignalOnTrackdir(const Tile &, Trackdir) */
 inline bool HasPbsSignalOnTrackdir(TileIndex tile, Trackdir td)
 {
-	for (Tile tile : RailTileIterator::Iterate(index)) {
-		if (HasPbsSignalOnTrackdir(tile, td)) return true;
+	for (Tile t : RailTileIterator::Iterate(tile)) {
+		if (HasPbsSignalOnTrackdir(t, td)) return true;
 	}
 	return false;
 }
@@ -613,8 +613,8 @@ inline bool HasOnewaySignalBlockingTrackdir(const Tile &tile, Trackdir td)
 /** @copydoc HasOnewaySignalBlockingTrackdir(const Tile &, Trackdir) */
 inline bool HasOnewaySignalBlockingTrackdir(TileIndex tile, Trackdir td)
 {
-	for (Tile tile : RailTileIterator::Iterate(index)) {
-		if (HasOnewaySignalBlockingTrackdir(tile, td)) return true;
+	for (Tile t : RailTileIterator::Iterate(tile)) {
+		if (HasOnewaySignalBlockingTrackdir(t, td)) return true;
 	}
 	return false;
 }
@@ -634,8 +634,8 @@ inline bool HasBlockSignalOnTrackdir(const Tile &tile, Trackdir td)
 /** @copydoc HasBlockSignalOnTrackdir(Tile, Trackdir) */
 inline bool HasBlockSignalOnTrackdir(TileIndex tile, Trackdir td)
 {
-	for (Tile tile : RailTileIterator::Iterate(index)) {
-		if (HasBlockSignalOnTrackdir(tile, td)) return true;
+	for (Tile t : RailTileIterator::Iterate(tile)) {
+		if (HasBlockSignalOnTrackdir(t, td)) return true;
 	}
 	return false;
 }
@@ -706,7 +706,7 @@ inline Tile GetRailTileFromDiagDir(TileIndex index, DiagDirection diagdir)
 inline Tile GetRailTileFromTrack(TileIndex index, Track track)
 {
 	for (auto tile : RailTileIterator::Iterate(index)) {
-		if (HasBit(GetRailTrackBits(tile), track)) return tile;
+		if (GetRailTrackBits(tile).Test(track)) return tile;
 	}
 
 	return {};

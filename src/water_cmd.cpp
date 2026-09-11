@@ -1225,7 +1225,7 @@ static void DoDryUp(TileIndex tile)
 	if (auto rail_itr = RailTileIterator::Iterate(tile); !rail_itr.empty()) {
 		for (Tile rail : rail_itr) {
 			assert(IsPlainRail(rail));
-			RailFenceType new_fences;
+			RailFence new_fences;
 			switch (TrackBitsToTrack(GetTrackBits(rail))) {
 				case Track::Upper: new_fences = RailFence::Horiz1; break;
 				case Track::Lower: new_fences = RailFence::Horiz2; break;

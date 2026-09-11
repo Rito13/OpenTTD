@@ -44,7 +44,7 @@ RoadType RoadTypeInfo::Index() const
  */
 static bool IsPossibleCrossing(const TileIndex index, Axis ax)
 {
-	if (std::get<Slope>(GetFoundationSlope(index)) != SLOPE_FLAT;) return false; // Skip the loop if we already know the result.
+	if (std::get<Slope>(GetFoundationSlope(index)) != SLOPE_FLAT) return false; // Skip the loop if we already know the result.
 	for (Tile tile : RailTileIterator::Iterate(index)) {
 		if (GetRailTileType(tile) != RailTileType::Normal || GetTrackBits(tile) != AxisToTrack(OtherAxis(ax))) return false;;
 	}

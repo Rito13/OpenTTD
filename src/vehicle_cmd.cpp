@@ -796,7 +796,7 @@ static void CloneVehicleName(const Vehicle *src, Vehicle *dst)
 	}
 
 	/* Format buffer and determine starting number. */
-	long num;
+	long num = 0;
 	uint8_t padding = 0;
 	if (number_position == src->name.length()) {
 		/* No digit at the end, so start at number 2. */

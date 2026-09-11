@@ -585,6 +585,7 @@ public:
 			++this->sub_tile;
 		} else {
 			this->value = Map::Size();
+			this->sub_tile = 0; // Does not affect the invalid state, however it makes the comparision with a default constructed invalid tile correct.
 		}
 		return *this;
 	}

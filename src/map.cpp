@@ -111,10 +111,7 @@ TileIndex TileVirtXYClampedToMap(int x, int y)
  */
 bool Tile::BelongsToIndex(TileIndex index) const
 {
-	for (Tile t(index); t.IsValid(); ++t) {
-		if (this->operator==(t)) return true;
-	}
-	return false;
+	return this->value == index.value;
 }
 
 /**
@@ -194,10 +191,10 @@ bool Tile::BelongsToIndex(TileIndex index) const
 			cur_tile.SetAssociated(has_next);
 			/* Remove tile. */
 			auto &line = Map::base_tiles[index.base() >> LOG_2_OF_TILE_INDEXES_PER_CHUNK];
-			auto next = line.erase(line.begin() + static_cast<size_t>(Map::offsets[index.base()] + to_remove.sub_tile));
+			line.erase(line.begin() + static_cast<size_t>(Map::offsets[index.base()] + to_remove.sub_tile));
 
 			auto &line_extended = Map::extended_tiles[index.base() >> LOG_2_OF_TILE_INDEXES_PER_CHUNK];
-			auto next_extended = line_extended.erase(line_extended.begin() + static_cast<size_t>(Map::offsets[index.base()] + to_remove.sub_tile));
+			line_extended.erase(line_extended.begin() + static_cast<size_t>(Map::offsets[index.base()] + to_remove.sub_tile));
 
 			/* Fix-up tile offsets. */
 			size_t count = TILE_INDEXES_PER_CHUNK - (index.base() & (TILE_INDEXES_PER_CHUNK - 1));

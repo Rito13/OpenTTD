@@ -261,11 +261,12 @@ void DecomposeTile(TileIndex index)
 
 		case TileType::Railway: {
 			Tile new_tile = Tile::RawNew(index, index);
-			Tile old_tile(new_tile.tile - 1, new_tile.tile_extended - 1);
+			Tile old_tile(index.base(), new_tile.sub_tile - 1);
+			TileIndex::BaseType chunk = index.base() >> LOG_2_OF_TILE_INDEXES_PER_CHUNK;
 
 			/* Copy old tile to the new tile. */
-			*new_tile.tile = *old_tile.tile;
-			*new_tile.tile_extended = *old_tile.tile_extended;
+			Map::base_tiles[chunk][Map::offsets[index.base()] + new_tile.sub_tile] = Map::base_tiles[chunk][Map::offsets[index.base()] + old_tile.sub_tile];
+			Map::extended_tiles[chunk][Map::offsets[index.base()] + new_tile.sub_tile] = Map::extended_tiles[chunk][Map::offsets[index.base()] + old_tile.sub_tile];
 			ClrBit(new_tile.m8(), 14); // Clear out any garbage in the associated tile flag.
 
 			/* Make new ground tile. */

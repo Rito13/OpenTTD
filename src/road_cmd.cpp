@@ -664,7 +664,7 @@ CommandCost CmdBuildRoad(DoCommandFlags flags, TileIndex tile, RoadBits pieces, 
 				return CommandCost(STR_ERROR_CROSSING_DISALLOWED_RAIL);
 			}
 
-			switch (gettrackbits(rail).base()) {
+			switch (GetTrackBits(rail).base()) {
 				case TrackBits{Track::X}.base():
 					if (pieces.Any(ROAD_X)) goto do_clear;
 					roaddir = Axis::Y;
@@ -685,7 +685,7 @@ CommandCost CmdBuildRoad(DoCommandFlags flags, TileIndex tile, RoadBits pieces, 
 		if (flags.Test(DoCommandFlag::Execute)) {
 			Track railtrack = AxisToTrack(OtherAxis(roaddir));
 			/* If there is more than one associated rail sub-tile, the previous checks never succeed. */
-			Tile rail = Tile::GetByType(tile, MP_RAILWAY);
+			Tile rail = Tile::GetByType(tile, TileType::Railway);
 			RailType rail_type = GetRailType(rail);
 			Owner rail_o = GetTileOwner(rail);
 			bool reserved = GetRailReservationTrackBits(rail).Test(railtrack);

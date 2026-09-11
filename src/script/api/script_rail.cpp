@@ -423,7 +423,7 @@ static const ScriptRailSignalData _possible_trackdirs[5][NUM_TRACK_DIRECTIONS] =
 
 	for (int i = 0; i < NUM_TRACK_DIRECTIONS; i++) {
 		const Track &track = _possible_trackdirs[data_index][i].track;
-		if (!static_cast<::TrackBits>(GetRailTracks(rail_tile)).Test(track)) continue;
+		if (!static_cast<::TrackBits>(GetRailTracks(tile)).Test(track)) continue;
 		if (!HasSignalOnTrack(rail_tile, track)) continue;
 		if (!HasSignalOnTrackdir(rail_tile, _possible_trackdirs[data_index][i].trackdir)) continue;
 		SignalType st = static_cast<SignalType>(::GetSignalType(rail_tile, track));
