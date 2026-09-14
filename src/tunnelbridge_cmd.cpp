@@ -1626,7 +1626,7 @@ void DrawBridgeMiddle(const TileInfo *ti, BridgePillarFlags blocked_pillars)
 	TransportType transport_type = GetTunnelBridgeTransportType(rampsouth);
 	Axis axis = GetBridgeAxis(ti->tile);
 	BridgePillarFlags pillars;
-	bool is_custom_layout; // Set if rail/road bridge uses a custom layout.
+	bool is_custom_layout = false; // Set if rail/road bridge uses a custom layout.
 
 	uint base_offset = GetBridgeMiddleAxisBaseOffset(axis);
 	std::span<const PalSpriteID> psid;
