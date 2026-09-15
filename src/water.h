@@ -26,14 +26,14 @@ enum class FloodingBehaviour : uint8_t {
 FloodingBehaviour GetFloodingBehaviour(TileIndex tile);
 void ClearNeighbourNonFloodingStates(TileIndex tile);
 
-void TileLoop_Water(TileIndex tile);
+bool TileLoop_Water(TileIndex index, Tile &tile);
 bool FloodHalftile(TileIndex t);
 
 void ConvertGroundTilesIntoWaterTiles();
 
 void DrawShipDepotSprite(int x, int y, Axis axis, DepotPart part);
 void DrawWaterClassGround(const struct TileInfo *ti);
-void DrawShoreTile(Slope tileh);
+void DrawShoreTile(const TileInfo *ti, bool draw_halftile, Corner halftile_corner);
 
 void MakeWaterKeepingClass(TileIndex tile, Owner o);
 void CheckForDockingTile(TileIndex t);

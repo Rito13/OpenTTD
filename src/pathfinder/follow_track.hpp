@@ -41,6 +41,7 @@ struct CFollowTrackT {
 	TileIndex old_tile; ///< the origin (vehicle moved from) before move
 	Trackdir old_td; ///< the trackdir (the vehicle was on) before move
 	TileIndex new_tile; ///< the new tile (the vehicle has entered)
+	Tile new_sub_tile; ///< the associated sub-tile of the new tile index that contains the track
 	TrackdirBits new_td_bits; ///< the new set of available trackdirs
 	DiagDirection exitdir; ///< exit direction (leaving the old tile)
 	bool is_tunnel; ///< last turn passed tunnel
@@ -78,6 +79,7 @@ struct CFollowTrackT {
 		this->old_tile = INVALID_TILE;
 		this->old_td = Trackdir::Invalid;
 		this->new_tile = INVALID_TILE;
+		this->new_sub_tile = {};
 		this->new_td_bits.Reset();
 		this->exitdir = DiagDirection::Invalid;
 		this->is_station = false;
@@ -165,7 +167,7 @@ struct CFollowTrackT {
 
 			return false;
 		}
-		if ((!IsRailTT() && !Allow90degTurns()) || (IsRailTT() && Rail90DegTurnDisallowed(GetTileRailType(this->old_tile), GetTileRailType(this->new_tile), !Allow90degTurns()))) {
+		if ((!IsRailTT() && !Allow90degTurns()) || (IsRailTT() && Rail90DegTurnDisallowed(GetTileRailType(this->old_tile, TrackdirToTrack(this->old_td)), GetTileRailType(this->new_tile, this->exitdir), !Allow90degTurns()))) {
 			this->new_td_bits.Reset(TrackdirCrossesTrackdirs(this->old_td));
 			if (this->new_td_bits.None()) {
 				this->err = ErrorCode::SharpTurn;
@@ -226,6 +228,7 @@ protected:
 					this->is_bridge = true;
 					this->new_tile = GetOtherBridgeEnd(this->old_tile);
 				}
+				this->new_sub_tile = this->new_tile;
 				this->tiles_skipped = GetTunnelBridgeLength(this->new_tile, this->old_tile);
 				return;
 			}
@@ -234,6 +237,10 @@ protected:
 
 		/* normal or station tile, do one step */
 		this->new_tile = TileAddByDiagDir(this->old_tile, this->exitdir);
+		this->new_sub_tile = this->new_tile;
+		if (IsRailTT() && Tile::HasType(this->new_tile, TileType::Railway)) {
+			this->new_sub_tile = GetRailTileFromDiagDir(this->new_tile, this->exitdir);
+		}
 
 		/* special handling for stations */
 		if (IsRailTT() && HasStationTileRail(this->new_tile)) {
@@ -249,8 +256,8 @@ protected:
 	 */
 	inline bool QueryNewTileTrackStatus()
 	{
-		if (IsRailTT() && IsPlainRailTile(this->new_tile)) {
-			this->new_td_bits = TrackBitsToTrackdirBits(GetTrackBits(this->new_tile));
+		if (IsRailTT() && IsPlainRailTile(this->new_sub_tile)) {
+			this->new_td_bits = TrackBitsToTrackdirBits(GetTrackBits(this->new_sub_tile));
 		} else if (IsRoadTT()) {
 			this->new_td_bits = GetTrackdirBitsForRoad(this->new_tile, this->IsTram() ? RoadTramType::Tram : RoadTramType::Road);
 		} else {
@@ -331,25 +338,29 @@ protected:
 				return false;
 			}
 		}
-		if (IsRailTT() && IsDepotTypeTile(this->new_tile, TT())) {
-			DiagDirection exitdir = GetRailDepotDirection(this->new_tile);
-			if (ReverseDiagDir(exitdir) != this->exitdir) {
+		if (IsRailTT()) {
+			/* Rail transport has to have a valid sub-tile. */
+			assert(this->new_sub_tile.IsValid());
+
+			if (IsRailDepotTile(this->new_sub_tile)) {
+				DiagDirection exitdir = GetRailDepotDirection(this->new_sub_tile);
+				if (ReverseDiagDir(exitdir) != this->exitdir) {
+					this->err = ErrorCode::NoWay;
+					return false;
+				}
+			}
+
+			/* rail transport is possible only on tiles with the same owner as vehicle */
+			if (GetTileOwner(this->new_sub_tile) != this->veh_owner) {
+				/* different owner */
 				this->err = ErrorCode::NoWay;
 				return false;
 			}
-		}
 
-		/* rail transport is possible only on tiles with the same owner as vehicle */
-		if (IsRailTT() && GetTileOwner(this->new_tile) != this->veh_owner) {
-			/* different owner */
-			this->err = ErrorCode::NoWay;
-			return false;
-		}
-
-		/* rail transport is possible only on compatible rail types */
-		if (IsRailTT() && this->railtypes.Any()) {
-			RailType rail_type = GetTileRailType(this->new_tile);
-			if (!this->railtypes.Test(rail_type)) {
+			/* rail transport is possible only on compatible rail types */
+			RailType rail_type = GetRailType(this->new_sub_tile);
+			assert(rail_type < RAILTYPE_END);
+			if (this->railtypes.Any() && !this->railtypes.Test(rail_type)) {
 				/* incompatible rail type */
 				this->err = ErrorCode::RailRoadType;
 				return false;
@@ -413,10 +424,11 @@ protected:
 	{
 		/* rail and road depots cause reversing */
 		if (!IsWaterTT() && IsDepotTypeTile(this->old_tile, TT())) {
-			DiagDirection exitdir = IsRailTT() ? GetRailDepotDirection(this->old_tile) : GetRoadDepotDirection(this->old_tile);
+			DiagDirection exitdir = IsRailTT() ? GetRailDepotDirection(GetRailDepotTile(this->old_tile)) : GetRoadDepotDirection(this->old_tile);
 			if (exitdir != this->exitdir) {
 				/* reverse */
 				this->new_tile = this->old_tile;
+				this->new_sub_tile = GetDepotTile(this->new_tile);
 				this->new_td_bits = TrackdirToTrackdirBits(ReverseTrackdir(this->old_td));
 				this->exitdir = exitdir;
 				this->tiles_skipped = 0;
@@ -432,6 +444,7 @@ protected:
 				(IsBayRoadStopTile(this->old_tile) && GetBayRoadStopDir(this->old_tile) == ReverseDiagDir(this->exitdir)))) {
 			/* reverse */
 			this->new_tile = this->old_tile;
+			this->new_sub_tile = this->new_tile;
 			this->new_td_bits = TrackdirToTrackdirBits(ReverseTrackdir(this->old_td));
 			this->exitdir = ReverseDiagDir(this->exitdir);
 			this->tiles_skipped = 0;
@@ -486,7 +499,7 @@ public:
 		}
 		/* Check for speed limit imposed by railtype */
 		if (IsRailTT()) {
-			uint16_t rail_speed = GetRailTypeInfo(GetRailType(this->old_tile))->max_speed;
+			uint16_t rail_speed = GetRailTypeInfo(GetTileRailType(this->old_tile, TrackdirToTrack(this->old_td)))->max_speed;
 			if (rail_speed > 0) max_speed = std::min<int>(max_speed, rail_speed);
 		}
 		if (IsRoadTT()) {

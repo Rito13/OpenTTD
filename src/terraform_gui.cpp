@@ -89,19 +89,18 @@ static void PlaceRockyArea(TileIndex end, TileIndex start, bool remove)
 	bool success = false;
 	TileArea ta(start, end);
 
-	for (TileIndex tile : ta) {
+	for (TileIndex index : ta) {
+		if (Tile::HasType(index, TileType::Railway)) continue;
+		Tile trees = Tile::GetByType(index, TileType::Trees);
+		if (trees && !remove) Tile::Remove(index, trees);
+		Tile tile = index;
 		switch (GetTileType(tile)) {
-			case TileType::Trees:
-				if (GetTreeGround(tile) == TreeGround::Shore) continue;
-				if (!remove) {
-					MakeClear(tile, ClearGround::Rocks, 3);
-				}
-				break;
-
 			case TileType::Clear:
 				if (remove) {
 					if (GetClearGround(tile) == ClearGround::Rocks) {
 						MakeClear(tile, ClearGround::Grass, 3);
+					} else {
+						continue;
 					}
 				} else {
 					MakeClear(tile, ClearGround::Rocks, 3);
@@ -118,7 +117,7 @@ static void PlaceRockyArea(TileIndex end, TileIndex start, bool remove)
 				} else {
 					switch (GetWaterTileType(tile)) {
 						case WaterTileType::Clear:
-							if (GetTileSlope(tile) != SLOPE_FLAT) continue;
+							if (GetTileSlope(index) != SLOPE_FLAT) continue;
 							SetWaterTileType(tile, WaterTileType::ClearRocks);
 							break;
 
@@ -131,7 +130,7 @@ static void PlaceRockyArea(TileIndex end, TileIndex start, bool remove)
 			default:
 				continue;
 		}
-		MarkTileDirtyByTile(tile);
+		MarkTileDirtyByTile(index);
 		success = true;
 	}
 
@@ -153,36 +152,6 @@ static void PlaceRoughGround(TileIndex end, TileIndex start, bool remove)
 
 	for (TileIndex tile : ta) {
 		switch (GetTileType(tile)) {
-			case TileType::Trees: {
-				/* Preserve snowline density underneath trees, so the tile loop
-				 * doesn't have to come back and fix it later. */
-				uint density = GetTreeDensity(tile);
-				if (remove) {
-					switch (GetTreeGround(tile)) {
-						case TreeGround::Rough:
-							SetTreeGroundDensity(tile, TreeGround::Grass, density);
-							break;
-						case TreeGround::RoughSnow:
-							SetTreeGroundDensity(tile, TreeGround::SnowOrDesert, density);
-							break;
-						default:
-							continue;
-					}
-				} else {
-					switch (GetTreeGround(tile)) {
-						case TreeGround::Grass:
-							SetTreeGroundDensity(tile, TreeGround::Rough, density);
-							break;
-						case TreeGround::SnowOrDesert:
-							SetTreeGroundDensity(tile, TreeGround::RoughSnow, density);
-							break;
-						default:
-							continue;
-					}
-				}
-				break;
-			}
-
 			case TileType::Clear:
 				if (remove) {
 					if (GetClearGround(tile) == ClearGround::Rough) {
@@ -198,8 +167,6 @@ static void PlaceRoughGround(TileIndex end, TileIndex start, bool remove)
 			default:
 				continue;
 		}
-		MarkTileDirtyByTile(tile);
-		success = true;
 	}
 
 	if (success && _settings_client.sound.confirm) SndPlayTileFx(SND_1F_CONSTRUCTION_OTHER, end);
@@ -505,7 +472,7 @@ static void CommonRaiseLowerBigLand(TileIndex tile, bool mode)
 		StringID msg =
 			mode ? STR_ERROR_CAN_T_RAISE_LAND_HERE : STR_ERROR_CAN_T_LOWER_LAND_HERE;
 
-		Command<Commands::TerraformLand>::Post(msg, CcTerraform, tile, SLOPE_N, mode);
+		Command<Commands::TerraformLand>::Post(msg, CcTerraform, tile, Corner::N, mode);
 	} else {
 		assert(_terraform_size != 0);
 		TileArea ta(tile, _terraform_size, _terraform_size);
@@ -532,7 +499,7 @@ static void CommonRaiseLowerBigLand(TileIndex tile, bool mode)
 
 		for (TileIndex tile2 : ta) {
 			if (TileHeight(tile2) == h) {
-				Command<Commands::TerraformLand>::Post(tile2, SLOPE_N, mode);
+				Command<Commands::TerraformLand>::Post(tile2, Corner::N, mode);
 			}
 		}
 	}

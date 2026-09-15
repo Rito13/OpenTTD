@@ -188,7 +188,7 @@ using StationClass = NewGRFClass<StationSpec, StationClassID>;
 static const StationClass::GlobalID STATION_CLASS_LABEL_DEFAULT{"DFLT"}; ///< Class label for default rail station.
 static const StationClass::GlobalID STATION_CLASS_LABEL_WAYPOINT{"WAYP"}; ///< Class label for default rail waypoints.
 
-const StationSpec *GetStationSpec(TileIndex t);
+const StationSpec *GetStationSpec(const Tile &t);
 
 /**
  * Get the station layout key for a given station layout size.
@@ -225,7 +225,7 @@ void AssignSpecToStation(const StationSpec *spec, BaseStation *st, uint8_t speci
 void DeallocateSpecFromStation(BaseStation *st, uint8_t specindex);
 bool DrawStationTile(int x, int y, RailType railtype, Axis axis, StationClassID sclass, uint station);
 
-void AnimateStationTile(TileIndex tile);
+void AnimateStationTile(TileIndex index, const Tile &tile);
 void TriggerStationAnimation(BaseStation *st, TileIndex tile, StationAnimationTrigger trigger, CargoType cargo_type = INVALID_CARGO);
 void TriggerStationRandomisation(BaseStation *st, TileIndex tile, StationRandomTrigger trigger, CargoType cargo_type = INVALID_CARGO);
 void StationUpdateCachedTriggers(BaseStation *st);

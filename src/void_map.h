@@ -14,10 +14,14 @@
 
 /**
  * Make a nice void tile ;)
- * @param t the tile to make void
+ * @param tile The index to make a void tile at.
+ * @pre !IsInnerTile(tile)
  */
-inline void MakeVoid(Tile t)
+inline void MakeVoid(TileIndex tile)
 {
+	assert(!IsInnerTile(tile));
+
+	Tile t(tile);
 	SetTileType(t, TileType::Void);
 	SetTileHeight(t, 0);
 	t.m1() = 0;
@@ -27,7 +31,7 @@ inline void MakeVoid(Tile t)
 	t.m5() = 0;
 	t.m6() = 0;
 	t.m7() = 0;
-	t.m8() = 0;
+	t.ClearM8();
 }
 
 #endif /* VOID_MAP_H */

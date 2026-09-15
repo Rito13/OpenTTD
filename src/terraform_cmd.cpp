@@ -19,6 +19,7 @@
 #include "core/backup_type.hpp"
 #include "terraform_cmd.h"
 #include "landscape_cmd.h"
+#include "landscape.h"
 
 #include "table/strings.h"
 
@@ -173,28 +174,28 @@ std::tuple<CommandCost, Money, TileIndex> CmdTerraformLand(DoCommandFlags flags,
 	TerraformerState ts;
 
 	/* Compute the costs and the terraforming result in a model of the landscape */
-	if ((slope & SLOPE_W) != 0 && tile + TileDiffXY(1, 0) < Map::Size()) {
+	if (slope.Test(Corner::W) && tile + TileDiffXY(1, 0) < Map::Size()) {
 		TileIndex t = tile + TileDiffXY(1, 0);
 		auto [cost, err_tile] = TerraformTileHeight(&ts, t, TileHeight(t) + direction);
 		if (cost.Failed()) return { cost, 0, err_tile };
 		total_cost.AddCost(cost.GetCost());
 	}
 
-	if ((slope & SLOPE_S) != 0 && tile + TileDiffXY(1, 1) < Map::Size()) {
+	if (slope.Test(Corner::S) && tile + TileDiffXY(1, 1) < Map::Size()) {
 		TileIndex t = tile + TileDiffXY(1, 1);
 		auto [cost, err_tile] = TerraformTileHeight(&ts, t, TileHeight(t) + direction);
 		if (cost.Failed()) return { cost, 0, err_tile };
 		total_cost.AddCost(cost.GetCost());
 	}
 
-	if ((slope & SLOPE_E) != 0 && tile + TileDiffXY(0, 1) < Map::Size()) {
+	if (slope.Test(Corner::E) && tile + TileDiffXY(0, 1) < Map::Size()) {
 		TileIndex t = tile + TileDiffXY(0, 1);
 		auto [cost, err_tile] = TerraformTileHeight(&ts, t, TileHeight(t) + direction);
 		if (cost.Failed()) return { cost, 0, err_tile };
 		total_cost.AddCost(cost.GetCost());
 	}
 
-	if ((slope & SLOPE_N) != 0) {
+	if (slope.Test(Corner::N)) {
 		TileIndex t = tile + TileDiffXY(0, 0);
 		auto [cost, err_tile] = TerraformTileHeight(&ts, t, TileHeight(t) + direction);
 		if (cost.Failed()) return { cost, 0, err_tile };
@@ -222,11 +223,11 @@ std::tuple<CommandCost, Money, TileIndex> CmdTerraformLand(DoCommandFlags flags,
 			int z_max = std::max({z_N, z_W, z_S, z_E});
 
 			/* Compute tile slope */
-			Slope tileh = (z_max > z_min + 1 ? SLOPE_STEEP : SLOPE_FLAT);
-			if (z_W > z_min) tileh |= SLOPE_W;
-			if (z_S > z_min) tileh |= SLOPE_S;
-			if (z_E > z_min) tileh |= SLOPE_E;
-			if (z_N > z_min) tileh |= SLOPE_N;
+			Slope tileh = (z_max > z_min + 1 ? Slope{Corner::Steep} : SLOPE_FLAT);
+			if (z_W > z_min) tileh.Set(Corner::W);
+			if (z_S > z_min) tileh.Set(Corner::S);
+			if (z_E > z_min) tileh.Set(Corner::E);
+			if (z_N > z_min) tileh.Set(Corner::N);
 
 			if (pass == 0) {
 				/* Check if bridge would take damage */
@@ -261,11 +262,25 @@ std::tuple<CommandCost, Money, TileIndex> CmdTerraformLand(DoCommandFlags flags,
 				tile_flags.Reset(DoCommandFlag::Execute);
 				tile_flags.Set(DoCommandFlag::NoModifyTownRating);
 			}
-			CommandCost cost;
+			CommandCost cost(ExpensesType::Construction);
 			if (indirectly_cleared) {
 				cost = Command<Commands::LandscapeClear>::Do(tile_flags, t);
 			} else {
-				cost = _tile_type_procs[GetTileType(t)]->terraform_tile_proc(t, tile_flags, z_min, tileh);
+				bool do_clear_tile = true;
+				Tile cur = t;
+				while (cur) {
+					bool deleted = false;
+					auto res = _tile_type_procs[GetTileType(cur)]->terraform_tile_proc(t, cur, tile_flags, z_min, tileh);
+					if (res.Failed() && res.GetErrorMessage() == INVALID_STRING_ID) {
+						/* Try clearing the tile if terraforming failed. */
+						std::tie(res, deleted) = _tile_type_procs[GetTileType(cur)]->clear_tile_proc(t, cur, tile_flags); // Modifies cur if tile was deleted.
+					} else {
+						do_clear_tile = false;
+					}
+					cost.AddCost(std::move(res));
+					if (!deleted) ++cur;
+				}
+				if (do_clear_tile && tile_flags.Test(DoCommandFlag::Execute)) DoClearSquare(t);
 			}
 			old_generating_world.Restore();
 			if (cost.Failed()) {
@@ -347,7 +362,7 @@ std::tuple<CommandCost, Money, TileIndex> CmdLevelLand(DoCommandFlags flags, Til
 		uint curh = TileHeight(t);
 		while (curh != h) {
 			CommandCost ret;
-			std::tie(ret, std::ignore, error_tile) = Command<Commands::TerraformLand>::Do(DoCommandFlags{flags}.Reset(DoCommandFlag::Execute), t, SLOPE_N, curh <= h);
+			std::tie(ret, std::ignore, error_tile) = Command<Commands::TerraformLand>::Do(DoCommandFlags{flags}.Reset(DoCommandFlag::Execute), t, Corner::N, curh <= h);
 			if (ret.Failed()) {
 				last_error = std::move(ret);
 
@@ -361,7 +376,7 @@ std::tuple<CommandCost, Money, TileIndex> CmdLevelLand(DoCommandFlags flags, Til
 				if (money < 0) {
 					return { cost, ret.GetCost(), error_tile };
 				}
-				Command<Commands::TerraformLand>::Do(flags, t, SLOPE_N, curh <= h);
+				Command<Commands::TerraformLand>::Do(flags, t, Corner::N, curh <= h);
 			} else {
 				/* When we're at the terraform limit we better bail (unneeded) testing as well.
 				 * This will probably cause the terraforming cost to be underestimated, but only
