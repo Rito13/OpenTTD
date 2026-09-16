@@ -122,7 +122,7 @@
 	EnforcePrecondition(false, ::IsValidTile(end_tile));
 	EnforcePrecondition(false, IsRailTypeAvailable(convert_to));
 
-	return ScriptObject::Command<Commands::ConvertRail>::Do(start_tile, end_tile, (::RailType)convert_to, false);
+	return ScriptObject::Command<Commands::ConvertRail>::Do(start_tile, end_tile, (::RailType)convert_to, false, ::Track::Invalid);
 }
 
 /* static */ TileIndex ScriptRail::GetRailDepotFrontTile(TileIndex depot)

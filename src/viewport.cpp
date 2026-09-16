@@ -3102,7 +3102,7 @@ static void CalcRaildirsDrawstyle(int x, int y, int method)
 	uint w = abs(dx) + TILE_SIZE;
 	uint h = abs(dy) + TILE_SIZE;
 
-	if (method & ~(VPM_RAILDIRS | VPM_SIGNALDIRS)) {
+	if ((method & ~(VPM_RAILDIRS | VPM_SIGNALDIRS)) && ((method & VPM_X_AND_Y) != VPM_X_AND_Y)) {
 		/* We 'force' a selection direction; first four rail buttons. */
 		method &= ~(VPM_RAILDIRS | VPM_SIGNALDIRS);
 		int raw_dx = _thd.selstart.x - _thd.selend.x;
@@ -3326,10 +3326,20 @@ void VpSelectTilesWithMethod(int x, int y, ViewportPlaceMethod method)
 
 	/* Special handling of drag in any (8-way) direction */
 	if (method & (VPM_RAILDIRS | VPM_SIGNALDIRS)) {
-		_thd.selend.x = x;
-		_thd.selend.y = y;
-		CalcRaildirsDrawstyle(x, y, method);
-		return;
+		if ((method & VPM_X_AND_Y) == VPM_X_AND_Y && !(_ctrl_pressed
+				&& IsDiagonalAreaDiagonalLine(TileVirtXY(_thd.selstart.x, _thd.selstart.y), TileVirtXY(x, y)))) {
+			method &= ~(VPM_RAILDIRS | VPM_SIGNALDIRS);
+
+			/* Clean after-effects of possible usage of VPM_RAILDIRS in previous calls. */
+			_thd.place_mode |= HT_DIAGONAL;
+			_thd.next_drawstyle = HT_RECT;
+		} else {
+			_thd.place_mode &= ~HT_DIAGONAL; // VPM_RAILDIRS will draw dashed line otherwise.
+			_thd.selend.x = x;
+			_thd.selend.y = y;
+			CalcRaildirsDrawstyle(x, y, method);
+			return;
+		}
 	}
 
 	/* Needed so level-land is placed correctly */

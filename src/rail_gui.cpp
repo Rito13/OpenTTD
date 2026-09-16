@@ -739,7 +739,7 @@ struct BuildRailToolbarWindow : Window {
 				break;
 
 			case WID_RAT_CONVERT_RAIL:
-				VpStartPlaceSizing(tile, VPM_X_AND_Y, DDSP_CONVERT_RAIL);
+				VpStartPlaceSizing(tile, VPM_X_AND_Y | VPM_RAILDIRS, DDSP_CONVERT_RAIL);
 				break;
 
 			default: NOT_REACHED();
@@ -782,7 +782,8 @@ struct BuildRailToolbarWindow : Window {
 					break;
 
 				case DDSP_CONVERT_RAIL:
-					Command<Commands::ConvertRail>::Post(STR_ERROR_CAN_T_CONVERT_RAIL, CcPlaySound_CONSTRUCTION_RAIL, end_tile, start_tile, _cur_railtype, _ctrl_pressed);
+					Command<Commands::ConvertRail>::Post(STR_ERROR_CAN_T_CONVERT_RAIL, CcPlaySound_CONSTRUCTION_RAIL, end_tile, start_tile, _cur_railtype, _ctrl_pressed, static_cast<Track>( _thd.drawstyle & HT_DIR_MASK));
+					_thd.place_mode = GetHighLightStyleForWidget(WID_RAT_CONVERT_RAIL); // Make the selection go back to rect.
 					break;
 
 				case DDSP_REMOVE_STATION:

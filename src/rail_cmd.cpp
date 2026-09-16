@@ -466,7 +466,7 @@ static CommandCost CheckRailTiles(TileIndex tile, Track track, RailType railtype
 	}
 
 	if (need_convert) {
-		CommandCost ret = Command<Commands::ConvertRail>::Do(flags, tile, tile, railtype, false);
+		CommandCost ret = Command<Commands::ConvertRail>::Do(flags, tile, tile, railtype, false, Track::Invalid);
 		if (ret.Failed()) return ret;
 		cost.AddCost(std::move(ret));
 	}
@@ -1539,6 +1539,23 @@ CommandCost CmdBuildSignalTrack(DoCommandFlags flags, TileIndex tile, TileIndex 
 }
 
 /**
+ * Remove all signals on given track from tile.
+ * @param tile The tile to remove signals from.
+ * @param track The track to remove signals from.
+ */
+static void RemoveSignalFromTile(const Tile &tile, Track track)
+{
+	SetPresentSignals(tile, GetPresentSignals(tile) & ~SignalOnTrack(track));
+
+	/* removed last signal from tile? */
+	if (GetPresentSignals(tile) == 0) {
+		SetSignalStates(tile, 0);
+		SetHasSignals(tile, false);
+		SetSignalVariant(tile, Track::Invalid, SignalVariant::Electric); // remove any possible semaphores
+	}
+}
+
+/**
  * Remove signals
  * @param flags operation to perform
  * @param tile_index Coordinates where signal is being deleted from.
@@ -1584,16 +1601,9 @@ CommandCost CmdRemoveSingleSignal(DoCommandFlags flags, TileIndex tile_index, Tr
 			}
 		}
 		Company::Get(GetTileOwner(tile))->infrastructure.signal -= CountBits(GetPresentSignals(tile));
-		SetPresentSignals(tile, GetPresentSignals(tile) & ~SignalOnTrack(track));
-		Company::Get(GetTileOwner(tile))->infrastructure.signal += CountBits(GetPresentSignals(tile));
+		RemoveSignalFromTile(tile, track);
+		if (HasSignals(tile)) Company::Get(GetTileOwner(tile))->infrastructure.signal += CountBits(GetPresentSignals(tile));
 		DirtyCompanyInfrastructureWindows(GetTileOwner(tile));
-
-		/* removed last signal from tile? */
-		if (GetPresentSignals(tile) == 0) {
-			SetSignalStates(tile, 0);
-			SetHasSignals(tile, false);
-			SetSignalVariant(tile, Track::Invalid, SignalVariant::Electric); // remove any possible semaphores
-		}
 
 		AddTrackToSignalBuffer(tile_index, track, GetTileOwner(tile));
 		YapfNotifyTrackLayoutChange(tile_index, track);
@@ -1672,9 +1682,10 @@ static bool TryMergeRailTile(TileIndex index, Tile &tile)
  * @param area_start start tile of drag
  * @param totype new railtype to convert to.
  * @param diagonal build diagonally or not.
+ * @param start_track If given area is a diagonal line specifies the track to start the line from. @see IsDiagonalAreaDiagonalLine
  * @return the cost of this operation or an error
  */
-CommandCost CmdConvertRail(DoCommandFlags flags, TileIndex tile_index, TileIndex area_start, RailType totype, bool diagonal)
+CommandCost CmdConvertRail(DoCommandFlags flags, TileIndex tile_index, TileIndex area_start, RailType totype, bool diagonal, Track start_track)
 {
 	TileIndex area_end = tile_index;
 
@@ -1687,14 +1698,38 @@ CommandCost CmdConvertRail(DoCommandFlags flags, TileIndex tile_index, TileIndex
 	CommandCost error = CommandCost(STR_ERROR_NO_SUITABLE_RAILROAD_TRACK); // by default, there is no track to convert.
 	bool found_convertible_track = false; // whether we actually did convert some track (see bug #7633)
 
+	bool do_only_diagonal_line = diagonal && IsDiagonalAreaDiagonalLine(area_start, area_end);
+	Trackdir next_trackdir = TrackToTrackdir(start_track);
+
+	if (do_only_diagonal_line) {
+		CommandCost ret = ValidateAutoDrag(&next_trackdir, area_start, area_end);
+		if (ret.Failed()) return ret;
+	}
+
 	std::unique_ptr<TileIterator> iter = TileIterator::Create(area_start, area_end, diagonal);
 	tile_index = *iter;
-	for (Tile tile{tile_index}; tile.IsValid() || tile_index != INVALID_TILE; tile.GoToNextByType(TileType::Railway)) {
+	for (Tile tile{}; tile.IsValid() || tile_index != INVALID_TILE; tile.GoToNextByType(TileType::Railway)) {
 		if (!tile.IsValid()) {
-			++(*iter);
-			tile_index = *iter;
-			if (tile_index == INVALID_TILE) break;
-			tile = tile_index;
+			if (do_only_diagonal_line) {
+				if (tile_index == area_end) break;
+
+				if (TrackdirToTrack(next_trackdir) != start_track) {
+					tile_index += ToTileIndexDiff(_trackdelta[GetOtherTrackdir(next_trackdir)]);
+					start_track = TrackdirToTrack(next_trackdir);
+				}
+				tile = GetRailTileFromTrack(tile_index, start_track);
+
+				next_trackdir = GetOtherTrackdir(next_trackdir);
+				if (!tile.IsValid()) continue;
+			} else {
+				tile_index = *iter;
+				if (tile_index == INVALID_TILE) break;
+				++(*iter);
+				tile = tile_index;
+			}
+		} else if (do_only_diagonal_line) {
+			if (flags.Test(DoCommandFlag::Execute) && GetTileType(tile) == TileType::Railway) TryMergeRailTile(tile_index, tile);
+			continue;
 		}
 
 		TileType tt = GetTileType(tile);
@@ -1764,6 +1799,22 @@ CommandCost CmdConvertRail(DoCommandFlags flags, TileIndex tile_index, TileIndex
 					if (IsPlainRailTile(tile)) {
 						TrackBits bits = GetTrackBits(tile);
 						num_pieces = bits.Count();
+						if (do_only_diagonal_line && num_pieces == 2 && !TracksOverlap(bits)) {
+							/* We can safely split the tile into two. One for each track. */
+							num_pieces = 1;
+							/* Create a new rail sub-tile. */
+							Tile new_tile = MakeRailNormal(tile_index, GetTileOwner(tile), start_track, type);
+							if (HasSignalOnTrack(tile, start_track)) {
+								SetHasSignals(new_tile, true);
+								SetSignalType(new_tile, start_track, GetSignalType(tile, start_track));
+								uint8_t signals_mask = SignalOnTrack(start_track);
+								SetPresentSignals(new_tile, GetPresentSignals(tile) & signals_mask);
+								SetSignalStates(new_tile, GetSignalStates(tile) & signals_mask);
+								RemoveSignalFromTile(tile, start_track);
+							}
+							SetTrackBits(tile, bits.Flip(start_track));
+							tile = new_tile;
+						}
 						if (TracksOverlap(bits)) num_pieces *= num_pieces;
 					}
 					c->infrastructure.rail[type] -= num_pieces;
@@ -1799,7 +1850,10 @@ CommandCost CmdConvertRail(DoCommandFlags flags, TileIndex tile_index, TileIndex
 
 					default: // RailTileType::Normal, RailTileType::Signals
 						found_convertible_track = true;
-						cost.AddCost(RailConvertCost(type, totype) * GetTrackBits(tile).Count());
+						TrackBits track_bits = GetTrackBits(tile);
+						uint num_bits = track_bits.Count();
+						if (do_only_diagonal_line && num_bits == 2 && !TracksOverlap(track_bits)) num_bits = 1; // Correct number of bits for test mode.
+						cost.AddCost(RailConvertCost(type, totype) * num_bits);
 						if (flags.Test(DoCommandFlag::Execute)) {
 							/* notify YAPF about the track layout change */
 							for (Track track : GetTrackBits(tile)) {

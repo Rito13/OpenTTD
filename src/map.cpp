@@ -380,6 +380,21 @@ uint DistanceFromEdgeDir(TileIndex tile, DiagDirection dir)
 }
 
 /**
+ * Check if the diagonal area between given two tiles is a daiagonal line.
+ * @param t0 One corner of the area.
+ * @param t1 Corner opposite to \a t0 of the area.
+ * @return \c true iff the area is a daiagonal line.
+ */
+bool IsDiagonalAreaDiagonalLine(TileIndex t0, TileIndex t1)
+{
+	uint shorter = Delta(TileX(t0), TileX(t1));
+	uint longer = Delta(TileY(t0), TileY(t1));
+	if (shorter > longer) std::swap(shorter, longer);
+	if (shorter == 0) return false; // Special case for very small areas.
+	return longer - shorter <= 1;
+}
+
+/**
  * Finds the distance for the closest tile with water/land given a tile
  * @param tile  the tile to find the distance too
  * @param water whether to find water or land

@@ -790,6 +790,8 @@ uint DistanceMaxPlusManhattan(TileIndex, TileIndex); ///< Max + Manhattan
 uint DistanceFromEdge(TileIndex); ///< shortest distance from any edge of the map
 uint DistanceFromEdgeDir(TileIndex, DiagDirection); ///< distance from the map edge in given direction
 
+bool IsDiagonalAreaDiagonalLine(TileIndex t0, TileIndex t1);
+
 /**
  * Convert an Axis to a TileIndexDiff
  *
