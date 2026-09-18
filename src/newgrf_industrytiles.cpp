@@ -189,20 +189,9 @@ uint16_t GetIndustryTileCallback(CallbackID callback, uint32_t param1, uint32_t 
 	return object.ResolveCallback(regs100);
 }
 
-bool DrawNewIndustryTile(TileInfo *ti, Industry *i, IndustryGfx gfx, const IndustryTileSpec *inds)
+bool DrawNewIndustryTile(TileInfo *ti, Industry *i, IndustryGfx gfx)
 {
-	if (ti->tileh != SLOPE_FLAT) {
-		bool draw_old_one = true;
-		if (inds->callback_mask.Test(IndustryTileCallbackMask::DrawFoundations)) {
-			/* Called to determine the type (if any) of foundation to draw for industry tile */
-			uint32_t callback_res = GetIndustryTileCallback(CBID_INDTILE_DRAW_FOUNDATIONS, 0, 0, gfx, i, ti->tile);
-			if (callback_res != CALLBACK_FAILED) draw_old_one = ConvertBooleanCallback(inds->grf_prop.grffile, CBID_INDTILE_DRAW_FOUNDATIONS, callback_res);
-		}
-
-		if (draw_old_one) DrawFoundation(ti, Foundation::Leveled);
-	}
-
-	IndustryTileResolverObject object(gfx, ti->tile, i);
+	IndustryTileResolverObject object(gfx, ti->index, i);
 
 	const auto *group = object.Resolve<TileLayoutSpriteGroup>();
 	if (group == nullptr) return false;
@@ -268,12 +257,12 @@ struct IndustryAnimationBase : public AnimationBase<IndustryAnimationBase, Indus
 	static constexpr IndustryTileCallbackMask cbm_animation_next_frame = IndustryTileCallbackMask::AnimationNextFrame;
 };
 
-void AnimateNewIndustryTile(TileIndex tile)
+void AnimateNewIndustryTile(TileIndex index, const Tile &tile)
 {
 	const IndustryTileSpec *itspec = GetIndustryTileSpec(GetIndustryGfx(tile));
 	if (itspec == nullptr) return;
 
-	IndustryAnimationBase::AnimateTile(itspec, Industry::GetByTile(tile), tile, itspec->special_flags.Test(IndustryTileSpecialFlag::NextFrameRandomBits));
+	IndustryAnimationBase::AnimateTile(itspec, Industry::GetByTile(tile), index, tile, itspec->special_flags.Test(IndustryTileSpecialFlag::NextFrameRandomBits));
 }
 
 static bool DoTriggerIndustryTileAnimation(TileIndex tile, IndustryAnimationTrigger iat, uint32_t random, uint32_t var18_extra = 0)
@@ -281,7 +270,7 @@ static bool DoTriggerIndustryTileAnimation(TileIndex tile, IndustryAnimationTrig
 	const IndustryTileSpec *itspec = GetIndustryTileSpec(GetIndustryGfx(tile));
 	if (!itspec->animation.triggers.Test(iat)) return false;
 
-	IndustryAnimationBase::ChangeAnimationFrame(CBID_INDTILE_ANIMATION_TRIGGER, itspec, Industry::GetByTile(tile), tile, random, to_underlying(iat) | var18_extra);
+	IndustryAnimationBase::ChangeAnimationFrame(CBID_INDTILE_ANIMATION_TRIGGER, itspec, Industry::GetByTile(tile), tile, Tile(tile), random, to_underlying(iat) | var18_extra);
 	return true;
 }
 

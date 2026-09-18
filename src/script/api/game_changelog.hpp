@@ -24,6 +24,7 @@
  *
  * Other changes:
  * \li GSTown::ExpandTown Change to town expansion to match expected behaviour with the 'allow_town_roads' setting
+ * \li GSRail::GetRailType now also needs a second tile parameter to indicate the side the tile is entered.
  *
  * \b 15.0
  *

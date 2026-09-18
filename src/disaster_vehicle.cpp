@@ -61,6 +61,20 @@ static void DisasterClearSquare(TileIndex tile)
 {
 	if (EnsureNoVehicleOnGround(tile).Failed()) return;
 
+	if (Tile::HasType(tile, TileType::Railway)) {
+		/* Clear the square if not a depot and all rail is owned by a human player. */
+		bool do_clear = std::ranges::all_of(RailTileIterator::Iterate(tile), [](const Tile &rail_tile) { return !IsRailDepot(rail_tile) && Company::IsHumanID(GetTileOwner(rail_tile)); });
+
+		if (do_clear) {
+			AutoRestoreBackup cur_company(_current_company, OWNER_WATER);
+			Command<Commands::LandscapeClear>::Do(DoCommandFlag::Execute, tile);
+
+			/* update signals in buffer */
+			UpdateSignalsInBuffer();
+		}
+		return;
+	}
+
 	switch (GetTileType(tile)) {
 		case TileType::Railway:
 			if (Company::IsHumanID(GetTileOwner(tile)) && !IsRailDepot(tile)) {
@@ -78,7 +92,6 @@ static void DisasterClearSquare(TileIndex tile)
 			break;
 		}
 
-		case TileType::Trees:
 		case TileType::Clear:
 			DoClearSquare(tile);
 			break;
@@ -422,7 +435,7 @@ static bool DisasterTick_Ufo(DisasterVehicle *ufo)
 
 static void DestructIndustry(Industry *i)
 {
-	for (const auto tile : Map::Iterate()) {
+	for (const auto tile : Map::IterateIndex()) {
 		if (i->TileBelongsToIndustry(tile)) {
 			ResetIndustryConstructionStage(tile);
 			MarkTileDirtyByTile(tile);
@@ -604,7 +617,7 @@ static bool DisasterTick_Big_Ufo(DisasterVehicle *v)
 		const auto is_valid_target = [](const Train *t) {
 			return t->IsFrontEngine() // Only the engines
 				&& Company::IsHumanID(t->owner) // Don't break AIs
-				&& IsPlainRailTile(t->tile) // No tunnels
+				&& IsPlainRailTile(Tile::GetByType(t->tile, TileType::Railway)) // No tunnels
 				&& !t->vehstatus.Test(VehState::Crashed); // Not crashed
 		};
 

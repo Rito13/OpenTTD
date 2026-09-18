@@ -19,6 +19,7 @@
 #include "track_type.h"
 #include "tile_map.h"
 #include "timer/timer_game_calendar.h"
+#include "bridge_type.h"
 
 /** Flags to describe several special states upon entering a tile. */
 enum class VehicleEnterTileState : uint8_t {
@@ -33,7 +34,8 @@ using VehicleEnterTileStates = EnumBitSet<VehicleEnterTileState, uint8_t>;
 /** Tile information, used while rendering the tile */
 struct TileInfo : Coord3D<int> {
 	Slope tileh;    ///< Slope of the tile
-	TileIndex tile; ///< Tile index
+	TileIndex index; ///< Tile index
+	Tile tile; ///< Tile pointer
 };
 
 /** Tile description for the 'land area information' tool */
@@ -61,47 +63,40 @@ struct TileDesc {
 /**
  * Tile callback function signature for drawing a tile and its contents to the screen
  * @param ti Information about the tile to draw
+ * @param draw_halftile Whether the halftile part of the tile should be drawn.
+ * @param halftile_corner A valid corner if the tile has a halftile foundation.
+ * @return Mask of pillar corners and edges blocked by tile below the bridge.
  */
-using DrawTileProc = void(TileInfo *ti);
-
-/**
- * Tile callback function signature for obtaining the world \c Z coordinate of a given
- * point of a tile.
- *
- * @param tile The queries tile for the Z coordinate.
- * @param x World X coordinate in tile "units".
- * @param y World Y coordinate in tile "units".
- * @param ground_vehicle Whether to get the Z coordinate of the ground vehicle, or the ground.
- * @return World Z coordinate at tile ground (vehicle) level, including slopes and foundations.
- * @see GetSlopePixelZ
- */
-using GetSlopePixelZProc = int(TileIndex tile, uint x, uint y, bool ground_vehicle);
+using DrawTileProc = BridgePillarFlags(TileInfo *ti, bool draw_halftile, Corner halftile_corner);
 
 /**
  * Tile callback function signature for clearing a tile.
- * @param tile The tile to clear.
+ * @param index Tile index that is being cleared.
+ * @param[in,out] tile The associated tile that is to be cleared.
  * @param flags The command flags.
- * @return The cost or error.
+ * @return Tuple: Error code or clearing cost / Indication if the current associated tile was removed from the map array.
  * @see ClearTile
  */
-using ClearTileProc = CommandCost(TileIndex tile, DoCommandFlags flags);
+using ClearTileProc = std::tuple<CommandCost, bool>(TileIndex index, Tile &tile, DoCommandFlags flags);
 
 /**
  * Tile callback function signature for obtaining cargo acceptance of a tile
+ * @param index The index of the queried tile.
  * @param tile            Tile queried for its accepted cargo
  * @param acceptance      Storage destination of the cargo acceptance in 1/8
  * @param always_accepted Bitmask of always accepted cargo types
  * @see AddAcceptedCargo
  */
-using AddAcceptedCargoProc = void(TileIndex tile, CargoArray &acceptance, CargoTypes &always_accepted);
+using AddAcceptedCargoProc = void(TileIndex index, const Tile &tile, CargoArray &acceptance, CargoTypes &always_accepted);
 
 /**
  * Tile callback function signature for obtaining a tile description
+ * @param index Index of the tile being queried.
  * @param tile Tile being queried
- * @param td   Storage pointer for returned tile description
+ * @param[out] td Storage pointer for returned tile description.
  * @see GetTileDesc
  */
-using GetTileDescProc = void(TileIndex tile, TileDesc &td);
+using GetTileDescProc = void(TileIndex index, const Tile &tile, TileDesc &td);
 
 /**
  * Tile callback function signature for getting the possible tracks
@@ -111,6 +106,7 @@ using GetTileDescProc = void(TileIndex tile, TileDesc &td);
  *
  * see track_func.h for usage of TrackStatus.
  *
+ * @param index The index of the tile to get the track status from.
  * @param tile     the tile to get the track status from
  * @param mode     the mode of transportation
  * @param sub_mode used to differentiate between different kinds within the mode
@@ -118,65 +114,74 @@ using GetTileDescProc = void(TileIndex tile, TileDesc &td);
  * @return the track status information
  * @see GetTileTrackStatus
  */
-using GetTileTrackStatusProc = TrackStatus(TileIndex tile, TransportType mode, RoadTramType sub_mode, DiagDirection side);
+using GetTileTrackStatusProc = TrackStatus(TileIndex index, const Tile &tile, TransportType mode, RoadTramType sub_mode, DiagDirection side);
 
 /**
  * Tile callback function signature for obtaining the produced cargo of a tile.
+ * @param index Index of the tile being queried.
  * @param tile      Tile being queried
  * @param produced  Destination array for produced cargo
  * @see AddProducedCargo
  */
-using AddProducedCargoProc = void(TileIndex tile, CargoArray &produced);
+using AddProducedCargoProc = void(TileIndex index, const Tile &tile, CargoArray &produced);
 
 /**
  * Tile callback function signature for clicking a tile.
+ * @param index The index of tile that was clicked.
  * @param tile The tile that was clicked.
  * @return Whether any action was taken.
  * @see ClickTile
  */
-using ClickTileProc = bool(TileIndex tile);
+using ClickTileProc = bool(TileIndex index, const Tile &tile);
 
 /**
  * Tile callback function signature for animating a tile.
+ * @param index The tile index to animate.
  * @param tile The tile to animate.
  * @see AnimateTile
  */
-using AnimateTileProc = void(TileIndex tile);
+using AnimateTileProc = void(TileIndex index, const Tile &tile);
 
 /**
  * Tile callback function signature for running periodic tile updates.
- * @param tile The tile to update.
+ * @param index Tile index being updated.
+ * @param[in,out] tile The tile to update.
+ * @return \c true iff the tile was removed from the map.
  * @see RunTileLoop
  */
-using TileLoopProc = void(TileIndex tile);
+using TileLoopProc = bool(TileIndex index, Tile &tile);
 
 /**
  * Tile callback function signature for changing the owner of a tile.
- * @param tile The tile to process.
+ * @param index Index of the tile being operated on.
+ * @param[in,out] tile Tile where the owner is changed. If the tile is removed from the map array, this will return the after-delete tile pointer.
  * @param old_owner The owner to replace.
  * @param new_owner The owner to replace with.
+ * @return \c true iff the current associated tile was removed from the map array.
  * @see ChangeTileOwner
  */
-using ChangeTileOwnerProc = void(TileIndex tile, Owner old_owner, Owner new_owner);
+using ChangeTileOwnerProc = bool(TileIndex index, Tile &tile, Owner old_owner, Owner new_owner);
 
 /**
  * Tile callback function for a vehicle entering a tile.
  * @param v Vehicle entering the tile.
+ * @param index Tile index entered.
  * @param tile Tile entered.
  * @param x X position in world coordinates.
  * @param y Y position in world coordinates.
  * @return Some meta-data over the to be entered tile.
  * @see VehicleEnterTile
  */
-using VehicleEnterTileProc = VehicleEnterTileStates(Vehicle *v, TileIndex tile, int x, int y);
+using VehicleEnterTileProc = VehicleEnterTileStates(Vehicle *v, TileIndex index, const Tile &tile, int x, int y);
 
 /**
  * Tile callback function signature for getting the foundation of a tile.
- * @param tile The tile to check.
+ * @param index The index of the tile to find a foundation for.
+ * @param tile The tile to find a foundation for.
  * @param tileh The current slope.
  * @return The foundation that will be used.
  */
-using GetFoundationProc = Foundation(TileIndex tile, Slope tileh);
+using GetFoundationProc = Foundation(TileIndex index, const Tile &tile, Slope tileh);
 
 /**
  * Tile callback function signature of the terraforming callback.
@@ -187,6 +192,7 @@ using GetFoundationProc = Foundation(TileIndex tile, Slope tileh);
  *
  * @note The terraforming has not yet taken place. So GetTileZ() and GetTileSlope() refer to the landscape before the terraforming operation.
  *
+ * @param index The TileIndex being terraformed.
  * @param tile      The involved tile.
  * @param flags     Command flags passed to the terraform command (DoCommandFlag::Execute, DoCommandFlag::QueryCost, etc.).
  * @param z_new     TileZ after terraforming.
@@ -194,18 +200,19 @@ using GetFoundationProc = Foundation(TileIndex tile, Slope tileh);
  * @return Error code or extra cost for terraforming (like clearing land, building foundations, etc., but not the terraforming itself.)
  * @see TerraformTile
  */
-using TerraformTileProc = CommandCost(TileIndex tile, DoCommandFlags flags, int z_new, Slope tileh_new);
+using TerraformTileProc = CommandCost(TileIndex index, const Tile &tile, DoCommandFlags flags, int z_new, Slope tileh_new);
 
 /**
  * Tile callback function signature to test if a bridge can be built above a tile.
- * @param tile The involved tile.
+ * @param index The involved index.
+ * @param[in,out] tile The involved tile.
  * @param flags Command flags passed to the build command.
  * @param axis Axis of bridge being built.
  * @param height Absolute height of bridge platform.
- * @return Error code or extra cost for building bridge above the tile.
+ * @return Tuple: Error code or extra cost for building bridge above the tile. / Indication if the current associated tile was removed from the map array.
  * @see CheckBuildAbove
  */
-using CheckBuildAboveProc = CommandCost(TileIndex tile, DoCommandFlags flags, Axis axis, int height);
+using CheckBuildAboveProc = std::tuple<CommandCost, bool>(TileIndex index, Tile &tile, DoCommandFlags flags, Axis axis, int height);
 
 /**
  * Set of callback functions for performing tile operations of a given tile type.
@@ -213,18 +220,17 @@ using CheckBuildAboveProc = CommandCost(TileIndex tile, DoCommandFlags flags, Ax
  */
 struct TileTypeProcs {
 	DrawTileProc *draw_tile_proc; ///< Called to render the tile and its contents to the screen.
-	GetSlopePixelZProc *get_slope_pixel_z_proc; ///< Called to get the world Z coordinate for a given location within the tile.
 	ClearTileProc *clear_tile_proc; ////< Called to clear a tile.
 	AddAcceptedCargoProc *add_accepted_cargo_proc = nullptr; ///< Adds accepted cargo of the tile to cargo array supplied as parameter.
 	GetTileDescProc *get_tile_desc_proc; ///< Get a description of a tile (for the 'land area information' tool).
-	GetTileTrackStatusProc *get_tile_track_status_proc = [](TileIndex, TransportType, RoadTramType, DiagDirection) -> TrackStatus { return {}; }; ///< Get available tracks and status of a tile.
+	GetTileTrackStatusProc *get_tile_track_status_proc = [](TileIndex, const Tile&, TransportType, RoadTramType, DiagDirection) -> TrackStatus { return {}; }; ///< Get available tracks and status of a tile.
 	ClickTileProc *click_tile_proc = nullptr; ///< Called when tile is clicked
 	AnimateTileProc *animate_tile_proc = nullptr; ///< Called to animate a tile.
 	TileLoopProc *tile_loop_proc; ///< Called to periodically update the tile.
-	ChangeTileOwnerProc *change_tile_owner_proc = [](TileIndex, CompanyID, CompanyID) {}; ///< Called to change the ownership of elements on a tile.
+	ChangeTileOwnerProc *change_tile_owner_proc = [](TileIndex, Tile&, CompanyID, CompanyID) { return false; }; ///< Called to change the ownership of elements on a tile.
 	AddProducedCargoProc *add_produced_cargo_proc = nullptr; ///< Adds produced cargo of the tile to cargo array supplied as parameter.
 	VehicleEnterTileProc *vehicle_enter_tile_proc = nullptr; ///< Called when a vehicle enters a tile.
-	GetFoundationProc *get_foundation_proc = [](TileIndex, Slope) { return Foundation::None; }; ///< Called to get the foundation.
+	GetFoundationProc *get_foundation_proc = [](TileIndex, const Tile&, Slope) { return Foundation::None; }; ///< Called to get the foundation.
 	TerraformTileProc *terraform_tile_proc; ///< Called when a terraforming operation is about to take place.
 	CheckBuildAboveProc *check_build_above_proc = nullptr; ///< Called to check whether a bridge can be build above.
 };
@@ -234,7 +240,7 @@ extern const EnumIndexArray<const TileTypeProcs *, TileType, TileType::MaxSize> 
 TrackStatus GetTileTrackStatus(TileIndex tile, TransportType mode, RoadTramType sub_mode, DiagDirection side = DiagDirection::Invalid);
 VehicleEnterTileStates VehicleEnterTile(Vehicle *v, TileIndex tile, int x, int y);
 void ChangeTileOwner(TileIndex tile, Owner old_owner, Owner new_owner);
-void GetTileDesc(TileIndex tile, TileDesc &td);
+void GetTileDesc(TileIndex index, const Tile &tile, TileDesc &td);
 
 /**
  * Obtain cargo acceptance of a tile.
@@ -244,9 +250,11 @@ void GetTileDesc(TileIndex tile, TileDesc &td);
  */
 inline void AddAcceptedCargo(TileIndex tile, CargoArray &acceptance, CargoTypes &always_accepted)
 {
-	AddAcceptedCargoProc *proc = _tile_type_procs[GetTileType(tile)]->add_accepted_cargo_proc;
-	if (proc == nullptr) return;
-	proc(tile, acceptance, always_accepted);
+	for (Tile t(tile); t.IsValid(); ++t) {
+		if (auto proc = _tile_type_procs[t.GetTileType()]->add_accepted_cargo_proc; proc != nullptr) {
+			proc(tile, t, acceptance, always_accepted);
+		}
+	}
 }
 
 /**
@@ -256,9 +264,11 @@ inline void AddAcceptedCargo(TileIndex tile, CargoArray &acceptance, CargoTypes 
  */
 inline void AddProducedCargo(TileIndex tile, CargoArray &produced)
 {
-	AddProducedCargoProc *proc = _tile_type_procs[GetTileType(tile)]->add_produced_cargo_proc;
-	if (proc == nullptr) return;
-	proc(tile, produced);
+	for (Tile t(tile); t.IsValid(); ++t) {
+		if (auto proc = _tile_type_procs[t.GetTileType()]->add_produced_cargo_proc; proc != nullptr) {
+			proc(tile, t, produced);
+		}
+	}
 }
 
 /**
@@ -266,23 +276,27 @@ inline void AddProducedCargo(TileIndex tile, CargoArray &produced)
  * @param tile Tile to test.
  * @returns True iff the type of the tile has a handler for tile animation.
  */
-inline bool MayAnimateTile(TileIndex tile)
+inline bool MayAnimateTile(const Tile &tile)
 {
 	return _tile_type_procs[GetTileType(tile)]->animate_tile_proc != nullptr;
 }
 
 inline void AnimateTile(TileIndex tile)
 {
-	AnimateTileProc *proc = _tile_type_procs[GetTileType(tile)]->animate_tile_proc;
-	assert(proc != nullptr);
-	proc(tile);
+	for (Tile t = tile; t.IsValid(); ++t) {
+		AnimateTileProc *proc = _tile_type_procs[t.GetTileType()]->animate_tile_proc;
+		if (proc != nullptr) proc(tile, t);
+	}
 }
 
 inline bool ClickTile(TileIndex tile)
 {
-	ClickTileProc *proc = _tile_type_procs[GetTileType(tile)]->click_tile_proc;
-	if (proc == nullptr) return false;
-	return proc(tile);
+	for (Tile t = tile; t.IsValid(); ++t) {
+		ClickTileProc *proc = _tile_type_procs[t.GetTileType()]->click_tile_proc;
+		if (proc != nullptr && proc(tile, t)) return true;
+	}
+
+	return false;
 }
 
 #endif /* TILE_CMD_H */

@@ -6,3 +6,18 @@
  */
 
 /* This file contains code to downgrade the API from 16 to 15. */
+
+/* 16 adds direction to GetRailType. */
+AIRail.GetRailTypeCompat15 <- AIRail.GetRailType;
+AIRail.GetRailType <- function(tile)
+{
+	local tile_x = AIMap.GetTileX(tile);
+	local tile_y = AIMap.GetTileY(tile);
+	local dirs = [[-1, 0], [0, -1], [1, 0], [0, 1]];
+
+	foreach (d in dirs) {
+		local rt = AIRail.GetRailTypeCompat15(tile, AIMap.GetTileIndex(tile_x + d[0], tile_y + d[1]));
+		if (rt != AIRail.RAILTYPE_INVALID) return rt;
+	}
+	return AIRail.RAILTYPE_INVALID;
+}

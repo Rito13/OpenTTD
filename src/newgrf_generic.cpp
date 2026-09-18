@@ -238,7 +238,7 @@ std::pair<const GRFFile *, uint16_t> GetAiPurchaseCallbackResult(GrfSpecFeature 
  */
 void AmbientSoundEffectCallback(TileIndex tile)
 {
-	assert(IsTileType(tile, TileType::Clear) || IsTileType(tile, TileType::Trees) || IsTileType(tile, TileType::Water));
+	assert(IsTileType(tile, TileType::Clear) || IsTileType(tile, TileType::Water));
 
 	/* Only run every 1/200-th time. */
 	uint32_t r; // Save for later
@@ -248,8 +248,11 @@ void AmbientSoundEffectCallback(TileIndex tile)
 	GenericResolverObject object(false, CBID_SOUNDS_AMBIENT_EFFECT);
 	object.generic_scope.feature = GrfSpecFeature::SoundEffects;
 
-	uint32_t param1_v7 = to_underlying(GetTileType(tile)) << 28 | Clamp(TileHeight(tile), 0, 15) << 24 | GB(r, 16, 8) << 16 | GetTerrainType(tile);
-	uint32_t param1_v8 = to_underlying(GetTileType(tile)) << 24 | GetTileZ(tile) << 16 | GB(r, 16, 8) << 8 | (HasTileWaterClass(tile) ? to_underlying(GetWaterClass(tile)) : 0) << 3 | GetTerrainType(tile);
+	TileType tt = GetTileType(tile);
+	if (Tile::HasType(tile, TileType::Trees)) tt = TileType::Trees;
+
+	uint32_t param1_v7 = to_underlying(tt) << 28 | Clamp(TileHeight(tile), 0, 15) << 24 | GB(r, 16, 8) << 16 | GetTerrainType(tile);
+	uint32_t param1_v8 = to_underlying(tt) << 24 | GetTileZ(tile) << 16 | GB(r, 16, 8) << 8 | (HasTileWaterClass(tile) ? to_underlying(GetWaterClass(tile)) : 0) << 3 | GetTerrainType(tile);
 
 	/* Run callback. */
 	auto callback = GetGenericCallbackResult(GrfSpecFeature::SoundEffects, object, param1_v7, param1_v8);
