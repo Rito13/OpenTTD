@@ -346,6 +346,13 @@ protected:
 	 */
 	static ScriptLogTypes::LogData &GetLogData();
 
+	/**
+	 * Check if sub API is available.
+	 * @return \c true iff the sub API is available.
+	 */
+	template<typename T> requires std::is_enum_v<T>
+	static bool IsSubAPIAvailable(T api);
+
 private:
 	/* Helper functions for DoCommand. */
 	static std::tuple<bool, bool, bool, bool> DoCommandPrep();

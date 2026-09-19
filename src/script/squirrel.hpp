@@ -12,12 +12,44 @@
 
 #include <squirrel.h>
 #include "../core/convertible_through_base.hpp"
+#include "../core/enum_type.hpp"
 
 /** The type of script we're working with, i.e. for who is it? */
 enum class ScriptType : uint8_t {
 	AI, ///< The script is for AI scripts.
 	GS, ///< The script is for Game scripts.
 };
+
+/** The type of sub API that a AI want to use. */
+enum class AISubAPI : uint8_t { /* Currently none */ };
+
+/** Bitset of AISubAPI elements. */
+using AISubAPIs = EnumBitSet<AISubAPI, uint8_t>;
+
+/** The type of sub API that a Game Script want to use. */
+enum class GSSubAPI : uint8_t {
+	End, ///< End marker.
+};
+
+/**
+ * Get the name under whitch the API should be exposed for Game Script.
+ * @param api The API to query.
+ * @return The string name of the API in squirrel.
+ */
+static constexpr std::string_view GetSQGSSubAPIName(GSSubAPI api)
+{
+	switch (api) {
+		default: NOT_REACHED();
+	}
+}
+
+/** Bitset of GSSubAPI elements. */
+using GSSubAPIs = EnumBitSet<GSSubAPI, uint8_t>;
+
+static_assert(sizeof(GSSubAPIs::BaseType) * 8 >= to_underlying(GSSubAPI::End)); // Make sure we can store all sub APIs.
+
+/** Set of all possible GSSubAPI. */
+constexpr GSSubAPIs ALL_GS_SUB_APIS{UINT8_MAX};
 
 struct ScriptAllocator;
 

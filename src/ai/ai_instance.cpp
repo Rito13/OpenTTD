@@ -53,7 +53,7 @@ void AIInstance::RegisterAPI()
 	ScriptInstance::RegisterAPI();
 
 	/* Register all classes */
-	SQAI_RegisterAll(*this->engine);
+	SQAI_RegisterAll(*this->engine, {});
 
 	if (!this->LoadCompatibilityScripts(Subdirectory::Ai, AIInfo::ApiVersions)) this->Died();
 }

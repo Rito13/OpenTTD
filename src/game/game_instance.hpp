@@ -11,6 +11,7 @@
 #define GAME_INSTANCE_HPP
 
 #include "../script/script_instance.hpp"
+#include "game_info.hpp"
 
 /** Runtime information about a game script like a pointer to the squirrel vm and the current state. */
 class GameInstance : public ScriptInstance {
@@ -23,10 +24,19 @@ public:
 	 */
 	void Initialize(class GameInfo *info);
 
+	/**
+	 * Test if the sub API is available for this game script.
+	 * @param api The sub API to test.
+	 * @return \c true iff the API is available.
+	 */
+	bool IsSubAPIAvailable(GSSubAPI api) { return this->required_sub_apis.Test(api); }
+
 	int GetSetting(const std::string &name) override;
 	ScriptInfo *FindLibrary(const std::string &library, int version) override;
 
 private:
+	GSSubAPIs required_sub_apis; ///< Sub APIs required by this Game Script to work properly.
+
 	void RegisterAPI() override;
 	void Died() override;
 	CommandCallbackData *GetDoCommandCallback() override;
