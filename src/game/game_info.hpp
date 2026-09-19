@@ -18,6 +18,8 @@ public:
 	/** All valid GameScript API versions, in order. */
 	static constexpr std::string_view ApiVersions[]{ "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "1.10", "1.11", "12", "13", "14", "15", "16" };
 
+	GSSubAPIs required_sub_apis; ///< Sub APIs required by this Game Script to work properly.
+
 	GameInfo();
 
 	/**

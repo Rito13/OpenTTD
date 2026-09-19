@@ -36,6 +36,7 @@ GameInstance::GameInstance() :
 void GameInstance::Initialize(GameInfo *info)
 {
 	this->api_version = info->GetAPIVersion();
+	this->required_sub_apis = info->required_sub_apis;
 
 	/* Register the GameController */
 	SQGSController_Register(*this->engine);
@@ -48,7 +49,7 @@ void GameInstance::RegisterAPI()
 	ScriptInstance::RegisterAPI();
 
 	/* Register all classes */
-	SQGS_RegisterAll(*this->engine);
+	SQGS_RegisterAll(*this->engine, this->required_sub_apis);
 
 	if (!this->LoadCompatibilityScripts(Subdirectory::Gs, GameInfo::ApiVersions)) this->Died();
 

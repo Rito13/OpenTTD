@@ -42,6 +42,14 @@ template <> SQInteger PushClassName<GameInfo, ScriptType::GS>(HSQUIRRELVM vm) { 
 	SQGSInfo.DefSQConst(engine, ScriptConfigFlags{ScriptConfigFlag::InGame}.base(), "CONFIG_INGAME");
 	SQGSInfo.DefSQConst(engine, ScriptConfigFlags{ScriptConfigFlag::Developer}.base(), "CONFIG_DEVELOPER");
 
+	/* Register GSSubAPI enum class */
+	DefSQClass<GSSubAPIs, ScriptType::GS> SQGSSubAPI("SubAPI");
+	SQGSSubAPI.PreRegister(engine);
+	for (GSSubAPI sub_api : EnumRange(GSSubAPI::End)) {
+		SQGSSubAPI.DefSQConst(engine, GSSubAPIs{sub_api}.base(), GetSQGSSubAPIName(sub_api));
+	}
+	SQGSSubAPI.PostRegister(engine);
+
 	SQGSInfo.PostRegister(engine);
 	engine.AddMethod("RegisterGS", &GameInfo::Constructor, "tx");
 }
@@ -74,6 +82,21 @@ template <> SQInteger PushClassName<GameInfo, ScriptType::GS>(HSQUIRRELVM vm) { 
 	if (!CheckAPIVersion(info->api_version)) {
 		sq_throwerror(vm, fmt::format("Loading info.nut from ({}.{}): GetAPIVersion returned invalid version", info->GetName(), info->GetVersion()));
 		return SQ_ERROR;
+	}
+
+	/* Try to get which sub APIs the Game Script requires to work. */
+	if (info->engine->MethodExists(info->SQ_instance, "GetRequiredSubAPIs")) {
+		int required_sub_apis;
+		if (!info->engine->CallIntegerMethod(info->SQ_instance, "GetRequiredSubAPIs", &required_sub_apis, MAX_GET_OPS)) return SQ_ERROR;
+		static_assert(sizeof(decltype(required_sub_apis)) >= sizeof(GSSubAPIs::BaseType)); // Make sure that GS can request access to each API.
+		info->required_sub_apis = GSSubAPIs{static_cast<GSSubAPIs::BaseType>(required_sub_apis)};
+	} else {
+		/* For Game Scripts that use API pre 16 we want to require all sub APIs by default. For newer APIs we require none. */
+		if (*std::ranges::find_if(GameInfo::ApiVersions, [info](const std::string_view &v){ return v == info->api_version || v == "16"; }) == "16") {
+			info->required_sub_apis = {};
+		} else {
+			info->required_sub_apis = ALL_GS_SUB_APIS;
+		}
 	}
 
 	/* Remove the link to the real instance, else it might get deleted by RegisterGame() */

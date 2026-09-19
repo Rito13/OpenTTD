@@ -65,17 +65,24 @@ BEGIN {
 	gsub("^([	 ]*)", "", $0)
 	gsub("* @api ", "", $0)
 
+	skip_this_line = "true"
+
 	if ($0 == "none") {
 		api_selected = "false"
 	} else if ($0 == "-all") {
 		api_selected = "false"
 	} else if (match($0, "-" apis)) {
 		api_selected = "false"
+	} else if (match($0, apis "\\.[a-zA-Z]*")) {
+		skip_this_line = "false"
+		$0 = gensub(".*" apis "\\.([a-zA-Z]*).*", "* @note This is a part of `\\1` sub API.", "g", $0)
 	} else if (match($0, apis)) {
 		api_selected = "true"
 	}
 
-	next
+	if (skip_this_line == "true") {
+		next
+	}
 }
 
 # Ignore forward declarations of classes

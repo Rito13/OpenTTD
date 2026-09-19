@@ -18,7 +18,7 @@
 #include "../../command_func.h"
 
 #include "../script_storage.hpp"
-#include "../script_instance.hpp"
+#include "../../game/game_instance.hpp"
 #include "../script_fatalerror.hpp"
 #include "script_error.hpp"
 #include "../../debug.h"
@@ -242,6 +242,14 @@ ScriptObject::DisableDoCommandScope::DisableDoCommandScope()
 /* static */ ScriptLogTypes::LogData &ScriptObject::GetLogData()
 {
 	return GetStorage().log_data;
+}
+
+template <>
+/* static */ bool ScriptObject::IsSubAPIAvailable<GSSubAPI>(GSSubAPI api)
+{
+	GameInstance *instance = dynamic_cast<GameInstance *>(&ScriptObject::GetActiveInstance());
+	if (instance == nullptr) return true; // The API does not exist and by default all methods are available.
+	return instance->IsSubAPIAvailable(api);
 }
 
 /* static */ void ScriptObject::SetCallbackVariable(int index, int value)

@@ -14,7 +14,7 @@
 
 ${SQUIRREL_INCLUDES}
 
-void SQ${APIUC}_RegisterAll(Squirrel &engine)
+void SQ${APIUC}_RegisterAll(Squirrel &engine, ${APIUC}SubAPIs sub_apis)
 {
 	DefSQClass<ScriptObject, ScriptType::${APIUC}> SQ${APIUC}Object("${APIUC}Object");
 	SQ${APIUC}Object.PreRegister(engine);
