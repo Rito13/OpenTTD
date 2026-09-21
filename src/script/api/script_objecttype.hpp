@@ -50,6 +50,7 @@ public:
 	 * @param tile The tile to build the object on.
 	 * @pre IsValidObjectType(object_type).
 	 * @return True if the object was successfully build.
+	 * @game @note Building objects in non deity mode is a part of Company sub API.
 	 */
 	static bool BuildObject(ObjectType object_type, SQInteger view, TileIndex tile);
 

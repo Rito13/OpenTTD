@@ -193,6 +193,7 @@ public:
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @exception ScriptRoad::ERR_UNSUITABLE_ROAD
 	 * @return Whether at least some road has been converted successfully.
+	 * @api game.Company
 	 */
 	static bool ConvertRoadType(TileIndex start_tile, TileIndex end_tile, RoadType road_type);
 
@@ -327,6 +328,7 @@ public:
 	 * @note Construction will fail if an obstacle is found between the start and end tiles.
 	 * @game @note Building a piece of road as deity (ScriptCompanyMode::IsDeity()) results in a piece of road owned by towns.
 	 * @return Whether the road has been/can be build or not.
+	 * @game @note BuildRoad as deity (ScriptCompanyMode::IsDeity()) is a part of TownRoads sub API. While otherwise it is a part of Company sub API.
 	 */
 	static bool BuildRoad(TileIndex start, TileIndex end);
 
@@ -355,6 +357,7 @@ public:
 	 * @exception ScriptError::ERR_VEHICLE_IN_THE_WAY
 	 * @note Construction will fail if an obstacle is found between the start and end tiles.
 	 * @return Whether the road has been/can be build or not.
+	 * @api game.Company
 	 */
 	static bool BuildOneWayRoad(TileIndex start, TileIndex end);
 
@@ -379,6 +382,7 @@ public:
 	 * @note Construction will fail if an obstacle is found between the start and end tiles.
 	 * @game @note Building a piece of road as deity (ScriptCompanyMode::IsDeity()) results in a piece of road owned by towns.
 	 * @return Whether the road has been/can be build or not.
+	 * @game @note BuildRoadFull as deity (ScriptCompanyMode::IsDeity()) is a part of TownRoads sub API. While otherwise it is a part of Company sub API.
 	 */
 	static bool BuildRoadFull(TileIndex start, TileIndex end);
 
@@ -407,6 +411,7 @@ public:
 	 * @exception ScriptError::ERR_VEHICLE_IN_THE_WAY
 	 * @note Construction will fail if an obstacle is found between the start and end tiles.
 	 * @return Whether the road has been/can be build or not.
+	 * @api game.Company
 	 */
 	static bool BuildOneWayRoadFull(TileIndex start, TileIndex end);
 
@@ -422,6 +427,7 @@ public:
 	 * @exception ScriptError::ERR_FLAT_LAND_REQUIRED
 	 * @exception ScriptError::ERR_AREA_NOT_CLEAR
 	 * @return Whether the road depot has been/can be build or not.
+	 * @api game.Company
 	 */
 	static bool BuildRoadDepot(TileIndex tile, TileIndex front);
 
@@ -449,6 +455,7 @@ public:
 	 * @exception ScriptError::ERR_BRIDGE_TOO_LOW
 	 * @exception ScriptError::ERR_STATION_TOO_SPREAD_OUT
 	 * @return Whether the station has been/can be build or not.
+	 * @api game.Company
 	 */
 	static bool BuildRoadStation(TileIndex tile, TileIndex front, RoadVehicleType road_veh_type, StationID station_id);
 
@@ -476,6 +483,7 @@ public:
 	 * @exception ScriptError::ERR_BRIDGE_TOO_LOW
 	 * @exception ScriptError::ERR_STATION_TOO_SPREAD_OUT
 	 * @return Whether the station has been/can be build or not.
+	 * @api game.Company
 	 */
 	static bool BuildDriveThroughRoadStation(TileIndex tile, TileIndex front, RoadVehicleType road_veh_type, StationID station_id);
 
@@ -495,6 +503,7 @@ public:
 	 * @exception ScriptError::ERR_VEHICLE_IN_THE_WAY
 	 * @exception ScriptRoad::ERR_ROAD_WORKS_IN_PROGRESS
 	 * @return Whether the road has been/can be removed or not.
+	 * @api game.Company
 	 */
 	static bool RemoveRoad(TileIndex start, TileIndex end);
 
@@ -515,6 +524,7 @@ public:
 	 * @exception ScriptError::ERR_VEHICLE_IN_THE_WAY
 	 * @exception ScriptRoad::ERR_ROAD_WORKS_IN_PROGRESS
 	 * @return Whether the road has been/can be removed or not.
+	 * @api game.Company
 	 */
 	static bool RemoveRoadFull(TileIndex start, TileIndex end);
 
@@ -527,6 +537,7 @@ public:
 	 * @exception ScriptError::ERR_OWNED_BY_ANOTHER_COMPANY
 	 * @exception ScriptError::ERR_VEHICLE_IN_THE_WAY
 	 * @return Whether the road depot has been/can be removed or not.
+	 * @api game.Company
 	 */
 	static bool RemoveRoadDepot(TileIndex tile);
 
@@ -539,6 +550,7 @@ public:
 	 * @exception ScriptError::ERR_OWNED_BY_ANOTHER_COMPANY
 	 * @exception ScriptError::ERR_VEHICLE_IN_THE_WAY
 	 * @return Whether the station has been/can be removed or not.
+	 * @api game.Company
 	 */
 	static bool RemoveRoadStation(TileIndex tile);
 

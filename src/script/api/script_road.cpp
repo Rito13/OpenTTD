@@ -524,6 +524,7 @@ static bool NeighbourHasReachableRoad(::RoadType rt, TileIndex start_tile, DiagD
 
 /* static */ bool ScriptRoad::BuildRoad(TileIndex start, TileIndex end)
 {
+	EnforcePrecondition(false, ScriptObject::IsSubAPIAvailable(ScriptCompanyMode::IsDeity() ? GSSubAPI::TownRoads : GSSubAPI::Company));
 	return _BuildRoadInternal(start, end, false, false);
 }
 
@@ -535,6 +536,7 @@ static bool NeighbourHasReachableRoad(::RoadType rt, TileIndex start_tile, DiagD
 
 /* static */ bool ScriptRoad::BuildRoadFull(TileIndex start, TileIndex end)
 {
+	EnforcePrecondition(false, ScriptObject::IsSubAPIAvailable(ScriptCompanyMode::IsDeity() ? GSSubAPI::TownRoads : GSSubAPI::Company));
 	return _BuildRoadInternal(start, end, false, true);
 }
 

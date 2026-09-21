@@ -98,6 +98,7 @@ public:
 	 * @note No matter if the road pieces were build or not, if building the
 	 *  tunnel succeeded, this function returns true.
 	 * @game @note Building a tunnel as deity (ScriptCompanyMode::IsDeity()) results in a tunnel owned by towns.
+	 * @game @note BuildTunnel as deity (ScriptCompanyMode::IsDeity()) is a part of TownRoads sub API. While otherwise it is a part of Company sub API.
 	 */
 	static bool BuildTunnel(ScriptVehicle::VehicleType vehicle_type, TileIndex start);
 
@@ -108,6 +109,7 @@ public:
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @exception ScriptError::ERR_OWNED_BY_ANOTHER_COMPANY
 	 * @return Whether the tunnel has been/can be removed or not.
+	 * @api game.Company
 	 */
 	static bool RemoveTunnel(TileIndex tile);
 };

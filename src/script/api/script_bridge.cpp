@@ -81,6 +81,7 @@ static void _DoCommandReturnBuildBridge1(class ScriptInstance &instance)
 	EnforcePrecondition(false, vehicle_type != ScriptVehicle::VT_RAIL || ScriptRail::IsRailTypeAvailable(ScriptRail::GetCurrentRailType()));
 	EnforcePrecondition(false, vehicle_type != ScriptVehicle::VT_ROAD || ScriptRoad::IsRoadTypeAvailable(ScriptRoad::GetCurrentRoadType()));
 	EnforcePrecondition(false, ScriptCompanyMode::IsValid() || vehicle_type == ScriptVehicle::VT_ROAD);
+	EnforcePrecondition(false, ScriptObject::IsSubAPIAvailable(ScriptCompanyMode::IsDeity() ? GSSubAPI::TownRoads : GSSubAPI::Company));
 
 	switch (vehicle_type) {
 		case ScriptVehicle::VT_ROAD:

@@ -62,7 +62,7 @@ public:
 	 * @pre to_type   == SPT_INDUSTRY || to_type   == SPT_TOWN.
 	 * @pre (from_type == SPT_INDUSTRY && ScriptIndustry::IsValidIndustry(from_id)) || (from_type == SPT_TOWN && ScriptTown::IsValidTown(from_id))
 	 * @pre (to_type   == SPT_INDUSTRY && ScriptIndustry::IsValidIndustry(to_id))   || (to_type   == SPT_TOWN && ScriptTown::IsValidTown(to_id))
-	 * @api -ai
+	 * @api -ai game.Subsidy
 	 */
 	static bool Create(CargoType cargo_type, SubsidyParticipantType from_type, SQInteger from_id, SubsidyParticipantType to_type, SQInteger to_id);
 

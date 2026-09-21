@@ -44,6 +44,7 @@
 	EnforcePrecondition(false, IsValidObjectType(object_type));
 	EnforcePrecondition(false, view >= 0 && view < GetViews(object_type));
 	EnforcePrecondition(false, ScriptMap::IsValidTile(tile));
+	EnforcePrecondition(false, ScriptCompanyMode::IsDeity() || ScriptObject::IsSubAPIAvailable(GSSubAPI::Company));
 
 	return ScriptObject::Command<Commands::BuildObject>::Do(tile, object_type, view);
 }

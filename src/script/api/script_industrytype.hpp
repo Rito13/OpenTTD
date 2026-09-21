@@ -142,6 +142,7 @@ public:
 	 * @param tile The tile to build the industry on.
 	 * @pre CanBuildIndustry(industry_type).
 	 * @return True if the industry was successfully build.
+	 * @game @note BuildIndustry as deity (ScriptCompanyMode::IsDeity()) is a part of IndustryConstruction sub API. While otherwise it is a part of Company sub API.
 	 */
 	static bool BuildIndustry(IndustryType industry_type, TileIndex tile);
 
@@ -156,6 +157,7 @@ public:
 	 * @game @note When ScriptCompanyMode::IsDeity, prospection will not fail
 	 * @game due to the general chance that prospection may fail. However prospection can still
 	 * @game fail if OpenTTD is unable to find a suitable location to place the industry.
+	 * @game @note ProspectIndustry as deity (ScriptCompanyMode::IsDeity()) is a part of IndustryConstruction sub API. While otherwise it is a part of Company sub API.
 	 */
 	static bool ProspectIndustry(IndustryType industry_type);
 

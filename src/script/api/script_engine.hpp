@@ -307,7 +307,7 @@ public:
 	 * @pre IsValidEngine(engine_id).
 	 * @pre ScriptCompany.ResolveCompanyID(company_id) != ScriptCompany::COMPANY_INVALID.
 	 * @return True if the action succeeded.
-	 * @api -ai
+	 * @api -ai game.Engines
 	 */
 	static bool EnableForCompany(EngineID engine_id, ScriptCompany::CompanyID company_id);
 
@@ -318,7 +318,7 @@ public:
 	 * @pre IsValidEngine(engine_id).
 	 * @pre ScriptCompany.ResolveCompanyID(company_id) != ScriptCompany::COMPANY_INVALID.
 	 * @return True if the action succeeded.
-	 * @api -ai
+	 * @api -ai game.Engines
 	 */
 	static bool DisableForCompany(EngineID engine_id, ScriptCompany::CompanyID company_id);
 

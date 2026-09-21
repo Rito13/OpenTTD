@@ -207,6 +207,7 @@ public:
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @exception ScriptRail::ERR_UNSUITABLE_TRACK
 	 * @return Whether at least some rail has been converted successfully.
+	 * @api game.Company
 	 */
 	static bool ConvertRailType(TileIndex start_tile, TileIndex end_tile, ScriptRail::RailType convert_to);
 
@@ -238,6 +239,7 @@ public:
 	 * @exception ScriptError::ERR_FLAT_LAND_REQUIRED
 	 * @exception ScriptError::ERR_AREA_NOT_CLEAR
 	 * @return Whether the rail depot has been/can be build or not.
+	 * @api game.Company
 	 */
 	static bool BuildRailDepot(TileIndex tile, TileIndex front);
 
@@ -250,6 +252,7 @@ public:
 	 * @exception ScriptError::ERR_OWNED_BY_ANOTHER_COMPANY
 	 * @exception ScriptError::ERR_VEHICLE_IN_THE_WAY
 	 * @return Whether the rail depot has been/can be removed or not.
+	 * @api game.Company
 	 */
 	static bool RemoveRailDepot(TileIndex tile);
 
@@ -276,6 +279,7 @@ public:
 	 * @exception ScriptError::ERR_BRIDGE_TOO_LOW
 	 * @exception ScriptError::ERR_STATION_TOO_SPREAD_OUT
 	 * @return Whether the station has been/can be build or not.
+	 * @api game.Company
 	 */
 	static bool BuildRailStation(TileIndex tile, RailTrack direction, SQInteger num_platforms, SQInteger platform_length, StationID station_id);
 
@@ -315,6 +319,7 @@ public:
 	 * @exception ScriptError::ERR_BRIDGE_TOO_LOW
 	 * @exception ScriptError::ERR_STATION_TOO_SPREAD_OUT
 	 * @return Whether the station has been/can be build or not.
+	 * @api game.Company
 	 */
 	static bool BuildNewGRFRailStation(TileIndex tile, RailTrack direction, SQInteger num_platforms, SQInteger platform_length, StationID station_id, CargoType cargo_type, IndustryType source_industry, IndustryType goal_industry, SQInteger distance, bool source_station);
 
@@ -330,6 +335,7 @@ public:
 	 * @exception ScriptError::ERR_BRIDGE_TOO_LOW
 	 * @exception ScriptError::ERR_STATION_TOO_SPREAD_OUT
 	 * @return Whether the rail waypoint has been/can be build or not.
+	 * @api game.Company
 	 */
 	static bool BuildRailWaypoint(TileIndex tile);
 
@@ -343,6 +349,7 @@ public:
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @exception ScriptRail::ERR_UNSUITABLE_TRACK
 	 * @return Whether at least one tile has been/can be cleared or not.
+	 * @api game.Company
 	 */
 	static bool RemoveRailWaypointTileRectangle(TileIndex tile, TileIndex tile2, bool keep_rail);
 
@@ -356,6 +363,7 @@ public:
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @exception ScriptRail::ERR_UNSUITABLE_TRACK
 	 * @return Whether at least one tile has been/can be cleared or not.
+	 * @api game.Company
 	 */
 	static bool RemoveRailStationTileRectangle(TileIndex tile, TileIndex tile2, bool keep_rail);
 
@@ -383,6 +391,7 @@ public:
 	 * @return Whether the rail has been/can be build or not.
 	 * @note You can only build a single track with this function so do not
 	 *   use the values from RailTrack as bitmask.
+	 * @api game.Company
 	 */
 	static bool BuildRailTrack(TileIndex tile, RailTrack rail_track);
 
@@ -397,6 +406,7 @@ public:
 	 * @return Whether the rail has been/can be removed or not.
 	 * @note You can only remove a single track with this function so do not
 	 *   use the values from RailTrack as bitmask.
+	 * @api game.Company
 	 */
 	static bool RemoveRailTrack(TileIndex tile, RailTrack rail_track);
 
@@ -433,6 +443,7 @@ public:
 	 * @exception ScriptError::ERR_ALREADY_BUILT
 	 * @note Construction will fail if an obstacle is found between the start and end tiles.
 	 * @return Whether the rail has been/can be build or not.
+	 * @api game.Company
 	 */
 	static bool BuildRail(TileIndex from, TileIndex tile, TileIndex to);
 
@@ -451,6 +462,7 @@ public:
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @exception ScriptRail::ERR_UNSUITABLE_TRACK
 	 * @return Whether the rail has been/can be removed or not.
+	 * @api game.Company
 	 */
 	static bool RemoveRail(TileIndex from, TileIndex tile, TileIndex to);
 
@@ -473,6 +485,7 @@ public:
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @exception ScriptRail::ERR_UNSUITABLE_TRACK
 	 * @return Whether the signal has been/can be build or not.
+	 * @api game.Company
 	 */
 	static bool BuildSignal(TileIndex tile, TileIndex front, SignalType signal);
 
@@ -485,6 +498,7 @@ public:
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @exception ScriptRail::ERR_UNSUITABLE_TRACK
 	 * @return Whether the signal has been/can be removed or not.
+	 * @api game.Company
 	 */
 	static bool RemoveSignal(TileIndex tile, TileIndex front);
 

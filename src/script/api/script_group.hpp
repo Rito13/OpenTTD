@@ -39,6 +39,7 @@ public:
 	 * @return The GroupID of the new group, or an invalid GroupID when
 	 *  it failed. Check the return value using IsValidGroup(). In test-mode
 	 *  0 is returned if it was successful; any other value indicates failure.
+	 * @api game.Company
 	 */
 	static GroupID CreateGroup(ScriptVehicle::VehicleType vehicle_type, GroupID parent_group_id);
 
@@ -49,6 +50,7 @@ public:
 	 * @pre IsValidGroup(group_id).
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @return True if and only if the group was successfully deleted.
+	 * @api game.Company
 	 */
 	static bool DeleteGroup(GroupID group_id);
 
@@ -69,6 +71,7 @@ public:
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @exception ScriptError::ERR_NAME_IS_NOT_UNIQUE
 	 * @return True if and only if the name was changed.
+	 * @api game.Company
 	 */
 	static bool SetName(GroupID group_id, Text *name);
 
@@ -88,6 +91,7 @@ public:
 	 * @pre IsValidGroup(parent_group_id).
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @return True if and only if the parent group was changed.
+	 * @api game.Company
 	 */
 	static bool SetParent(GroupID group_id, GroupID parent_group_id);
 
@@ -107,6 +111,7 @@ public:
 	 * @pre IsValidGroup(group_id).
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @return True if and only if the protection was successfully changed.
+	 * @api game.Company
 	 */
 	static bool EnableAutoReplaceProtection(GroupID group_id, bool enable);
 
@@ -156,6 +161,7 @@ public:
 	 * @note A vehicle can be in only one group at the same time. To remove it from
 	 *  a group, move it to another or to GROUP_DEFAULT. Moving the vehicle to the
 	 *  given group means removing it from another group.
+	 * @api game.Company
 	 */
 	static bool MoveVehicle(GroupID group_id, VehicleID vehicle_id);
 
@@ -167,6 +173,7 @@ public:
 	 * @param keep_length If true, wagons will be removed if the new engine is longer.
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @return True if and only if the value was successfully changed.
+	 * @api game.Company
 	 */
 	static bool EnableWagonRemoval(bool keep_length);
 
@@ -188,6 +195,7 @@ public:
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @return True if and if the replacing was successfully started.
 	 * @note To stop autoreplacing engine_id_old, call StopAutoReplace(group_id, engine_id_old).
+	 * @api game.Company
 	 */
 	static bool SetAutoReplace(GroupID group_id, EngineID engine_id_old, EngineID engine_id_new);
 
@@ -209,6 +217,7 @@ public:
 	 * @pre IsValidGroup(group_id) || group_id == GROUP_DEFAULT || group_id == GROUP_ALL.
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @return True if and if the replacing was successfully stopped.
+	 * @api game.Company
 	 */
 	static bool StopAutoReplace(GroupID group_id, EngineID engine_id);
 
@@ -245,6 +254,7 @@ public:
 	 * @pre IsValidGroup(group_id).
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @return True iff the colour was set successfully.
+	 * @api game.Company
 	 */
 	static bool SetPrimaryColour(GroupID group_id, ScriptCompany::Colours colour);
 
@@ -255,6 +265,7 @@ public:
 	 * @pre IsValidGroup(group_id).
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @return True iff the colour was set successfully.
+	 * @api game.Company
 	 */
 	static bool SetSecondaryColour(GroupID group_id, ScriptCompany::Colours colour);
 

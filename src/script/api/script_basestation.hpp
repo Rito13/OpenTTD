@@ -59,6 +59,7 @@ public:
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @exception ScriptError::ERR_NAME_IS_NOT_UNIQUE
 	 * @return True if the name was changed.
+	 * @api game.Company
 	 */
 	static bool SetName(StationID station_id, Text *name);
 

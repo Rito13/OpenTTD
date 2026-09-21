@@ -87,6 +87,7 @@ static void _DoCommandReturnBuildTunnel1(class ScriptInstance &instance)
 	EnforcePrecondition(false, vehicle_type != ScriptVehicle::VT_RAIL || ScriptRail::IsRailTypeAvailable(ScriptRail::GetCurrentRailType()));
 	EnforcePrecondition(false, vehicle_type != ScriptVehicle::VT_ROAD || ScriptRoad::IsRoadTypeAvailable(ScriptRoad::GetCurrentRoadType()));
 	EnforcePrecondition(false, ScriptCompanyMode::IsValid() || vehicle_type == ScriptVehicle::VT_ROAD);
+	EnforcePrecondition(false, ScriptObject::IsSubAPIAvailable(ScriptCompanyMode::IsDeity() ? GSSubAPI::TownRoads : GSSubAPI::Company));
 
 	if (vehicle_type == ScriptVehicle::VT_RAIL) {
 		/* For rail we do nothing special */

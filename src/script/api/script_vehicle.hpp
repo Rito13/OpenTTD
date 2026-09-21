@@ -132,6 +132,7 @@ public:
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @exception ScriptError::ERR_NAME_IS_NOT_UNIQUE
 	 * @return True if and only if the name was changed.
+	 * @api game.Company
 	 */
 	static bool SetName(VehicleID vehicle_id, Text *name);
 
@@ -336,6 +337,7 @@ public:
 	 * @note In Test Mode it means you can't assign orders yet to this vehicle,
 	 *   as the vehicle isn't really built yet. Build it for real first before
 	 *   assigning orders.
+	 * @api game.Company
 	 */
 	static VehicleID BuildVehicle(TileIndex depot, EngineID engine_id);
 
@@ -358,6 +360,7 @@ public:
 	 * @note In Test Mode it means you can't assign orders yet to this vehicle,
 	 *   as the vehicle isn't really built yet. Build it for real first before
 	 *   assigning orders.
+	 * @api game.Company
 	 */
 	static VehicleID BuildVehicleWithRefit(TileIndex depot, EngineID engine_id, CargoType cargo);
 
@@ -388,6 +391,7 @@ public:
 	 * @return The VehicleID of the new vehicle, or an invalid VehicleID when
 	 *   it failed. Check the return value using IsValidVehicle. In test-mode
 	 *   0 is returned if it was successful; any other value indicates failure.
+	 * @api game.Company
 	 */
 	static VehicleID CloneVehicle(TileIndex depot, VehicleID vehicle_id, bool share_orders);
 
@@ -404,6 +408,7 @@ public:
 	 * @pre dest_vehicle_id == -1 || GetVehicleType(dest_vehicle_id) == VT_RAIL.
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @return Whether or not moving the wagon succeeded.
+	 * @api game.Company
 	 */
 	static bool MoveWagon(VehicleID source_vehicle_id, SQInteger source_wagon, SQInteger dest_vehicle_id, SQInteger dest_wagon);
 
@@ -420,6 +425,7 @@ public:
 	 * @pre dest_vehicle_id == -1 || GetVehicleType(dest_vehicle_id) == VT_RAIL.
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @return Whether or not moving the wagons succeeded.
+	 * @api game.Company
 	 */
 	static bool MoveWagonChain(VehicleID source_vehicle_id, SQInteger source_wagon, SQInteger dest_vehicle_id, SQInteger dest_wagon);
 
@@ -448,6 +454,7 @@ public:
 	 * @exception ScriptVehicle::ERR_VEHICLE_IS_DESTROYED
 	 * @exception ScriptVehicle::ERR_VEHICLE_NOT_IN_DEPOT
 	 * @return True if and only if the refit succeeded.
+	 * @api game.Company
 	 */
 	static bool RefitVehicle(VehicleID vehicle_id, CargoType cargo);
 
@@ -461,6 +468,7 @@ public:
 	 * @exception ScriptVehicle::ERR_VEHICLE_IS_DESTROYED
 	 * @exception ScriptVehicle::ERR_VEHICLE_NOT_IN_DEPOT
 	 * @return True if and only if the vehicle has been sold.
+	 * @api game.Company
 	 */
 	static bool SellVehicle(VehicleID vehicle_id);
 
@@ -476,6 +484,7 @@ public:
 	 * @exception ScriptVehicle::ERR_VEHICLE_IS_DESTROYED
 	 * @exception ScriptVehicle::ERR_VEHICLE_NOT_IN_DEPOT
 	 * @return True if and only if the wagon has been sold.
+	 * @api game.Company
 	 */
 	static bool SellWagon(VehicleID vehicle_id, SQInteger wagon);
 
@@ -491,6 +500,7 @@ public:
 	 * @exception ScriptVehicle::ERR_VEHICLE_IS_DESTROYED
 	 * @exception ScriptVehicle::ERR_VEHICLE_NOT_IN_DEPOT
 	 * @return True if and only if the wagons have been sold.
+	 * @api game.Company
 	 */
 	static bool SellWagonChain(VehicleID vehicle_id, SQInteger wagon);
 
@@ -502,6 +512,7 @@ public:
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @exception ScriptVehicle::ERR_VEHICLE_CANNOT_SEND_TO_DEPOT
 	 * @return True if the current order was changed.
+	 * @api game.Company
 	 */
 	static bool SendVehicleToDepot(VehicleID vehicle_id);
 
@@ -513,6 +524,7 @@ public:
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @exception ScriptVehicle::ERR_VEHICLE_CANNOT_SEND_TO_DEPOT
 	 * @return True if the current order was changed.
+	 * @api game.Company
 	 */
 	static bool SendVehicleToDepotForServicing(VehicleID vehicle_id);
 
@@ -525,6 +537,7 @@ public:
 	 * @exception (For aircraft only): ScriptVehicle::ERR_VEHICLE_IN_FLIGHT
 	 * @exception (For trains only): ScriptVehicle::ERR_VEHICLE_NO_POWER
 	 * @return True if and only if the vehicle has been started or stopped.
+	 * @api game.Company
 	 */
 	static bool StartStopVehicle(VehicleID vehicle_id);
 
@@ -537,6 +550,7 @@ public:
 	 * @return True if and only if the vehicle has started to turn.
 	 * @note Vehicles cannot always be reversed. For example busses and trucks need to be running
 	 *  and not be inside a depot.
+	 * @api game.Company
 	 */
 	static bool ReverseVehicle(VehicleID vehicle_id);
 

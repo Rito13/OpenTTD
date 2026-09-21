@@ -121,6 +121,7 @@
 	EnforceDeityOrCompanyModeValid(false);
 	EnforcePrecondition(false, CanBuildIndustry(industry_type));
 	EnforcePrecondition(false, ScriptMap::IsValidTile(tile));
+	EnforcePrecondition(false, ScriptObject::IsSubAPIAvailable(ScriptCompanyMode::IsDeity() ? GSSubAPI::IndustryConstruction : GSSubAPI::Company));
 
 	uint32_t seed = ScriptBase::Rand();
 	uint32_t layout_index = ScriptBase::RandRange((uint32_t)::GetIndustrySpec(industry_type)->layouts.size());
@@ -131,6 +132,7 @@
 {
 	EnforceDeityOrCompanyModeValid(false);
 	EnforcePrecondition(false, CanProspectIndustry(industry_type));
+	EnforcePrecondition(false, ScriptObject::IsSubAPIAvailable(ScriptCompanyMode::IsDeity() ? GSSubAPI::IndustryConstruction : GSSubAPI::Company));
 
 	uint32_t seed = ScriptBase::Rand();
 	return ScriptObject::Command<Commands::BuildIndustry>::Do(TileIndex{}, industry_type, 0, false, seed);

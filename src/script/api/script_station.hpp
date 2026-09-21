@@ -284,6 +284,7 @@ public:
 	 * @pre IsValidStation(station_id).
 	 * @pre HasStationType(station_id, STATION_AIRPORT).
 	 * @return True if the state was toggled successfully.
+	 * @api game.Company
 	 */
 	static bool OpenCloseAirport(StationID station_id);
 

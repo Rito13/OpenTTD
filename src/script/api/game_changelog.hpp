@@ -25,6 +25,162 @@
  * Other changes:
  * \li GSTown::ExpandTown Change to town expansion to match expected behaviour with the 'allow_town_roads' setting
  *
+ * Following sub API were created to restict some functions:
+ * \li Bank
+ *   - GSCompany::SetMaxLoanAmountForCompany
+ *   - GSCompany::ResetMaxLoanAmountForCompany
+ * \li Company
+  GSAirport::BuildAirport
+  GSAirport::RemoveAirport
+  GSBaseStation::SetName
+  GSBridge::BuildBridge as company
+  GSBridge::RemoveBridge
+  GSCompany::SetName
+  GSCompany::SetPresidentName
+  GSCompany::SetPresidentGender
+  GSCompany::SetLoanAmount
+  GSCompany::SetMinimumLoanAmount
+  GSCompany::BuildCompanyHQ
+  GSCompany::SetAutoRenewStatus
+  GSCompany::SetAutoRenewMonths
+  GSCompany::SetAutoRenewMoney
+  GSCompany::SetPrimaryLiveryColour
+  GSCompany::SetSecondaryLiveryColour
+  GSGroup::CreateGroup
+  GSGroup::DeleteGroup
+  GSGroup::SetName
+  GSGroup::SetParent
+  GSGroup::EnableAutoReplaceProtection
+  GSGroup::MoveVehicle
+  GSGroup::EnableWagonRemoval
+  GSGroup::SetAutoReplace
+  GSGroup::StopAutoReplace
+  GSGroup::SetPrimaryColour
+  GSGroup::SetSecondaryColour
+  GSIndustryType::BuildIndustry as company
+  GSIndustryType::ProspectIndustry as company
+  GSMarine::BuildWaterDepot
+  GSMarine::BuildDock
+  GSMarine::BuildBuoy
+  GSMarine::BuildLock
+  GSMarine::BuildCanal
+  GSMarine::RemoveWaterDepot
+  GSMarine::RemoveDock
+  GSMarine::RemoveBuoy
+  GSMarine::RemoveLock
+  GSMarine::RemoveCanal
+  GSObjectType::BuildObject as company (as deity available to all Game Scripts)
+  GSOrder::SetOrderJumpTo
+  GSOrder::SetOrderCondition
+  GSOrder::SetOrderCompareFunction
+  GSOrder::SetOrderCompareValue
+  GSOrder::SetStopLocation
+  GSOrder::SetOrderRefit
+  GSOrder::AppendOrder
+  GSOrder::AppendConditionalOrder
+  GSOrder::InsertOrder
+  GSOrder::InsertConditionalOrder
+  GSOrder::RemoveOrder
+  GSOrder::SetOrderFlags
+  GSOrder::MoveOrder
+  GSOrder::SkipToOrder
+  GSOrder::CopyOrders
+  GSOrder::ShareOrders
+  GSOrder::UnshareOrders
+  GSRail::ConvertRailType
+  GSRail::BuildRailDepot
+  GSRail::RemoveRailDepot
+  GSRail::BuildRailStation
+  GSRail::BuildNewGRFRailStation
+  GSRail::BuildRailWaypoint
+  GSRail::RemoveRailWaypointTileRectangle
+  GSRail::RemoveRailStationTileRectangle
+  GSRail::BuildRailTrack
+  GSRail::RemoveRailTrack
+  GSRail::BuildRail
+  GSRail::RemoveRail
+  GSRail::BuildSignal
+  GSRail::RemoveSignal
+  GSRoad::ConvertRoadType
+  GSRoad::BuildRoad as company
+  GSRoad::BuildOneWayRoad
+  GSRoad::BuildRoadFull as company
+  GSRoad::BuildOneWayRoadFull
+  GSRoad::BuildRoadDepot
+  GSRoad::BuildRoadStation
+  GSRoad::BuildDriveThroughRoadStation
+  GSRoad::RemoveRoad
+  GSRoad::RemoveRoadFull
+  GSRoad::RemoveRoadDepot
+  GSRoad::RemoveRoadStation
+  GSStation::OpenCloseAirport
+  GSTile::RaiseTile
+  GSTile::LowerTile
+  GSTile::LevelTiles
+  GSTile::DemolishTile
+  GSTile::PlantTree
+  GSTile::PlantTreeRectangle
+  GSTown::PerformTownAction
+  GSTown::FoundTown as company
+  GSTunnel::BuildTunnel as company
+  GSTunnel::RemoveTunnel
+  GSVehicle::SetName
+  GSVehicle::BuildVehicle
+  GSVehicle::BuildVehicleWithRefit
+  GSVehicle::CloneVehicle
+  GSVehicle::MoveWagon
+  GSVehicle::MoveWagonChain
+  GSVehicle::RefitVehicle
+  GSVehicle::SellVehicle
+  GSVehicle::SellWagon
+  GSVehicle::SellWagonChain
+  GSVehicle::SendVehicleToDepot
+  GSVehicle::SendVehicleToDepotForServicing
+  GSVehicle::StartStopVehicle
+  GSVehicle::ReverseVehicle
+ * \li Engines
+  GSEngine::EnableForCompany
+  GSEngine::DisableForCompany
+ * \li IndustryConstruction
+  GSIndustryType::BuildIndustry as deity
+  GSIndustryType::ProspectIndustry as deity
+ * \li IndustryProduction
+  GSIndustry::SetText
+  GSIndustry::SetControlFlags
+  GSIndustry::SetProductionLevel
+ * \li IndustryServicing
+  GSIndustry::SetExclusiveSupplier
+  GSIndustry::SetExclusiveConsumer
+ * \li Settings
+  GSGameSettings::SetValue
+ * \li Simulation
+  GSGame::Pause
+  GSGame::Unpause
+ * \li Subsidy
+  GSSubsidy::Create
+ * \li Town
+  GSTown::SetName
+  GSTown::SetText
+  GSTown::SetCargoGoal
+  GSTown::SetGrowthRate
+  GSTown::ChangeRating
+ * \li TownConstruction
+  GSTown::ExpandTown
+  GSTown::FoundTown as deity
+ * \li TownRoads
+  GSBridge::BuildBridge as deity
+  GSRoad::BuildRoad as deity
+  GSRoad::BuildRoadFull as deity
+  GSTunnel::BuildTunnel as deity
+ * \li Viewport
+  GSViewport::ScrollTo
+  GSViewport::ScrollEveryoneTo
+  GSViewport::ScrollCompanyClientsTo
+  GSViewport::ScrollClientTo
+ * \li Window
+  GSWindow::Close
+  GSWindow::Highlight
+ *
  * \b 15.0
  *
  * API additions:
