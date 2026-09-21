@@ -153,6 +153,7 @@ public:
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @exception ScriptError::ERR_NAME_IS_NOT_UNIQUE
 	 * @return True if the name was changed.
+	 * @api game.Company
 	 */
 	static bool SetName(Text *name);
 
@@ -171,6 +172,7 @@ public:
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @exception ScriptError::ERR_NAME_IS_NOT_UNIQUE
 	 * @return True if the name was changed.
+	 * @api game.Company
 	 */
 	static bool SetPresidentName(Text *name);
 
@@ -189,6 +191,7 @@ public:
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @return True if the gender was changed.
 	 * @note When successful a random face will be created.
+	 * @api game.Company
 	 */
 	static bool SetPresidentGender(Gender gender);
 
@@ -208,6 +211,7 @@ public:
 	 * @pre 'loan' - GetLoanAmount() + GetBankBalance() must be non-negative.
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @return True if the loan could be set to your requested amount.
+	 * @api game.Company
 	 */
 	static bool SetLoanAmount(Money loan);
 
@@ -218,6 +222,7 @@ public:
 	 * @pre 'loan' must be below GetMaxLoanAmount().
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @return True if we could allocate a minimum of 'loan' loan.
+	 * @api game.Company
 	 */
 	static bool SetMinimumLoanAmount(Money loan);
 
@@ -245,7 +250,7 @@ public:
 	 * @pre ResolveCompanyID(company) != COMPANY_INVALID.
 	 * @note You need to create your own news message to inform about max loan change.
 	 * @note Max loan value set with this method is not affected by inflation.
-	 * @api -ai
+	 * @api -ai game.Bank
 	 */
 	static bool SetMaxLoanAmountForCompany(ScriptCompany::CompanyID company, Money amount);
 
@@ -257,7 +262,7 @@ public:
 	 * @pre amount >= 0 && amount <= MAX_LOAN_LIMIT.
 	 * @pre ResolveCompanyID(company) != COMPANY_INVALID.
 	 * @note You need to create your own news message to inform about max loan change.
-	 * @api -ai
+	 * @api -ai game.Bank
 	 */
 	static bool ResetMaxLoanAmountForCompany(ScriptCompany::CompanyID company);
 
@@ -364,6 +369,7 @@ public:
 	 * @return True if the HQ could be build.
 	 * @note An HQ can not be removed, only by water or rebuilding; If an HQ is
 	 *  build again, the old one is removed.
+	 * @api game.Company
 	 */
 	static bool BuildCompanyHQ(TileIndex tile);
 
@@ -381,6 +387,7 @@ public:
 	 * @param autorenew The new autorenew status.
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @return True if autorenew status has been modified.
+	 * @api game.Company
 	 */
 	static bool SetAutoRenewStatus(bool autorenew);
 
@@ -399,6 +406,7 @@ public:
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @return True if autorenew months has been modified.
 	 * @see \ref ScriptCalendarTime
+	 * @api game.Company
 	 */
 	static bool SetAutoRenewMonths(SQInteger months);
 
@@ -418,6 +426,7 @@ public:
 	 * @return True if autorenew money has been modified.
 	 * @pre money >= 0
 	 * @pre money <  2**32
+	 * @api game.Company
 	 */
 	static bool SetAutoRenewMoney(Money money);
 
@@ -435,6 +444,7 @@ public:
 	 * @param colour Colour to set.
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @return False if unable to set primary colour of the livery scheme (e.g. colour in use).
+	 * @api game.Company
 	 */
 	static bool SetPrimaryLiveryColour(LiveryScheme scheme, Colours colour);
 
@@ -444,6 +454,7 @@ public:
 	 * @param colour Colour to set.
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @return False if unable to set secondary colour of the livery scheme.
+	 * @api game.Company
 	 */
 	static bool SetSecondaryLiveryColour(LiveryScheme scheme, Colours colour);
 

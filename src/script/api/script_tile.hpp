@@ -433,6 +433,7 @@ public:
 	 * @exception ScriptError::ERR_TOO_CLOSE_TO_EDGE
 	 * @exception ScriptTile::ERR_TILE_TOO_HIGH
 	 * @return 0 means failed, 1 means success.
+	 * @api game.Company
 	 */
 	static bool RaiseTile(TileIndex tile, Slope slope);
 
@@ -450,6 +451,7 @@ public:
 	 * @exception ScriptError::ERR_TOO_CLOSE_TO_EDGE
 	 * @exception ScriptTile::ERR_TILE_TOO_LOW
 	 * @return 0 means failed, 1 means success.
+	 * @api game.Company
 	 */
 	static bool LowerTile(TileIndex tile, Slope slope);
 
@@ -469,6 +471,7 @@ public:
 	 *  successfully leveled already.
 	 * @note This function may return true in ScriptTestMode, although it fails in
 	 *  ScriptExecMode.
+	 * @api game.Company
 	 */
 	static bool LevelTiles(TileIndex start_tile, TileIndex end_tile);
 
@@ -478,6 +481,7 @@ public:
 	 * @pre ScriptMap::IsValidTile(tile).
 	 * @exception ScriptError::ERR_AREA_NOT_CLEAR
 	 * @return True if and only if the tile was demolished.
+	 * @api game.Company
 	 */
 	static bool DemolishTile(TileIndex tile);
 
@@ -487,6 +491,7 @@ public:
 	 * @pre ScriptMap::IsValidTile(tile).
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @return True if and only if a tree was added on the tile.
+	 * @api game.Company
 	 */
 	static bool PlantTree(TileIndex tile);
 
@@ -500,6 +505,7 @@ public:
 	 * @pre height >= 1 && height <= 20.
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @return True if and only if a tree was added on any of the tiles in the rectangle.
+	 * @api game.Company
 	 */
 	static bool PlantTreeRectangle(TileIndex tile, SQInteger width, SQInteger height);
 

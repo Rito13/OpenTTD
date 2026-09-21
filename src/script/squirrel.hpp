@@ -28,6 +28,20 @@ using AISubAPIs = EnumBitSet<AISubAPI, uint8_t>;
 
 /** The type of sub API that a Game Script want to use. */
 enum class GSSubAPI : uint8_t {
+	Company, ///< Modification of the game state as a company.
+	TownRoads, ///< Management of town road infrastructure.
+	Bank, ///< Management of loans and economy.
+	Engines, ///< Granting access to engines.
+	Simulation, ///< Management of the game simulation.
+	Settings, ///< Management of the game settings.
+	IndustryServicing, ///< Granting exclusive rights to take or supply cargo from/to an industry.
+	IndustryProduction, ///< Production management for industries.
+	IndustryConstruction, ///< Construction of new industrues.
+	Subsidy, ///< Creation of subsidies.
+	Town, ///< Management of towns.
+	TownConstruction, ///< Construction of new towns and houses.
+	Window, ///< Management of in game windows (singleplayer only).
+	Viewport, ///< Management of viewports.
 	End, ///< End marker.
 };
 
@@ -39,17 +53,31 @@ enum class GSSubAPI : uint8_t {
 static constexpr std::string_view GetSQGSSubAPIName(GSSubAPI api)
 {
 	switch (api) {
+		case GSSubAPI::Company: return "Company";
+		case GSSubAPI::TownRoads: return "TownRoads";
+		case GSSubAPI::Bank: return "Bank";
+		case GSSubAPI::Engines: return "Engines";
+		case GSSubAPI::Simulation: return "Simulation";
+		case GSSubAPI::Settings: return "Settings";
+		case GSSubAPI::IndustryServicing: return "IndustryServicing";
+		case GSSubAPI::IndustryProduction: return "IndustryProduction";
+		case GSSubAPI::IndustryConstruction: return "IndustryConstruction";
+		case GSSubAPI::Subsidy: return "Subsidy";
+		case GSSubAPI::Town: return "Town";
+		case GSSubAPI::TownConstruction: return "TownConstruction";
+		case GSSubAPI::Window: return "Window";
+		case GSSubAPI::Viewport: return "Viewport";
 		default: NOT_REACHED();
 	}
 }
 
 /** Bitset of GSSubAPI elements. */
-using GSSubAPIs = EnumBitSet<GSSubAPI, uint8_t>;
+using GSSubAPIs = EnumBitSet<GSSubAPI, uint16_t>;
 
 static_assert(sizeof(GSSubAPIs::BaseType) * 8 >= to_underlying(GSSubAPI::End)); // Make sure we can store all sub APIs.
 
 /** Set of all possible GSSubAPI. */
-constexpr GSSubAPIs ALL_GS_SUB_APIS{UINT8_MAX};
+constexpr GSSubAPIs ALL_GS_SUB_APIS{UINT16_MAX};
 
 struct ScriptAllocator;
 

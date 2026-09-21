@@ -152,6 +152,7 @@ public:
 	 * @game @note Building a bridge as deity (ScriptCompanyMode::IsDeity()) results in a bridge owned by towns.
 	 * @note No matter if the road pieces were build or not, if building the
 	 *  bridge succeeded, this function returns true.
+	 * @game @note BuildBridge as deity (ScriptCompanyMode::IsDeity()) is a part of TownRoads sub API. While otherwise it is a part of Company sub API.
 	 */
 	static bool BuildBridge(ScriptVehicle::VehicleType vehicle_type, BridgeType bridge_type, TileIndex start, TileIndex end);
 
@@ -162,6 +163,7 @@ public:
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @exception ScriptError::ERR_OWNED_BY_ANOTHER_COMPANY
 	 * @return Whether the bridge has been/can be removed or not.
+	 * @api game.Company
 	 */
 	static bool RemoveBridge(TileIndex tile);
 

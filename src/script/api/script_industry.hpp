@@ -102,7 +102,7 @@ public:
 	 * @pre ScriptCompanyMode::IsDeity().
 	 * @pre IsValidIndustry(industry_id).
 	 * @return True if the action succeeded.
-	 * @api -ai
+	 * @api -ai game.IndustryProduction
 	 */
 	static bool SetText(IndustryID industry_id, Text *text);
 
@@ -287,7 +287,7 @@ public:
 	 * @pre IsValidIndustry(industry_id).
 	 * @pre ScriptCompanyMode::IsDeity().
 	 * @return True if the action succeeded.
-	 * @api -ai
+	 * @api -ai game.IndustryProduction
 	 */
 	static bool SetControlFlags(IndustryID industry_id, SQInteger control_flags);
 
@@ -308,7 +308,7 @@ public:
 	 * @pre IsValidIndustry(industry_id).
 	 * @pre ScriptCompanyMode::IsDeity().
 	 * @return True if the action succeeded.
-	 * @api -ai
+	 * @api -ai game.IndustryServicing
 	 */
 	static bool SetExclusiveSupplier(IndustryID industry_id, ScriptCompany::CompanyID company_id);
 
@@ -329,7 +329,7 @@ public:
 	 * @pre IsValidIndustry(industry_id).
 	 * @pre ScriptCompanyMode::IsDeity().
 	 * @return True if the action succeeded.
-	 * @api -ai
+	 * @api -ai game.IndustryServicing
 	 */
 	static bool SetExclusiveConsumer(IndustryID industry_id, ScriptCompany::CompanyID company_id);
 
@@ -353,7 +353,7 @@ public:
 	 * @pre ScriptCompanyMode::IsDeity().
 	 * @pre prod_level >= 4 && prod_level <= 128.
 	 * @return True if the action succeeded.
-	 * @api -ai
+	 * @api -ai game.IndustryProduction
 	 */
 	static bool SetProductionLevel(IndustryID industry_id, SQInteger prod_level, bool show_news, Text *custom_news);
 };

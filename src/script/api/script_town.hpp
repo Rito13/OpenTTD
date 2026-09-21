@@ -155,7 +155,7 @@ public:
 	 * @pre IsValidTown(town_id).
 	 * @pre ScriptCompanyMode::IsDeity().
 	 * @return True if the action succeeded.
-	 * @api -ai
+	 * @api -ai game.Town
 	 */
 	static bool SetName(TownID town_id, Text *name);
 
@@ -166,7 +166,7 @@ public:
 	 * @pre IsValidTown(town_id).
 	 * @pre ScriptCompanyMode::IsDeity().
 	 * @return True if the action succeeded.
-	 * @api -ai
+	 * @api -ai game.Town
 	 */
 	static bool SetText(TownID town_id, Text *text);
 
@@ -249,7 +249,7 @@ public:
 	 * @pre ScriptCompanyMode::IsDeity().
 	 * @return True if the action succeeded.
 	 * @see \ref ScriptEconomyTime
-	 * @api -ai
+	 * @api -ai game.Town
 	 */
 	static bool SetCargoGoal(TownID town_id, ScriptCargo::TownEffect towneffect_id, SQInteger goal);
 
@@ -278,7 +278,7 @@ public:
 	 *       and the game settings (economy.town_growth_rate) allow town growth at all.
 	 * @note When changing the growth rate, the relative progress is preserved and scaled to the new rate.
 	 * @see \ref ScriptEconomyTime
-	 * @api -ai
+	 * @api -ai game.Town
 	 */
 	static bool SetGrowthRate(TownID town_id, SQInteger days_between_town_growth);
 
@@ -400,6 +400,7 @@ public:
 	 * @pre IsActionAvailable(town_id, town_action).
 	 * @game @pre ScriptCompanyMode::IsValid().
 	 * @return True if the action succeeded.
+	 * @api game.Company
 	 */
 	static bool PerformTownAction(TownID town_id, TownAction town_action);
 
@@ -412,7 +413,7 @@ public:
 	 * @pre houses > 0.
 	 * @pre ScriptCompanyMode::IsDeity().
 	 * @return True if the action succeeded.
-	 * @api -ai
+	 * @api -ai game.TownConstruction
 	 */
 	static bool ExpandTown(TownID town_id, SQInteger houses);
 
@@ -432,6 +433,7 @@ public:
 	 * @return True if the action succeeded.
 	 * @game @note Companies are restricted by the advanced setting that controls if funding towns is allowed or not. If custom road layout is forbidden and there is a company mode in scope (ScriptCompanyMode::IsValid()), the layout parameter will be ignored.
 	 * @ai @note AIs are restricted by the advanced setting that controls if funding towns is allowed or not. If custom road layout is forbidden, the layout parameter will be ignored.
+	 * @game @note FoundTown as deity (ScriptCompanyMode::IsDeity()) is a part of TownConstruction sub API. While otherwise it is a part of Company sub API.
 	 */
 	static bool FoundTown(TileIndex tile, TownSize size, bool city, RoadLayout layout, Text *name);
 
@@ -465,7 +467,7 @@ public:
 	 * @pre IsValidTown(town_id).
 	 * @pre ScriptCompany.ResolveCompanyID(company) != ScriptCompany::COMPANY_INVALID.
 	 * @pre ScriptCompanyMode::IsDeity().
-	 * @api -ai
+	 * @api -ai game.Town
 	 */
 	static bool ChangeRating(TownID town_id, ScriptCompany::CompanyID company_id, SQInteger delta);
 

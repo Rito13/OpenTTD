@@ -67,7 +67,7 @@ public:
 	 * @pre IsValid(setting).
 	 * @return True if the action succeeded.
 	 * @note Results achieved in the past offer no guarantee for the future.
-	 * @api -ai
+	 * @api -ai game.Settings
 	 */
 	static bool SetValue(const std::string &setting, SQInteger value);
 

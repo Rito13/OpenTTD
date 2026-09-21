@@ -83,6 +83,7 @@ public:
 	 * @param number The number of the window to close, or NUMBER_ALL to close all of this class.
 	 *               The value will be clamped to 0 .. MAX(int32_t) when value is not NUMBER_ALL.
 	 * @pre !ScriptGame::IsMultiplayer().
+	 * @api game.Window
 	 */
 	static void Close(WindowClass window, SQInteger number);
 
@@ -108,6 +109,7 @@ public:
 	 * @pre number != NUMBER_ALL.
 	 * @pre colour < TC_END || (widget == WIDGET_ALL && colour == TC_INVALID).
 	 * @pre IsOpen(window, number).
+	 * @api game.Window
 	 */
 	static void Highlight(WindowClass window, SQInteger number, SQInteger widget, TextColour colour);
 

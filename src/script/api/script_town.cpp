@@ -300,6 +300,7 @@
 	EnforcePrecondition(false, ::IsValidTile(tile));
 	EnforcePrecondition(false, size == TOWN_SIZE_SMALL || size == TOWN_SIZE_MEDIUM || size == TOWN_SIZE_LARGE)
 	EnforcePrecondition(false, ScriptCompanyMode::IsDeity() || size != TOWN_SIZE_LARGE);
+	EnforcePrecondition(false, ScriptObject::IsSubAPIAvailable(ScriptCompanyMode::IsDeity() ? GSSubAPI::TownConstruction : GSSubAPI::Company));
 	if (ScriptCompanyMode::IsDeity() || _settings_game.economy.found_town == TownFounding::CustomLayout) {
 		EnforcePrecondition(false, layout >= ROAD_LAYOUT_ORIGINAL && layout <= ROAD_LAYOUT_RANDOM);
 	} else {

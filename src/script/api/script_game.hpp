@@ -33,12 +33,14 @@ public:
 	/**
 	 * Pause the server.
 	 * @return True if the action succeeded.
+	 * @api game.Simulation
 	 */
 	static bool Pause();
 
 	/**
 	 * Unpause the server.
 	 * @return True if the action succeeded.
+	 * @api game.Simulation
 	 */
 	static bool Unpause();
 

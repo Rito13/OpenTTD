@@ -26,6 +26,7 @@ public:
 	 * @param tile The tile to put in the center of the screen.
 	 * @pre ! ScriptGame::IsMultiplayer().
 	 * @pre ScriptMap::IsValidTile(tile).
+	 * @api game.Viewport
 	 */
 	static void ScrollTo(TileIndex tile);
 
@@ -36,6 +37,7 @@ public:
 	 * @pre ScriptCompanyMode::IsDeity().
 	 * @pre ScriptMap::IsValidTile(tile)
 	 * @return True iff the command was executed successfully.
+	 * @api game.Viewport
 	 */
 	static bool ScrollEveryoneTo(TileIndex tile);
 
@@ -48,6 +50,7 @@ public:
 	 * @pre ScriptMap::IsValidTile(tile)
 	 * @pre ResolveCompanyID(company) != COMPANY_INVALID
 	 * @return True iff the command was executed successfully.
+	 * @api game.Viewport
 	 */
 	static bool ScrollCompanyClientsTo(ScriptCompany::CompanyID company, TileIndex tile);
 
@@ -61,6 +64,7 @@ public:
 	 * @pre ScriptMap::IsValidTile(tile)
 	 * @pre ResolveClientID(client) != CLIENT_INVALID
 	 * @return True iff the command was executed successfully.
+	 * @api game.Viewport
 	 */
 	static bool ScrollClientTo(ScriptClient::ClientID client, TileIndex tile);
 };
