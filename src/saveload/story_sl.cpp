@@ -77,6 +77,7 @@ static const SaveLoad _story_pages_desc[] = {
 	SaveLoad::Variable<VarFileType::U32>("date", SLE_OBJECT_ADDRESS(StoryPage, date)),
 	SaveLoad::Variable<VarFileType::U16>("company", SLE_OBJECT_ADDRESS(StoryPage, company), SaveLoadVersion::MinVersion, SaveLoadVersion::Storybooks),
 	SaveLoad::Variable<VarFileType::U8>("company", SLE_OBJECT_ADDRESS(StoryPage, company), SaveLoadVersion::Storybooks),
+	SaveLoad::Variable<VarFileType::U8>("game_script", SLE_OBJECT_ADDRESS(StoryPage, game_script), SaveLoadVersion::MultipleGameScripts),
 	SaveLoad::String("title", SLE_OBJECT_ADDRESS(StoryPage, title), StringValidationSetting::AllowControlCode),
 };
 

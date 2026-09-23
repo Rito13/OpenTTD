@@ -12,8 +12,9 @@
 
 #include "command_type.h"
 #include "goal_type.h"
+#include "game/game_type.hpp"
 
-std::tuple<CommandCost, GoalID> CmdCreateGoal(DoCommandFlags flags, CompanyID company, GoalType type, GoalTypeID dest, const EncodedString &text);
+std::tuple<CommandCost, GoalID> CmdCreateGoal(DoCommandFlags flags, CompanyID company, GoalType type, GoalTypeID dest, const EncodedString &text, GameID game_script);
 CommandCost CmdRemoveGoal(DoCommandFlags flags, GoalID goal);
 CommandCost CmdSetGoalDestination(DoCommandFlags flags, GoalID goal, GoalType type, GoalTypeID dest);
 CommandCost CmdSetGoalText(DoCommandFlags flags, GoalID goal, const EncodedString &text);

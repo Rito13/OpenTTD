@@ -55,6 +55,7 @@ static const SaveLoad _league_tables_desc[] = {
 	SaveLoad::String("title", SLE_OBJECT_ADDRESS(LeagueTable, title), StringValidationSetting::AllowControlCode),
 	SaveLoad::String("header", SLE_OBJECT_ADDRESS(LeagueTable, header), StringValidationSetting::AllowControlCode),
 	SaveLoad::String("footer", SLE_OBJECT_ADDRESS(LeagueTable, footer), StringValidationSetting::AllowControlCode),
+	SaveLoad::Variable<VarFileType::U8>("game_script", SLE_OBJECT_ADDRESS(LeagueTable, game_script), SaveLoadVersion::MultipleGameScripts),
 };
 
 struct LEATChunkHandler : ChunkHandler {

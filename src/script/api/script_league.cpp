@@ -15,13 +15,18 @@
 #include "script_error.hpp"
 #include "../../league_base.h"
 #include "../../league_cmd.h"
+#include "../../game/game_instance.hpp"
 
 #include "../../safeguards.h"
 
 
 /* static */ bool ScriptLeagueTable::IsValidLeagueTable(LeagueTableID table_id)
 {
-	return ::LeagueTable::IsValidID(table_id);
+	const LeagueTable *table = ::LeagueTable::GetIfValid(table_id);
+	if (table == nullptr) return false;
+	GameInstance *game = dynamic_cast<GameInstance *>(&ScriptObject::GetActiveInstance());
+	assert(game != nullptr);
+	return game->GetID() == table->game_script;
 }
 
 /* static */ LeagueTableID ScriptLeagueTable::New(Text *title, Text *header, Text *footer)
@@ -38,7 +43,9 @@
 	EncodedString encoded_header = (header != nullptr ? header->GetEncodedText() : EncodedString{});
 	EncodedString encoded_footer = (footer != nullptr ? footer->GetEncodedText() : EncodedString{});
 
-	if (!ScriptObject::Command<Commands::CreateLeagueTable>::Do(&ScriptInstance::DoCommandReturnLeagueTableID, encoded_title, encoded_header, encoded_footer)) return LEAGUE_TABLE_INVALID;
+	GameInstance *game = dynamic_cast<GameInstance *>(&ScriptObject::GetActiveInstance());
+	assert(game != nullptr);
+	if (!ScriptObject::Command<Commands::CreateLeagueTable>::Do(&ScriptInstance::DoCommandReturnLeagueTableID, encoded_title, encoded_header, encoded_footer, game->GetID())) return LEAGUE_TABLE_INVALID;
 
 	/* In case of test-mode, we return LeagueTableID 0 */
 	return LeagueTableID::Begin();
@@ -46,7 +53,9 @@
 
 /* static */ bool ScriptLeagueTable::IsValidLeagueTableElement(LeagueTableElementID element_id)
 {
-	return ::LeagueTableElement::IsValidID(element_id);
+	const LeagueTableElement *element = ::LeagueTableElement::GetIfValid(element_id);
+	if (element == nullptr) return false;
+	return ScriptLeagueTable::IsValidLeagueTable(element->table);
 }
 
 /* static */ LeagueTableElementID ScriptLeagueTable::NewElement(LeagueTableID table, SQInteger rating, ScriptCompany::CompanyID company, Text *text, Text *score, LinkType link_type, SQInteger link_target)

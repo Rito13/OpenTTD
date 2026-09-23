@@ -11,16 +11,18 @@
 #define GAME_CONFIG_HPP
 
 #include "../script/script_config.hpp"
+#include "game_type.hpp"
 
 /** Game script instantion of script configuration. */
 class GameConfig : public ScriptConfig {
 public:
 	/**
 	 * Get the script configuration.
+	 * @param game_script The Game Script to get the configuration of.
 	 * @param source The context, i.e. current / new game mode.
 	 * @return The configuration.
 	 */
-	static GameConfig *GetConfig(ScriptSettingSource source = ScriptSettingSource::Default);
+	static GameConfig *GetConfig(GameID game_script, ScriptSettingSource source = ScriptSettingSource::Default);
 
 	GameConfig() :
 		ScriptConfig()

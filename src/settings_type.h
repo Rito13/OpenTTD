@@ -703,7 +703,7 @@ struct CompanySettings {
 struct ScriptConfigSettings
 {
 	TypedIndexContainer<std::array<std::unique_ptr<class AIConfig>, MAX_COMPANIES>, CompanyID> ai; ///< settings per company
-	std::unique_ptr<class GameConfig> game; ///< settings for gamescript
+	std::vector<std::unique_ptr<class GameConfig>> game; ///< settings for gamescript
 
 	ScriptConfigSettings();
 	~ScriptConfigSettings();

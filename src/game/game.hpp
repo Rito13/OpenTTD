@@ -89,8 +89,9 @@ public:
 
 	/**
 	 * Save data from Game Scripts to a savegame.
+	 * @param id The index of the Game Script to save.
 	 */
-	static void Save();
+	static void Save(GameID id);
 
 	/** @copydoc ScriptScanner::GetConsoleList */
 	static void GetConsoleList(std::back_insert_iterator<std::string> &output_iterator, bool newest_only);
