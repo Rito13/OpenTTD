@@ -24,7 +24,7 @@
 
 /* static */ uint Game::frame_counter = 0;
 /* static */ GameInfo *Game::info = nullptr;
-/* static */ std::unique_ptr<GameInstance> Game::instance = nullptr;
+/* static */ std::vector<std::unique_ptr<GameInstance>> Game::instance{};
 /* static */ std::unique_ptr<GameScannerInfo> Game::scanner_info = nullptr;
 /* static */ std::unique_ptr<GameScannerLibrary> Game::scanner_library = nullptr;
 
@@ -34,7 +34,7 @@
 		PerformanceMeasurer::SetInactive(PerformanceElement::GameScript);
 		return;
 	}
-	if (Game::instance == nullptr) {
+	if (Game::instance.size() == 0) {
 		PerformanceMeasurer::SetInactive(PerformanceElement::GameScript);
 		return;
 	}
@@ -43,18 +43,20 @@
 
 	Game::frame_counter++;
 
-	AutoRestoreBackup cur_company(_current_company, OWNER_DEITY);
-	Game::instance->GameLoop();
+	for (GameID id = 0; id < Game::GetCurrentCountOfInstances(); ++id) {
+		AutoRestoreBackup cur_company(_current_company, OWNER_DEITY);
+		Game::instance[id]->GameLoop();
 
-	/* Occasionally collect garbage */
-	if ((Game::frame_counter & 255) == 0) {
-		Game::instance->CollectGarbage();
+		/* Occasionally collect garbage */
+		if ((Game::frame_counter & 255) == 0) {
+			Game::instance[id]->CollectGarbage();
+		}
 	}
 }
 
 /* static */ void Game::Initialize()
 {
-	if (Game::instance != nullptr) Game::Uninitialize(true);
+	if (Game::instance.size() != 0) Game::Uninitialize(true);
 
 	Game::frame_counter = 0;
 
@@ -69,8 +71,6 @@
 
 /* static */ void Game::StartNew()
 {
-	if (Game::instance != nullptr) return;
-
 	/* Don't start GameScripts in intro */
 	if (_game_mode == GameMode::Menu) return;
 
@@ -86,9 +86,11 @@
 	AutoRestoreBackup cur_company(_current_company, OWNER_DEITY);
 
 	Game::info = info;
-	Game::instance = std::make_unique<GameInstance>();
-	Game::instance->Initialize(info);
-	Game::instance->LoadOnStack(config->GetToLoadData());
+	GameID id = Game::GetCurrentCountOfInstances();
+	if (id == MAX_COUNT_OF_GAME_SCRIPTS) return;
+	Game::instance.push_back(std::make_unique<GameInstance>());
+	Game::instance[id]->Initialize(info);
+	Game::instance[id]->LoadOnStack(config->GetToLoadData());
 	config->SetToLoadData(nullptr);
 
 	InvalidateWindowClassesData(WindowClass::ScriptDebug, -1);
@@ -113,19 +115,22 @@
 	}
 }
 
-/* static */ void Game::Pause()
+/* static */ void Game::Pause(GameID id)
 {
-	if (Game::instance != nullptr) Game::instance->Pause();
+	assert(id < Game::instance.size() && Game::instance[id] != nullptr);
+	Game::instance[id]->Pause();
 }
 
-/* static */ void Game::Unpause()
+/* static */ void Game::Unpause(GameID id)
 {
-	if (Game::instance != nullptr) Game::instance->Unpause();
+	assert(id < Game::instance.size() && Game::instance[id] != nullptr);
+	Game::instance[id]->Unpause();
 }
 
-/* static */ bool Game::IsPaused()
+/* static */ bool Game::IsPaused(GameID id)
 {
-	return Game::instance != nullptr? Game::instance->IsPaused() : false;
+	assert(id < Game::instance.size() && Game::instance[id] != nullptr);
+	return Game::instance[id]->IsPaused();
 }
 
 /* static */ void Game::NewEvent(ScriptEvent *event)
@@ -138,13 +143,15 @@
 	}
 
 	/* Check if Game instance is alive */
-	if (Game::instance == nullptr) {
+	if (Game::instance.size() == 0) {
 		return;
 	}
 
 	/* Queue the event */
-	AutoRestoreBackup cur_company(_current_company, OWNER_DEITY);
-	Game::instance->InsertEvent(event);
+	for (GameID id = 0; id < Game::GetCurrentCountOfInstances(); ++id) {
+		AutoRestoreBackup cur_company(_current_company, OWNER_DEITY);
+		Game::instance[id]->InsertEvent(event);
+	}
 }
 
 /* static */ void Game::ResetConfig()
@@ -155,8 +162,8 @@
 		if (!_settings_game.script_config.game->ResetInfo(true)) {
 			Debug(Facility::Script, Severity::Critical, "After a reload, the GameScript by the name '{}' was no longer found, and removed from the list.", _settings_game.script_config.game->GetName());
 			_settings_game.script_config.game->Change(std::nullopt);
-			if (Game::instance != nullptr) Game::ResetInstance();
-		} else if (Game::instance != nullptr) {
+			if (Game::instance.size() != 0) Game::ResetInstance();
+		} else if (Game::instance.size() != 0) {
 			Game::info = _settings_game.script_config.game->GetInfo();
 		}
 	}
@@ -185,9 +192,11 @@
 
 /* static */ void Game::Save()
 {
-	if (Game::instance != nullptr && (!_networking || _network_server)) {
-		AutoRestoreBackup cur_company(_current_company, OWNER_DEITY);
-		Game::instance->Save();
+	if (Game::instance.size() != 0 && (!_networking || _network_server)) {
+		for (GameID id = 0; id < Game::GetCurrentCountOfInstances(); ++id) {
+			AutoRestoreBackup cur_company(_current_company, OWNER_DEITY);
+			Game::instance[id]->Save();
+		}
 	} else {
 		GameInstance::SaveEmpty();
 	}
@@ -223,9 +232,10 @@
 	return Game::scanner_library->FindLibrary(library, version);
 }
 
-/* static */ void Game::ResetInstance()
+/* static */ void Game::ResetInstance(GameID first_id)
 {
-	Game::instance.reset();
+	assert(first_id < Game::GetCurrentCountOfInstances() || first_id == 0);
+	Game::instance.resize(first_id);
 	Game::info = nullptr;
 }
 

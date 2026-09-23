@@ -12,6 +12,7 @@
 
 #include "../script/api/script_event.hpp"
 #include "game_scanner.hpp"
+#include "game_type.hpp"
 
 /**
  * Main Game class. Contains all functions needed to start, stop, save and load Game Scripts.
@@ -43,21 +44,24 @@ public:
 	 * Suspends the Game Script and then pause the execution of the script. The
 	 * script will not be resumed from its suspended state until the script
 	 * has been unpaused.
+	 * @param id The index of the Game Script to pause.
 	 */
-	static void Pause();
+	static void Pause(GameID id);
 
 	/**
 	 * Resume execution of the Game Script. This function will not actually execute
 	 * the script, but set a flag so that the script is executed by the usual
 	 * mechanism that executes the script.
+	 * @param id The index of the Game Script to unpause.
 	 */
-	static void Unpause();
+	static void Unpause(GameID id);
 
 	/**
 	 * Checks if the Game Script is paused.
+	 * @param id The index of the Game Script to check.
 	 * @return true if the Game Script is paused, otherwise false.
 	 */
-	static bool IsPaused();
+	static bool IsPaused(GameID id);
 
 	/**
 	 * Queue a new event for the game script.
@@ -84,7 +88,7 @@ public:
 	static void ResetConfig();
 
 	/**
-	 * Save data from a GameScript to a savegame.
+	 * Save data from Game Scripts to a savegame.
 	 */
 	static void Save();
 
@@ -103,14 +107,22 @@ public:
 
 	/**
 	 * Get the current active instance.
+	 * @param id The index of the Game Script to get the instance of.
 	 * @return The current Game script instance.
 	 */
-	static class GameInstance *GetInstance() { return Game::instance.get(); }
+	static class GameInstance *GetInstance(GameID id) { return Game::instance[id].get(); }
 
 	/**
-	 * Reset the current active instance.
+	 * Get how many instances of GameInstance are currently active.
+	 * @return The count of game instances.
 	 */
-	static void ResetInstance();
+	static GameID GetCurrentCountOfInstances() { return Game::instance.size(); }
+
+	/**
+	 * Reset the current active instances.
+	 * @param first_id The ID of first instance to reset. All instances with higher IDs also will be reset.
+	 */
+	static void ResetInstance(GameID first_id = 0);
 
 	/** Wrapper function for GameScanner::HasGame */
 	static bool HasGame(const ContentInfo &ci, bool md5sum);
@@ -122,7 +134,7 @@ public:
 
 private:
 	static uint frame_counter; ///< Tick counter for the Game code.
-	static std::unique_ptr<GameInstance> instance; ///< Instance to the current active Game.
+	static std::vector<std::unique_ptr<GameInstance>> instance; ///< Instances to the current active Game Scripts.
 	static std::unique_ptr<GameScannerInfo> scanner_info; ///< Scanner for Game scripts.
 	static std::unique_ptr<GameScannerLibrary> scanner_library; ///< Scanner for GS Libraries.
 	static GameInfo *info; ///< Current selected GameInfo.

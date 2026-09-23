@@ -11,6 +11,7 @@
 #define WIDGETS_SCRIPT_WIDGET_H
 
 #include "../company_type.h"
+#include "../game/game_type.hpp"
 
 /** Widgets of the #ScriptListWindow class. */
 enum ScriptListWidgets : WidgetID {
@@ -36,7 +37,8 @@ enum ScriptDebugWidgets : WidgetID {
 	WID_SCRD_VIEW,                 ///< The row of company buttons.
 	WID_SCRD_NAME_TEXT,            ///< Name of the current selected.
 	WID_SCRD_SETTINGS,             ///< Settings button.
-	WID_SCRD_SCRIPT_GAME,          ///< Game Script button.
+	WID_SCRD_GAME_SCRIPT_BUTTON_START, ///< First Game Script button.
+	WID_SCRD_GAME_SCRIPT_BUTTON_END = WID_SCRD_GAME_SCRIPT_BUTTON_START + MAX_COUNT_OF_GAME_SCRIPTS - 1, ///< Last possible Game Script button.
 	WID_SCRD_RELOAD_TOGGLE,        ///< Reload button.
 	WID_SCRD_LOG_PANEL,            ///< Panel where the log is in.
 	WID_SCRD_VSCROLLBAR,           ///< Vertical scrollbar of the log panel.
