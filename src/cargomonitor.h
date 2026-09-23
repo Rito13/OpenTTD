@@ -13,6 +13,7 @@
 #include "cargo_type.h"
 #include "source_type.h"
 #include "core/overflowsafe_type.hpp"
+#include "game/game.hpp"
 
 struct Station;
 
@@ -37,10 +38,14 @@ extern CargoMonitorMap _cargo_deliveries;
 constexpr uint8_t CCB_TOWN_IND_NUMBER_START = 0; ///< Start bit of the town or industry number.
 constexpr uint8_t CCB_TOWN_IND_NUMBER_LENGTH = 16; ///< Number of bits of the town or industry number.
 constexpr uint8_t CCB_IS_INDUSTRY_BIT = 16; ///< Bit indicating the town/industry number is an industry.
+constexpr uint8_t CCB_GS_ID_START_1 = 17; ///< Start bit of the first part of GS index.
+constexpr uint8_t CCB_GS_ID_LENGTH_1 = 2; ///< Number of bits to store in the first part of GS index.
 constexpr uint8_t CCB_CARGO_TYPE_START = 19; ///< Start bit of the cargo type field.
 constexpr uint8_t CCB_CARGO_TYPE_LENGTH = 6; ///< Number of bits of the cargo type field.
 constexpr uint8_t CCB_COMPANY_START = 25; ///< Start bit of the company field.
 constexpr uint8_t CCB_COMPANY_LENGTH = 4; ///< Number of bits of the company field.
+constexpr uint8_t CCB_GS_ID_START_2 = 29; ///< Start bit of the second part of GS index.
+constexpr uint8_t CCB_GS_ID_LENGTH_2 = 3; ///< Number of bits to store in the second part of GS index.
 
 static_assert(NUM_CARGO     <= (1 << CCB_CARGO_TYPE_LENGTH));
 static_assert(MAX_COMPANIES <= (1 << CCB_COMPANY_LENGTH));
@@ -51,9 +56,10 @@ static_assert(MAX_COMPANIES <= (1 << CCB_COMPANY_LENGTH));
  * @param company Company performing the transport.
  * @param ctype Cargo type being transported.
  * @param ind %Industry providing or accepting the cargo.
+ * @param gs The index of the Game Script that monitors.
  * @return The encoded cargo/company/industry number.
  */
-inline CargoMonitorID EncodeCargoIndustryMonitor(CompanyID company, CargoType ctype, IndustryID ind)
+inline CargoMonitorID EncodeCargoIndustryMonitor(CompanyID company, CargoType ctype, IndustryID ind, GameID gs)
 {
 	assert(ctype < (1 << CCB_CARGO_TYPE_LENGTH));
 	assert(company < (1 << CCB_COMPANY_LENGTH));
@@ -63,6 +69,8 @@ inline CargoMonitorID EncodeCargoIndustryMonitor(CompanyID company, CargoType ct
 	SetBit(ret, CCB_IS_INDUSTRY_BIT);
 	SB(ret, CCB_CARGO_TYPE_START, CCB_CARGO_TYPE_LENGTH, ctype);
 	SB(ret, CCB_COMPANY_START, CCB_COMPANY_LENGTH, company.base());
+	SB(ret, CCB_GS_ID_START_1, CCB_GS_ID_LENGTH_1, GB(gs, 0, CCB_GS_ID_LENGTH_1));
+	SB(ret, CCB_GS_ID_START_2, CCB_GS_ID_LENGTH_2, GB(gs, CCB_GS_ID_LENGTH_1, CCB_GS_ID_LENGTH_2));
 	return ret;
 }
 
@@ -71,9 +79,10 @@ inline CargoMonitorID EncodeCargoIndustryMonitor(CompanyID company, CargoType ct
  * @param company %Company performing the transport.
  * @param ctype Cargo type being transported.
  * @param town %Town providing or accepting the cargo.
+ * @param gs The index of the Game Script that monitors.
  * @return The encoded cargo/company/town number.
  */
-inline CargoMonitorID EncodeCargoTownMonitor(CompanyID company, CargoType ctype, TownID town)
+inline CargoMonitorID EncodeCargoTownMonitor(CompanyID company, CargoType ctype, TownID town, GameID gs)
 {
 	assert(ctype < (1 << CCB_CARGO_TYPE_LENGTH));
 	assert(company < (1 << CCB_COMPANY_LENGTH));
@@ -82,6 +91,8 @@ inline CargoMonitorID EncodeCargoTownMonitor(CompanyID company, CargoType ctype,
 	SB(ret, CCB_TOWN_IND_NUMBER_START, CCB_TOWN_IND_NUMBER_LENGTH, town.base());
 	SB(ret, CCB_CARGO_TYPE_START, CCB_CARGO_TYPE_LENGTH, ctype);
 	SB(ret, CCB_COMPANY_START, CCB_COMPANY_LENGTH, company.base());
+	SB(ret, CCB_GS_ID_START_1, CCB_GS_ID_LENGTH_1, GB(gs, 0, CCB_GS_ID_LENGTH_1));
+	SB(ret, CCB_GS_ID_START_2, CCB_GS_ID_LENGTH_2, GB(gs, CCB_GS_ID_LENGTH_1, CCB_GS_ID_LENGTH_2));
 	return ret;
 }
 
@@ -137,8 +148,18 @@ inline TownID DecodeMonitorTown(CargoMonitorID num)
 	return static_cast<TownID>(GB(num, CCB_TOWN_IND_NUMBER_START, CCB_TOWN_IND_NUMBER_LENGTH));
 }
 
-void ClearCargoPickupMonitoring(CompanyID company = INVALID_OWNER);
-void ClearCargoDeliveryMonitoring(CompanyID company = INVALID_OWNER);
+/**
+ * Extract the Gmae Script index from the cargo monitor.
+ * @param num Cargo monitoring number to decode.
+ * @return The extracted index.
+ */
+inline GameID DecodeMonitorGameScriptID(CargoMonitorID num)
+{
+	return static_cast<GameID>(GB(num, CCB_GS_ID_START_1, CCB_GS_ID_LENGTH_1) | (GB(num, CCB_GS_ID_START_2, CCB_GS_ID_LENGTH_2) << CCB_GS_ID_LENGTH_1));
+}
+
+void ClearCargoPickupMonitoring(CompanyID company = INVALID_OWNER, GameID gs = INVALID_GS_ID);
+void ClearCargoDeliveryMonitoring(CompanyID company = INVALID_OWNER, GameID gs = INVALID_GS_ID);
 int32_t GetDeliveryAmount(CargoMonitorID monitor, bool keep_monitoring);
 int32_t GetPickupAmount(CargoMonitorID monitor, bool keep_monitoring);
 void AddCargoDelivery(CargoType cargo_type, CompanyID company, uint32_t amount, Source src, const Station *st, IndustryID dest = IndustryID::Invalid());

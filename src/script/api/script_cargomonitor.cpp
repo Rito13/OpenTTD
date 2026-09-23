@@ -13,6 +13,7 @@
 #include "../../cargomonitor.h"
 #include "../../town.h"
 #include "../../industry.h"
+#include "../../game/game_instance.hpp"
 
 #include "../../safeguards.h"
 
@@ -23,7 +24,9 @@
 	if (!ScriptCargo::IsValidCargo(cargo)) return -1;
 	if (!::Town::IsValidID(town_id)) return -1;
 
-	CargoMonitorID monitor = EncodeCargoTownMonitor(cid, cargo, town_id);
+	GameInstance *game = dynamic_cast<GameInstance *>(&ScriptObject::GetActiveInstance());
+	assert(game != nullptr);
+	CargoMonitorID monitor = EncodeCargoTownMonitor(cid, cargo, town_id, game->GetID());
 	return GetDeliveryAmount(monitor, keep_monitoring);
 }
 
@@ -34,7 +37,9 @@
 	if (!ScriptCargo::IsValidCargo(cargo)) return -1;
 	if (!::Industry::IsValidID(industry_id)) return -1;
 
-	CargoMonitorID monitor = EncodeCargoIndustryMonitor(cid, cargo, industry_id);
+	GameInstance *game = dynamic_cast<GameInstance *>(&ScriptObject::GetActiveInstance());
+	assert(game != nullptr);
+	CargoMonitorID monitor = EncodeCargoIndustryMonitor(cid, cargo, industry_id, game->GetID());
 	return GetDeliveryAmount(monitor, keep_monitoring);
 }
 
@@ -45,7 +50,9 @@
 	if (!ScriptCargo::IsValidCargo(cargo)) return -1;
 	if (!::Town::IsValidID(town_id)) return -1;
 
-	CargoMonitorID monitor = EncodeCargoTownMonitor(cid, cargo, town_id);
+	GameInstance *game = dynamic_cast<GameInstance *>(&ScriptObject::GetActiveInstance());
+	assert(game != nullptr);
+	CargoMonitorID monitor = EncodeCargoTownMonitor(cid, cargo, town_id, game->GetID());
 	return GetPickupAmount(monitor, keep_monitoring);
 }
 
@@ -56,13 +63,17 @@
 	if (!ScriptCargo::IsValidCargo(cargo)) return -1;
 	if (!::Industry::IsValidID(industry_id)) return -1;
 
-	CargoMonitorID monitor = EncodeCargoIndustryMonitor(cid, cargo, industry_id);
+	GameInstance *game = dynamic_cast<GameInstance *>(&ScriptObject::GetActiveInstance());
+	assert(game != nullptr);
+	CargoMonitorID monitor = EncodeCargoIndustryMonitor(cid, cargo, industry_id, game->GetID());
 	return GetPickupAmount(monitor, keep_monitoring);
 }
 
 /* static */ void ScriptCargoMonitor::StopAllMonitoring()
 {
-	ClearCargoPickupMonitoring();
-	ClearCargoDeliveryMonitoring();
+	GameInstance *game = dynamic_cast<GameInstance *>(&ScriptObject::GetActiveInstance());
+	assert(game != nullptr);
+	ClearCargoPickupMonitoring(::INVALID_OWNER, game->GetID());
+	ClearCargoDeliveryMonitoring(::INVALID_OWNER, game->GetID());
 }
 

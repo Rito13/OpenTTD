@@ -12,5 +12,6 @@
 
 using GameID = uint8_t; ///< Type to store Game Script id.
 static constexpr GameID MAX_COUNT_OF_GAME_SCRIPTS = 32; ///< How many Game Scripts can run at the same time.
+static constexpr GameID INVALID_GS_ID = 0xFF; ///< Invalid marker for GameID.
 
 #endif /* GAME_TYPE_HPP */

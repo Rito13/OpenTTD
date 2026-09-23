@@ -12,6 +12,7 @@
 
 #include "../script/script_instance.hpp"
 #include "game_info.hpp"
+#include "game_type.hpp"
 
 /** Runtime information about a game script like a pointer to the squirrel vm and the current state. */
 class GameInstance : public ScriptInstance {
@@ -21,8 +22,9 @@ public:
 	/**
 	 * Initialize the script and prepare it for its first run.
 	 * @param info The GameInfo to start.
+	 * @param id The index under whitch the script is initialized.
 	 */
-	void Initialize(class GameInfo *info);
+	void Initialize(class GameInfo *info, GameID id);
 
 	/**
 	 * Test if the sub API is available for this game script.
@@ -31,11 +33,18 @@ public:
 	 */
 	bool IsSubAPIAvailable(GSSubAPI api) { return this->required_sub_apis.Test(api); }
 
+	/**
+	 * Get the index of this Game Script.
+	 * @return The index of this Game Script.
+	 */
+	GameID GetID() { return this->id; }
+
 	int GetSetting(const std::string &name) override;
 	ScriptInfo *FindLibrary(const std::string &library, int version) override;
 
 private:
 	GSSubAPIs required_sub_apis; ///< Sub APIs required by this Game Script to work properly.
+	GameID id; ///< The current index of this Game Script.
 
 	void RegisterAPI() override;
 	void Died() override;
