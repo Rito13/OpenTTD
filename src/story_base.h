@@ -17,6 +17,7 @@
 #include "gfx_type.h"
 #include "vehicle_type.h"
 #include "core/pool_type.hpp"
+#include "game/game_type.hpp"
 
 using StoryPageElementPool = Pool<StoryPageElement, StoryPageElementID, 64>;
 using StoryPagePool = Pool<StoryPage, StoryPageID, 64>;
@@ -163,12 +164,23 @@ struct StoryPage : StoryPagePool::PoolItem<&_story_page_pool> {
 	uint32_t sort_value = 0; ///< A number that increases for every created story page. Used for sorting. The id of a story page is the pool index.
 	TimerGameCalendar::Date date{}; ///< Date when the page was created.
 	CompanyID company = CompanyID::Invalid(); ///< StoryPage is for a specific company; CompanyID::Invalid() if it is global
+	GameID game_script = 0; ///< By which Game Script was this goal created.
 
 	EncodedString title; ///< Title of story page
 
 	StoryPage(StoryPageID index) : StoryPagePool::PoolItem<&_story_page_pool>(index) {}
-	StoryPage(StoryPageID index, uint32_t sort_value, TimerGameCalendar::Date date, CompanyID company, const EncodedString &title) :
-		StoryPagePool::PoolItem<&_story_page_pool>(index), sort_value(sort_value), date(date), company(company), title(title) {}
+
+	/**
+	 * Construct the story page.
+	 * @param index The index within the story page pool.
+	 * @param sort_value The value indicating possition in the story page selection dropdown.
+	 * @param date The date of the creation of this story page.
+	 * @param company The company for the story page.
+	 * @param title The title of the story page.
+	 * @param game_script The Game Script that created this story page.
+	 */
+	StoryPage(StoryPageID index, uint32_t sort_value, TimerGameCalendar::Date date, CompanyID company, const EncodedString &title, GameID game_script) :
+		StoryPagePool::PoolItem<&_story_page_pool>(index), sort_value(sort_value), date(date), company(company), game_script(game_script), title(title) {}
 
 	~StoryPage();
 };

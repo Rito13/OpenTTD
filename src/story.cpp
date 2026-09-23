@@ -254,9 +254,10 @@ bool StoryPageButtonData::ValidateVehicleType() const
  * @param flags type of operation
  * @param company Company for which this story page belongs to.
  * @param text Title of the story page. Null is allowed in which case a generic page title is provided by OpenTTD.
+ * @param game_script The Game Script that created this goal.
  * @return the cost of this operation or an error
  */
-std::tuple<CommandCost, StoryPageID> CmdCreateStoryPage(DoCommandFlags flags, CompanyID company, const EncodedString &text)
+std::tuple<CommandCost, StoryPageID> CmdCreateStoryPage(DoCommandFlags flags, CompanyID company, const EncodedString &text, GameID game_script)
 {
 	if (!StoryPage::CanAllocateItem()) return { CMD_ERROR, StoryPageID::Invalid() };
 
@@ -269,7 +270,7 @@ std::tuple<CommandCost, StoryPageID> CmdCreateStoryPage(DoCommandFlags flags, Co
 			_story_page_next_sort_value = 0;
 		}
 
-		StoryPage *s = StoryPage::Create(_story_page_next_sort_value, TimerGameCalendar::date, company, text);
+		StoryPage *s = StoryPage::Create(_story_page_next_sort_value, TimerGameCalendar::date, company, text, game_script);
 
 		InvalidateWindowClassesData(WindowClass::StoryBook, -1);
 		if (StoryPage::GetNumItems() == 1) InvalidateWindowData(WindowClass::MainToolbar, 0);

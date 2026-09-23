@@ -32,9 +32,9 @@ static const SaveLoad _game_script_desc[] = {
 	SaveLoad::Variable<VarFileType::U32>("version", SLE_GLOBAL_ADDRESS(_game_saveload_version)),
 };
 
-static void SaveReal_GSDT(int)
+static void SaveReal_GSDT(int arg)
 {
-	GameConfig *config = GameConfig::GetConfig();
+	GameConfig *config = GameConfig::GetConfig(arg);
 
 	if (config->HasScript()) {
 		_game_saveload_name = config->GetName();
@@ -48,7 +48,7 @@ static void SaveReal_GSDT(int)
 	_game_saveload_settings = config->SettingsToString();
 
 	SlObject(nullptr, _game_script_desc);
-	Game::Save();
+	Game::Save(arg);
 }
 
 struct GSDTChunkHandler : ChunkHandler {
@@ -59,57 +59,62 @@ struct GSDTChunkHandler : ChunkHandler {
 		const std::vector<SaveLoad> slt = SlCompatTableHeader(_game_script_desc, _game_script_sl_compat);
 
 		/* Free all current data */
-		GameConfig::GetConfig(GameConfig::ScriptSettingSource::ForceCurrentGame)->Change(std::nullopt);
-
-		if (SlIterateArray() == -1) return;
-
-		_game_saveload_version = -1;
-		SlObject(nullptr, slt);
-
-		if (_game_mode == GameMode::Menu || (_networking && !_network_server)) {
-			GameInstance::LoadEmpty();
-			if (SlIterateArray() != -1) SlErrorCorrupt("Too many GameScript configs");
-			return;
+		for (GameID i = 0; i < _settings_newgame.script_config.game.size(); ++i) {
+			GameConfig::GetConfig(i, GameConfig::ScriptSettingSource::ForceCurrentGame)->Change(std::nullopt);
 		}
 
-		GameConfig *config = GameConfig::GetConfig(GameConfig::ScriptSettingSource::ForceCurrentGame);
-		if (!_game_saveload_name.empty()) {
-			config->Change(_game_saveload_name, _game_saveload_version, false);
-			if (!config->HasScript()) {
-				/* No version of the GameScript available that can load the data. Try to load the
-				 * latest version of the GameScript instead. */
-				config->Change(_game_saveload_name, -1, false);
-				if (!config->HasScript()) {
-					if (_game_saveload_name != "%_dummy") {
-						Debug(Facility::Script, Severity::Critical, "The savegame has an GameScript by the name '{}', version {} which is no longer available.", _game_saveload_name, _game_saveload_version);
-						Debug(Facility::Script, Severity::Critical, "This game will continue to run without GameScript.");
-					} else {
-						Debug(Facility::Script, Severity::Critical, "The savegame had no GameScript available at the time of saving.");
-						Debug(Facility::Script, Severity::Critical, "This game will continue to run without GameScript.");
-					}
-				} else {
-					Debug(Facility::Script, Severity::Critical, "The savegame has an GameScript by the name '{}', version {} which is no longer available.", _game_saveload_name, _game_saveload_version);
-					Debug(Facility::Script, Severity::Critical, "The latest version of that GameScript has been loaded instead, but it'll not get the savegame data as it's incompatible.");
-				}
-				/* Make sure the GameScript doesn't get the saveload data, as it was not the
-				 *  writer of the saveload data in the first place */
-				_game_saveload_version = -1;
+		for (int id = SlIterateArray(); id != -1; id = SlIterateArray()) {
+			_game_saveload_version = -1;
+			SlObject(nullptr, slt);
+
+			if (_game_mode == GameMode::Menu || (_networking && !_network_server)) {
+				GameInstance::LoadEmpty();
+				if (id >= MAX_COUNT_OF_GAME_SCRIPTS) SlErrorCorrupt("Too many GameScript configs");
+				continue;
 			}
+
+			GameConfig *config = GameConfig::GetConfig(static_cast<GameID>(id), GameConfig::ScriptSettingSource::ForceCurrentGame);
+			if (!_game_saveload_name.empty()) {
+				config->Change(_game_saveload_name, _game_saveload_version, false);
+				if (!config->HasScript()) {
+					/* No version of the GameScript available that can load the data. Try to load the
+					 * latest version of the GameScript instead. */
+					config->Change(_game_saveload_name, -1, false);
+					if (!config->HasScript()) {
+						if (_game_saveload_name != "%_dummy") {
+							Debug(Facility::Script, Severity::Critical, "The savegame has an GameScript by the name '{}', version {} which is no longer available.", _game_saveload_name, _game_saveload_version);
+							Debug(Facility::Script, Severity::Critical, "This game will continue to run without GameScript.");
+						} else {
+							Debug(Facility::Script, Severity::Critical, "The savegame had no GameScript available at the time of saving.");
+							Debug(Facility::Script, Severity::Critical, "This game will continue to run without GameScript.");
+						}
+					} else {
+						Debug(Facility::Script, Severity::Critical, "The savegame has an GameScript by the name '{}', version {} which is no longer available.", _game_saveload_name, _game_saveload_version);
+						Debug(Facility::Script, Severity::Critical, "The latest version of that GameScript has been loaded instead, but it'll not get the savegame data as it's incompatible.");
+					}
+					/* Make sure the GameScript doesn't get the saveload data, as it was not the
+					 *  writer of the saveload data in the first place */
+					_game_saveload_version = -1;
+				}
+			}
+
+			config->StringToSettings(_game_saveload_settings);
+
+			/* Load the GameScript saved data */
+			config->SetToLoadData(GameInstance::Load(_game_saveload_version));
+
+			if (id >= MAX_COUNT_OF_GAME_SCRIPTS) SlErrorCorrupt("Too many GameScript configs");
 		}
-
-		config->StringToSettings(_game_saveload_settings);
-
-		/* Load the GameScript saved data */
-		config->SetToLoadData(GameInstance::Load(_game_saveload_version));
-
-		if (SlIterateArray() != -1) SlErrorCorrupt("Too many GameScript configs");
 	}
 
 	void Save() const override
 	{
 		SlTableHeader(_game_script_desc);
-		SlSetArrayIndex(0);
-		SlAutolength(SaveReal_GSDT, 0);
+
+		for (GameID id = 0; id < Game::GetCurrentCountOfInstances(); ++id) {
+			SlSetArrayIndex(id);
+			SlAutolength(SaveReal_GSDT, id);
+		}
 	}
 };
 

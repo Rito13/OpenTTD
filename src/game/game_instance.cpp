@@ -33,10 +33,11 @@ GameInstance::GameInstance() :
 	ScriptInstance("GS")
 {}
 
-void GameInstance::Initialize(GameInfo *info, GameID id)
+void GameInstance::Initialize(GameInfo *info, GameID id, GSSubAPIs already_used_sub_apis)
 {
 	this->api_version = info->GetAPIVersion();
 	this->required_sub_apis = info->required_sub_apis;
+	this->required_sub_apis.Reset(already_used_sub_apis);
 	this->id = id;
 
 	/* Register the GameController */
@@ -59,7 +60,7 @@ void GameInstance::RegisterAPI()
 
 int GameInstance::GetSetting(const std::string &name)
 {
-	return GameConfig::GetConfig()->GetSetting(name);
+	return GameConfig::GetConfig(this->id)->GetSetting(name);
 }
 
 ScriptInfo *GameInstance::FindLibrary(const std::string &library, int version)

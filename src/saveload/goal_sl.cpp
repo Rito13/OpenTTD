@@ -23,6 +23,7 @@ static const SaveLoad _goals_desc[] = {
 	SaveLoad::String("text", SLE_OBJECT_ADDRESS(Goal, text), StringValidationSetting::AllowControlCode),
 	SaveLoad::String("progress", SLE_OBJECT_ADDRESS(Goal, progress), StringValidationSetting::AllowControlCode, SaveLoadVersion::GoalProgressPlaneAcceleration),
 	SaveLoad::Variable<VarFileType::Bool>("completed", SLE_OBJECT_ADDRESS(Goal, completed), SaveLoadVersion::GoalProgressPlaneAcceleration),
+	SaveLoad::Variable<VarFileType::U8>("game_script", SLE_OBJECT_ADDRESS(Goal, game_script), SaveLoadVersion::MultipleGameScripts),
 };
 
 struct GOALChunkHandler : ChunkHandler {

@@ -350,7 +350,7 @@ void MakeNewgameSettingsLive()
 	for (CompanyID c = CompanyID::Begin(); c < MAX_COMPANIES; ++c) {
 		_settings_game.script_config.ai[c].reset();
 	}
-	_settings_game.script_config.game.reset();
+	_settings_game.script_config.game.clear();
 
 	/* Copy newgame settings to active settings.
 	 * Also initialise old settings needed for savegame conversion. */

@@ -14,6 +14,7 @@
 #include "goal_type.h"
 #include "core/pool_type.hpp"
 #include "strings_type.h"
+#include "game/game_type.hpp"
 
 using GoalPool = Pool<Goal, GoalID, 64>;
 extern GoalPool _goal_pool;
@@ -26,6 +27,7 @@ struct Goal : GoalPool::PoolItem<&_goal_pool> {
 	EncodedString text{}; ///< Text of the goal.
 	EncodedString progress{}; ///< Progress text of the goal.
 	bool completed = false; ///< Is the goal completed or not?
+	GameID game_script = INVALID_GS_ID; ///< By which Game Script was this goal created.
 
 	/**
 	 * Construct the goal.
@@ -34,9 +36,10 @@ struct Goal : GoalPool::PoolItem<&_goal_pool> {
 	 * @param dst The goal target.
 	 * @param company The company for the goal.
 	 * @param text The text of the goal.
+	 * @param game_script The Game Script that created this goal.
 	 */
-	Goal(GoalID index, GoalType type = GoalType::None, GoalTypeID dst = 0, CompanyID company = CompanyID::Invalid(), const EncodedString &text = {}) :
-		GoalPool::PoolItem<&_goal_pool>(index), company(company), type(type), dst(dst), text(text) {}
+	Goal(GoalID index, GoalType type = GoalType::None, GoalTypeID dst = 0, CompanyID company = CompanyID::Invalid(), const EncodedString &text = {}, GameID game_script = 0) :
+		GoalPool::PoolItem<&_goal_pool>(index), company(company), type(type), dst(dst), text(text), game_script(game_script) {}
 
 	/**
 	 * (Empty) destructor has to be defined else operator delete might be called with nullptr parameter

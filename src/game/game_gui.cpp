@@ -99,10 +99,11 @@ struct GSConfigWindow : public Window {
 	Scrollbar *vscroll = nullptr; ///< Cache of the vertical scrollbar.
 	typedef std::vector<const ScriptConfigItem *> VisibleSettingsList; ///< typedef for a vector of script settings
 	VisibleSettingsList visible_settings{}; ///< List of visible GS settings
+	GameID game_script = 0; ///< Currently configured Game Script.
 
 	GSConfigWindow() : Window(_gs_config_desc)
 	{
-		this->gs_config = GameConfig::GetConfig();
+		this->gs_config = GameConfig::GetConfig(this->game_script);
 
 		this->CreateNestedTree(); // Initializes 'this->line_height' as a side effect.
 		this->vscroll = this->GetScrollbar(WID_GSC_SCROLLBAR);
@@ -169,7 +170,7 @@ struct GSConfigWindow : public Window {
 	 */
 	std::string GetText() const
 	{
-		if (const GameInfo *info = GameConfig::GetConfig()->GetInfo(); info != nullptr) return info->GetName();
+		if (const GameInfo *info = GameConfig::GetConfig(this->game_script)->GetInfo(); info != nullptr) return info->GetName();
 		return GetString(STR_AI_CONFIG_NONE);
 	}
 
@@ -228,7 +229,7 @@ struct GSConfigWindow : public Window {
 	void OnClick([[maybe_unused]] Point pt, WidgetID widget, [[maybe_unused]] int click_count) override
 	{
 		if (widget >= WID_GSC_TEXTFILE && widget < WID_GSC_TEXTFILE + TextfileType::ContentEnd) {
-			if (GameConfig::GetConfig() == nullptr) return;
+			if (GameConfig::GetConfig(this->game_script) == nullptr) return;
 
 			ShowScriptTextfileWindow(this, static_cast<TextfileType>(widget - WID_GSC_TEXTFILE), OWNER_DEITY);
 			return;
@@ -237,7 +238,7 @@ struct GSConfigWindow : public Window {
 		switch (widget) {
 			case WID_GSC_GSLIST: {
 				this->InvalidateData();
-				if (click_count > 1 && _game_mode != GameMode::Normal) ShowScriptListWindow(OWNER_DEITY, _ctrl_pressed);
+				if (click_count > 1 && _game_mode != GameMode::Normal) ShowScriptListWindow(static_cast<CompanyID>(OWNER_END.base() + this->game_script), _ctrl_pressed);
 				break;
 			}
 
@@ -334,7 +335,7 @@ struct GSConfigWindow : public Window {
 			}
 
 			case WID_GSC_OPEN_URL: {
-				const GameConfig *config = GameConfig::GetConfig();
+				const GameConfig *config = GameConfig::GetConfig(this->game_script);
 				if (config == nullptr || config->GetInfo() == nullptr) return;
 				OpenBrowser(config->GetInfo()->GetURL());
 				break;
@@ -396,7 +397,7 @@ struct GSConfigWindow : public Window {
 
 		this->SetWidgetDisabledState(WID_GSC_CHANGE, (_game_mode == GameMode::Normal) || !IsEditable());
 
-		const GameConfig *config = GameConfig::GetConfig();
+		const GameConfig *config = GameConfig::GetConfig(this->game_script);
 		this->SetWidgetDisabledState(WID_GSC_OPEN_URL, config->GetInfo() == nullptr || config->GetInfo()->GetURL().empty());
 		for (TextfileType tft : EnumRange(TextfileType::ContentBegin, TextfileType::ContentEnd)) {
 			this->SetWidgetDisabledState(WID_GSC_TEXTFILE + tft, !config->GetTextfile(tft, OWNER_DEITY).has_value());

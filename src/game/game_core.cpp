@@ -77,21 +77,26 @@
 	/* Clients shouldn't start GameScripts */
 	if (_networking && !_network_server) return;
 
-	GameConfig *config = GameConfig::GetConfig(GameConfig::ScriptSettingSource::ForceCurrentGame);
-	GameInfo *info = config->GetInfo();
-	if (info == nullptr) return;
+	GSSubAPIs used_sub_apis{};
+	for (GameID id = 0; id < Game::GetCurrentCountOfInstances(); ++id) used_sub_apis.Set(Game::instance[id]->GetAvailableSubAPIs());
 
-	config->AnchorUnchangeableSettings();
+	for (GameID id = Game::GetCurrentCountOfInstances(); id < _settings_newgame.script_config.game.size(); ++id) {
+		GameConfig *config = GameConfig::GetConfig(id, GameConfig::ScriptSettingSource::ForceCurrentGame);
+		GameInfo *info = config->GetInfo();
+		if (info == nullptr) break;
 
-	AutoRestoreBackup cur_company(_current_company, OWNER_DEITY);
+		config->AnchorUnchangeableSettings();
 
-	Game::info = info;
-	GameID id = Game::GetCurrentCountOfInstances();
-	if (id == MAX_COUNT_OF_GAME_SCRIPTS) return;
-	Game::instance.push_back(std::make_unique<GameInstance>());
-	Game::instance[id]->Initialize(info, id);
-	Game::instance[id]->LoadOnStack(config->GetToLoadData());
-	config->SetToLoadData(nullptr);
+		AutoRestoreBackup cur_company(_current_company, OWNER_DEITY);
+
+		Game::info = info;
+		if (id == MAX_COUNT_OF_GAME_SCRIPTS) break;
+		Game::instance.push_back(std::make_unique<GameInstance>());
+		Game::instance[id]->Initialize(info, id, used_sub_apis);
+		Game::instance[id]->LoadOnStack(config->GetToLoadData());
+		config->SetToLoadData(nullptr);
+		used_sub_apis.Set(Game::instance[id]->GetAvailableSubAPIs());
+	}
 
 	InvalidateWindowClassesData(WindowClass::ScriptDebug, -1);
 }
@@ -110,8 +115,8 @@
 		Game::scanner_info.reset();
 		Game::scanner_library.reset();
 
-		_settings_game.script_config.game.reset();
-		_settings_newgame.script_config.game.reset();
+		_settings_game.script_config.game.clear();
+		_settings_newgame.script_config.game.clear();
 	}
 }
 
@@ -158,19 +163,21 @@
 {
 	/* Check for both newgame as current game if we can reload the GameInfo inside
 	 *  the GameConfig. If not, remove the Game from the list. */
-	if (_settings_game.script_config.game != nullptr && _settings_game.script_config.game->HasScript()) {
-		if (!_settings_game.script_config.game->ResetInfo(true)) {
-			Debug(Facility::Script, Severity::Critical, "After a reload, the GameScript by the name '{}' was no longer found, and removed from the list.", _settings_game.script_config.game->GetName());
-			_settings_game.script_config.game->Change(std::nullopt);
-			if (Game::instance.size() != 0) Game::ResetInstance();
-		} else if (Game::instance.size() != 0) {
-			Game::info = _settings_game.script_config.game->GetInfo();
+	for (size_t i = 0; i < _settings_game.script_config.game.size(); ++i) {
+		if (!_settings_game.script_config.game[i]->HasScript()) continue;
+		if (!_settings_game.script_config.game[i]->ResetInfo(true)) {
+			Debug(Facility::Script, Severity::Critical, "After a reload, the GameScript by the name '{}' was no longer found, and removed from the list.", _settings_game.script_config.game[i]->GetName());
+			_settings_game.script_config.game[i]->Change(std::nullopt);
+			if (Game::instance.size() > i) Game::ResetInstance(i);
+		} else if (Game::instance.size() > i) {
+			Game::info = _settings_game.script_config.game[i]->GetInfo();
 		}
 	}
-	if (_settings_newgame.script_config.game != nullptr && _settings_newgame.script_config.game->HasScript()) {
-		if (!_settings_newgame.script_config.game->ResetInfo(false)) {
-			Debug(Facility::Script, Severity::Critical, "After a reload, the GameScript by the name '{}' was no longer found, and removed from the list.", _settings_newgame.script_config.game->GetName());
-			_settings_newgame.script_config.game->Change(std::nullopt);
+	for (size_t i = 0; i < _settings_newgame.script_config.game.size(); ++i) {
+		if (!_settings_newgame.script_config.game[i]->HasScript()) continue;
+		if (!_settings_newgame.script_config.game[i]->ResetInfo(false)) {
+			Debug(Facility::Script, Severity::Critical, "After a reload, the GameScript by the name '{}' was no longer found, and removed from the list.", _settings_newgame.script_config.game[i]->GetName());
+			_settings_newgame.script_config.game[i]->Change(std::nullopt);
 		}
 	}
 }
@@ -190,13 +197,11 @@
 }
 
 
-/* static */ void Game::Save()
+/* static */ void Game::Save(GameID id)
 {
-	if (Game::instance.size() != 0 && (!_networking || _network_server)) {
-		for (GameID id = 0; id < Game::GetCurrentCountOfInstances(); ++id) {
-			AutoRestoreBackup cur_company(_current_company, OWNER_DEITY);
-			Game::instance[id]->Save();
-		}
+	if (Game::instance.size() > id && (!_networking || _network_server)) {
+		AutoRestoreBackup cur_company(_current_company, OWNER_DEITY);
+		Game::instance[id]->Save();
 	} else {
 		GameInstance::SaveEmpty();
 	}

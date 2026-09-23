@@ -996,23 +996,28 @@ static void GameLoadConfig(const IniFile &ini, std::string_view grpname)
 	const IniGroup *group = ini.GetGroup(grpname);
 
 	/* Clean any configured GameScript */
-	GameConfig::GetConfig(GameConfig::ScriptSettingSource::ForceNewGame)->Change(std::nullopt);
+	for (GameID i = 0; i < _settings_newgame.script_config.game.size(); ++i) {
+		GameConfig::GetConfig(i, GameConfig::ScriptSettingSource::ForceNewGame)->Change(std::nullopt);
+	}
 
 	/* If no group exists, return */
 	if (group == nullptr || group->items.empty()) return;
 
-	const IniItem &item = group->items.front();
+	GameID id = 0;
+	for (const IniItem &item : group->items) {
+		GameConfig *config = GameConfig::GetConfig(id, AIConfig::ScriptSettingSource::ForceNewGame);
 
-	GameConfig *config = GameConfig::GetConfig(AIConfig::ScriptSettingSource::ForceNewGame);
-
-	config->Change(item.name);
-	if (!config->HasScript()) {
-		if (item.name != "none") {
-			Debug(Facility::Script, Severity::Critical, "The GameScript by the name '{}' was no longer found, and removed from the list.", item.name);
-			return;
+		config->Change(item.name);
+		if (!config->HasScript()) {
+			if (item.name != "none") {
+				Debug(Facility::Script, Severity::Critical, "The GameScript by the name '{}' was no longer found, and removed from the list.", item.name);
+				continue;
+			}
 		}
+		if (item.value.has_value()) config->StringToSettings(*item.value);
+		++id;
+		if (id >= MAX_COUNT_OF_GAME_SCRIPTS) break;
 	}
-	if (item.value.has_value()) config->StringToSettings(*item.value);
 }
 
 /**
@@ -1217,17 +1222,19 @@ static void GameSaveConfig(IniFile &ini, std::string_view grpname)
 	IniGroup &group = ini.GetOrCreateGroup(grpname);
 	group.Clear();
 
-	GameConfig *config = GameConfig::GetConfig(AIConfig::ScriptSettingSource::ForceNewGame);
 	std::string name;
-	std::string value = config->SettingsToString();
+	for (GameID i = 0; i < _settings_newgame.script_config.game.size(); ++i) {
+		GameConfig *config = GameConfig::GetConfig(i, AIConfig::ScriptSettingSource::ForceNewGame);
+		std::string value = config->SettingsToString();
 
-	if (config->HasScript()) {
-		name = config->GetName();
-	} else {
-		name = "none";
+		if (config->HasScript()) {
+			name = config->GetName();
+		} else {
+			name = "none";
+		}
+
+		group.CreateItem(name).SetValue(value);
 	}
-
-	group.CreateItem(name).SetValue(value);
 }
 
 /**
@@ -2066,8 +2073,10 @@ ScriptConfigSettings &ScriptConfigSettings::operator=(const ScriptConfigSettings
 			this->ai[c] = std::make_unique<AIConfig>(*other.ai[c]);
 		}
 	}
-	if (other.game != nullptr) {
-		this->game = std::make_unique<GameConfig>(*other.game);
+	if (other.game.size() > this->game.size()) this->game.resize(other.game.size());
+	for (GameID id = 0; id < other.game.size(); ++id) {
+		if (other.game[id] == nullptr) continue;
+		this->game[id] = std::make_unique<GameConfig>(*other.game[id]);
 	}
 	return *this;
 }

@@ -15,6 +15,7 @@
 #include "league_type.h"
 #include "core/pool_type.hpp"
 #include "strings_type.h"
+#include "game/game_type.hpp"
 
 bool IsValidLink(Link link);
 
@@ -53,9 +54,18 @@ struct LeagueTable : LeagueTablePool::PoolItem<&_league_table_pool> {
 	EncodedString title{}; ///< Title of the table
 	EncodedString header{}; ///< Text to show above the table
 	EncodedString footer{}; ///< Text to show below the table
+	GameID game_script = INVALID_GS_ID; ///< By which Game Script was this table created.
 
-	LeagueTable(LeagueTableID index, const EncodedString &title = {}, const EncodedString &header = {}, const EncodedString &footer = {}) :
-		LeagueTablePool::PoolItem<&_league_table_pool>(index), title(title), header(header), footer(footer) { }
+	/**
+	 * Construct the league table.
+	 * @param index The index within the league table pool.
+	 * @param title The title for the table.
+	 * @param header The text to show above the new table.
+	 * @param footer The text to show below the new table.
+	 * @param game_script The Game Script that created this table.
+	 */
+	LeagueTable(LeagueTableID index, const EncodedString &title = {}, const EncodedString &header = {}, const EncodedString &footer = {}, GameID game_script = 0) :
+		LeagueTablePool::PoolItem<&_league_table_pool>(index), title(title), header(header), footer(footer), game_script(game_script) {}
 
 	/**
 	 * (Empty) destructor has to be defined else operator delete might be called with nullptr parameter

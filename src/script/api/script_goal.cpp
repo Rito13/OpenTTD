@@ -20,12 +20,17 @@
 #include "../../string_func.h"
 #include "../../network/network_base.h"
 #include "../../goal_cmd.h"
+#include "../../game/game_instance.hpp"
 
 #include "../../safeguards.h"
 
 /* static */ bool ScriptGoal::IsValidGoal(GoalID goal_id)
 {
-	return ::Goal::IsValidID(goal_id);
+	const Goal *goal = ::Goal::GetIfValid(goal_id);
+	if (goal == nullptr) return false;
+	GameInstance *game = dynamic_cast<GameInstance *>(&ScriptObject::GetActiveInstance());
+	assert(game != nullptr);
+	return game->GetID() == goal->game_script;
 }
 
 /* static */ bool ScriptGoal::IsValidGoalDestination(ScriptCompany::CompanyID company, GoalType type, SQInteger destination)
@@ -61,7 +66,9 @@
 	EnforcePrecondition(GOAL_INVALID, company == ScriptCompany::COMPANY_INVALID || ScriptCompany::ResolveCompanyID(company) != ScriptCompany::COMPANY_INVALID);
 	EnforcePrecondition(GOAL_INVALID, IsValidGoalDestination(company, type, destination));
 
-	if (!ScriptObject::Command<Commands::CreateGoal>::Do(&ScriptInstance::DoCommandReturnGoalID, ScriptCompany::FromScriptCompanyID(company), (::GoalType)type, destination, text)) return GOAL_INVALID;
+	GameInstance *game = dynamic_cast<GameInstance *>(&ScriptObject::GetActiveInstance());
+	assert(game != nullptr);
+	if (!ScriptObject::Command<Commands::CreateGoal>::Do(&ScriptInstance::DoCommandReturnGoalID, ScriptCompany::FromScriptCompanyID(company), (::GoalType)type, destination, text, game->GetID())) return GOAL_INVALID;
 
 	/* In case of test-mode, we return GoalID 0 */
 	return GoalID::Begin();

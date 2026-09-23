@@ -74,9 +74,10 @@ INSTANTIATE_POOL_METHODS(Goal)
  * @param type GoalType of destination.
  * @param dest GoalTypeID of destination.
  * @param text Text of the goal.
+ * @param game_script The Game Script that created this goal.
  * @return the cost of this operation or an error
  */
-std::tuple<CommandCost, GoalID> CmdCreateGoal(DoCommandFlags flags, CompanyID company, GoalType type, GoalTypeID dest, const EncodedString &text)
+std::tuple<CommandCost, GoalID> CmdCreateGoal(DoCommandFlags flags, CompanyID company, GoalType type, GoalTypeID dest, const EncodedString &text, GameID game_script)
 {
 	if (!Goal::CanAllocateItem()) return { CMD_ERROR, GoalID::Invalid() };
 
@@ -86,7 +87,7 @@ std::tuple<CommandCost, GoalID> CmdCreateGoal(DoCommandFlags flags, CompanyID co
 	if (!Goal::IsValidGoalDestination(company, type, dest)) return { CMD_ERROR, GoalID::Invalid() };
 
 	if (flags.Test(DoCommandFlag::Execute)) {
-		Goal *g = Goal::Create(type, dest, company, text);
+		Goal *g = Goal::Create(type, dest, company, text, game_script);
 
 		if (g->company == CompanyID::Invalid()) {
 			InvalidateWindowClassesData(WindowClass::GoalList);

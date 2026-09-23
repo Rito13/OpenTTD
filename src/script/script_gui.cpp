@@ -50,7 +50,7 @@
 
 static ScriptConfig *GetConfig(CompanyID slot)
 {
-	if (slot >= OWNER_END) return GameConfig::GetConfig();
+	if (slot >= OWNER_END) return GameConfig::GetConfig(slot.base() - OWNER_END.base());
 	return AIConfig::GetConfig(slot);
 }
 
@@ -74,7 +74,7 @@ struct ScriptListWindow : public Window {
 	ScriptListWindow(WindowDesc &desc, CompanyID slot, bool show_all) : Window(desc),
 		slot(slot), show_all(show_all)
 	{
-		if (this->slot == OWNER_DEITY) {
+		if (this->slot >= OWNER_END) {
 			this->info_list = this->show_all ? Game::GetInfoList() : Game::GetUniqueInfoList();
 		} else {
 			this->info_list = this->show_all ? AI::GetInfoList() : AI::GetUniqueInfoList();
@@ -105,7 +105,7 @@ struct ScriptListWindow : public Window {
 	{
 		if (widget != WID_SCRL_CAPTION) return this->Window::GetWidgetString(widget, stringid);
 
-		return GetString(STR_AI_LIST_CAPTION, (this->slot == OWNER_DEITY) ? STR_AI_LIST_CAPTION_GAMESCRIPT : STR_AI_LIST_CAPTION_AI);
+		return GetString(STR_AI_LIST_CAPTION, (this->slot >= OWNER_END) ? STR_AI_LIST_CAPTION_GAMESCRIPT : STR_AI_LIST_CAPTION_AI);
 	}
 
 	void UpdateWidgetSize(WidgetID widget, Dimension &size, [[maybe_unused]] const Dimension &padding, [[maybe_unused]] Dimension &fill, [[maybe_unused]] Dimension &resize) override
@@ -127,7 +127,7 @@ struct ScriptListWindow : public Window {
 				Rect tr = r.Shrink(WidgetDimensions::scaled.matrix);
 				/* First AI in the list is hardcoded to random */
 				if (this->vscroll->IsVisible(0)) {
-					DrawString(tr, this->slot == OWNER_DEITY ? STR_AI_CONFIG_NONE : STR_AI_CONFIG_RANDOM_AI, this->selected == -1 ? TextColour::White : TextColour::Orange);
+					DrawString(tr, this->slot >= OWNER_END ? STR_AI_CONFIG_NONE : STR_AI_CONFIG_RANDOM_AI, this->selected == -1 ? TextColour::White : TextColour::Orange);
 					tr.top += this->line_height;
 				}
 				int i = 0;
@@ -339,7 +339,7 @@ struct ScriptSettingsWindow : public Window {
 	{
 		if (widget != WID_SCRS_CAPTION) return this->Window::GetWidgetString(widget, stringid);
 
-		return GetString((this->slot == OWNER_DEITY) ? STR_AI_SETTINGS_CAPTION_GAMESCRIPT : STR_AI_SETTINGS_CAPTION_AI);
+		return GetString((this->slot >= OWNER_END) ? STR_AI_SETTINGS_CAPTION_GAMESCRIPT : STR_AI_SETTINGS_CAPTION_AI);
 	}
 
 	void UpdateWidgetSize(WidgetID widget, Dimension &size, [[maybe_unused]] const Dimension &padding, [[maybe_unused]] Dimension &fill, [[maybe_unused]] Dimension &resize) override
@@ -481,7 +481,7 @@ struct ScriptSettingsWindow : public Window {
 			}
 
 			case WID_SCRS_RESET:
-				this->script_config->ResetEditableSettings(_game_mode == GameMode::Menu || ((this->slot != OWNER_DEITY) && !Company::IsValidID(this->slot)));
+				this->script_config->ResetEditableSettings(_game_mode == GameMode::Menu || ((this->slot < OWNER_END) && !Company::IsValidID(this->slot)));
 				this->SetDirty();
 				break;
 		}
@@ -544,7 +544,7 @@ private:
 	{
 		return _game_mode == GameMode::Menu
 			|| _game_mode == GameMode::Editor
-			|| ((this->slot != OWNER_DEITY) && !Company::IsValidID(this->slot))
+			|| ((this->slot < OWNER_END) && !Company::IsValidID(this->slot))
 			|| config_item.flags.Test(ScriptConfigFlag::InGame)
 			|| _settings_client.gui.ai_developer_tools;
 	}
@@ -552,7 +552,7 @@ private:
 	void SetValue(int value)
 	{
 		const ScriptConfigItem &config_item = *this->visible_settings[this->clicked_row];
-		if (_game_mode == GameMode::Normal && ((this->slot == OWNER_DEITY) || Company::IsValidID(this->slot)) && !config_item.flags.Test(ScriptConfigFlag::InGame)) return;
+		if (_game_mode == GameMode::Normal && ((this->slot >= OWNER_END) || Company::IsValidID(this->slot)) && !config_item.flags.Test(ScriptConfigFlag::InGame)) return;
 		this->script_config->SetSetting(config_item.name, value);
 		this->SetDirty();
 	}
@@ -610,7 +610,7 @@ struct ScriptTextfileWindow : public TextfileWindow {
 	std::string GetWidgetString(WidgetID widget, StringID stringid) const override
 	{
 		if (widget == WID_TF_CAPTION) {
-			return GetString(stringid, (this->slot == OWNER_DEITY) ? STR_CONTENT_TYPE_GAME_SCRIPT : STR_CONTENT_TYPE_AI, GetConfig(this->slot)->GetInfo()->GetName());
+			return GetString(stringid, (this->slot >= OWNER_END) ? STR_CONTENT_TYPE_GAME_SCRIPT : STR_CONTENT_TYPE_AI, GetConfig(this->slot)->GetInfo()->GetName());
 		}
 
 		return this->Window::GetWidgetString(widget, stringid);
@@ -622,7 +622,7 @@ struct ScriptTextfileWindow : public TextfileWindow {
 		if (!textfile.has_value()) {
 			this->Close();
 		} else {
-			this->LoadTextfile(textfile.value(), (this->slot == OWNER_DEITY) ? Subdirectory::Gs : Subdirectory::Ai);
+			this->LoadTextfile(textfile.value(), (this->slot >= OWNER_END) ? Subdirectory::Gs : Subdirectory::Ai);
 		}
 	}
 };
@@ -812,8 +812,8 @@ struct ScriptDebugWindow : public Window {
 	{
 		if (widget != WID_SCRD_NAME_TEXT) return this->Window::GetWidgetString(widget, stringid);
 
-		if (this->filter.script_debug_company == OWNER_DEITY) {
-			const GameInfo *info = Game::GetInfo();
+		if (this->filter.script_debug_company >= OWNER_END) {
+			const ScriptInfo *info = GetConfig(this->filter.script_debug_company)->GetInfo();
 			assert(info != nullptr);
 			return GetString(STR_AI_DEBUG_NAME_AND_VERSION, info->GetName(), info->GetVersion());
 		}
@@ -1019,7 +1019,7 @@ struct ScriptDebugWindow : public Window {
 
 		switch (widget) {
 			case WID_SCRD_RELOAD_TOGGLE:
-				if (this->filter.script_debug_company == OWNER_DEITY) break;
+				if (this->filter.script_debug_company >= OWNER_END) break;
 				/* First kill the company of the AI, then start a new one. This should start the current AI again */
 				Command<Commands::CompanyControl>::Post(CompanyCtrlAction::Delete, this->filter.script_debug_company, CompanyRemoveReason::Manual, ClientID::Invalid);
 				Command<Commands::CompanyControl>::Post(CompanyCtrlAction::NewAI, this->filter.script_debug_company, CompanyRemoveReason::None, ClientID::Invalid);
@@ -1155,7 +1155,7 @@ struct ScriptDebugWindow : public Window {
 		extern CompanyID _local_company;
 		this->SetWidgetDisabledState(WID_SCRD_RELOAD_TOGGLE,
 				this->filter.script_debug_company == CompanyID::Invalid() ||
-				this->filter.script_debug_company == OWNER_DEITY ||
+				this->filter.script_debug_company >= OWNER_END ||
 				this->filter.script_debug_company == _local_company);
 		this->SetWidgetDisabledState(WID_SCRD_CONTINUE_BTN, this->filter.script_debug_company == CompanyID::Invalid() ||
 			(this->filter.script_debug_company >= OWNER_END ? !Game::IsPaused(this->filter.script_debug_company.base() - OWNER_END.base()) : !AI::IsPaused(this->filter.script_debug_company)));

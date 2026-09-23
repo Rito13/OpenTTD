@@ -52,16 +52,17 @@ bool IsValidLink(Link link)
  * @param title Title of the league table
  * @param header Text to show above the table
  * @param footer Text to show below the table
+ * @param game_script The Game Script that created this table.
  * @return the cost of this operation or an error
  */
-std::tuple<CommandCost, LeagueTableID> CmdCreateLeagueTable(DoCommandFlags flags, const EncodedString &title, const EncodedString &header, const EncodedString &footer)
+std::tuple<CommandCost, LeagueTableID> CmdCreateLeagueTable(DoCommandFlags flags, const EncodedString &title, const EncodedString &header, const EncodedString &footer, GameID game_script)
 {
 	if (_current_company != OWNER_DEITY) return { CMD_ERROR, LeagueTableID::Invalid() };
 	if (!LeagueTable::CanAllocateItem()) return { CMD_ERROR, LeagueTableID::Invalid() };
 	if (title.empty()) return { CMD_ERROR, LeagueTableID::Invalid() };
 
 	if (flags.Test(DoCommandFlag::Execute)) {
-		LeagueTable *lt = LeagueTable::Create(title, header, footer);
+		LeagueTable *lt = LeagueTable::Create(title, header, footer, game_script);
 		return { CommandCost(), lt->index };
 	}
 

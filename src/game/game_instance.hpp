@@ -23,8 +23,9 @@ public:
 	 * Initialize the script and prepare it for its first run.
 	 * @param info The GameInfo to start.
 	 * @param id The index under whitch the script is initialized.
+	 * @param already_used_sub_apis Set of sub APIs that are already used by other Game Scripts.
 	 */
-	void Initialize(class GameInfo *info, GameID id);
+	void Initialize(class GameInfo *info, GameID id, GSSubAPIs already_used_sub_apis);
 
 	/**
 	 * Test if the sub API is available for this game script.
@@ -32,6 +33,12 @@ public:
 	 * @return \c true iff the API is available.
 	 */
 	bool IsSubAPIAvailable(GSSubAPI api) { return this->required_sub_apis.Test(api); }
+
+	/**
+	 * Get which sub APIs are available for this Game Script.
+	 * @return The sub APIs available for this Game Script.
+	 */
+	GSSubAPIs GetAvailableSubAPIs() { return this->required_sub_apis; }
 
 	/**
 	 * Get the index of this Game Script.

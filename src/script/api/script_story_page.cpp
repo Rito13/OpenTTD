@@ -20,6 +20,7 @@
 #include "../../string_func.h"
 #include "../../tile_map.h"
 #include "../../story_cmd.h"
+#include "../../game/game_instance.hpp"
 
 #include "../../safeguards.h"
 
@@ -30,12 +31,18 @@ static inline bool StoryPageElementTypeRequiresText(StoryPageElementType type)
 
 /* static */ bool ScriptStoryPage::IsValidStoryPage(StoryPageID story_page_id)
 {
-	return ::StoryPage::IsValidID(story_page_id);
+	const StoryPage *page = ::StoryPage::GetIfValid(story_page_id);
+	if (page == nullptr) return false;
+	GameInstance *game = dynamic_cast<GameInstance *>(&ScriptObject::GetActiveInstance());
+	assert(game != nullptr);
+	return game->GetID() == page->game_script;
 }
 
 /* static */ bool ScriptStoryPage::IsValidStoryPageElement(StoryPageElementID story_page_element_id)
 {
-	return ::StoryPageElement::IsValidID(story_page_element_id);
+	const StoryPageElement *element = ::StoryPageElement::GetIfValid(story_page_element_id);
+	if (element == nullptr) return false;
+	return ScriptStoryPage::IsValidStoryPage(element->page);
 }
 
 /* static */ bool ScriptStoryPage::IsValidStoryPageElementType(StoryPageElementType type)
@@ -51,9 +58,11 @@ static inline bool StoryPageElementTypeRequiresText(StoryPageElementType type)
 	EnforcePrecondition(STORY_PAGE_INVALID, company == ScriptCompany::COMPANY_INVALID || ScriptCompany::ResolveCompanyID(company) != ScriptCompany::COMPANY_INVALID);
 
 	::CompanyID c = ScriptCompany::FromScriptCompanyID(company);
+	GameInstance *game = dynamic_cast<GameInstance *>(&ScriptObject::GetActiveInstance());
+	assert(game != nullptr);
 
 	if (!ScriptObject::Command<Commands::CreateStoryPage>::Do(&ScriptInstance::DoCommandReturnStoryPageID,
-		c, title != nullptr ? title->GetEncodedText() : EncodedString{})) return STORY_PAGE_INVALID;
+		c, title != nullptr ? title->GetEncodedText() : EncodedString{}, game->GetID())) return STORY_PAGE_INVALID;
 
 	/* In case of test-mode, we return StoryPageID 0 */
 	return StoryPageID::Begin();
