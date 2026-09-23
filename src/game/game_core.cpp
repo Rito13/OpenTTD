@@ -89,7 +89,7 @@
 	GameID id = Game::GetCurrentCountOfInstances();
 	if (id == MAX_COUNT_OF_GAME_SCRIPTS) return;
 	Game::instance.push_back(std::make_unique<GameInstance>());
-	Game::instance[id]->Initialize(info);
+	Game::instance[id]->Initialize(info, id);
 	Game::instance[id]->LoadOnStack(config->GetToLoadData());
 	config->SetToLoadData(nullptr);
 

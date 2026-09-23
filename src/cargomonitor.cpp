@@ -22,16 +22,18 @@ CargoMonitorMap _cargo_deliveries; ///< Map of monitored deliveries to the amoun
  * is specified as company.
  * @param cargo_monitor_map reference to the cargo monitor map to operate on.
  * @param company company to clear cargo monitors for or #INVALID_OWNER if all cargo monitors should be cleared.
+ * @param gs The Game Script for whitch to clear the monitors or #INVALID_GS_ID if for all of them.
  */
-static void ClearCargoMonitoring(CargoMonitorMap &cargo_monitor_map, CompanyID company = INVALID_OWNER)
+static void ClearCargoMonitoring(CargoMonitorMap &cargo_monitor_map, CompanyID company, GameID gs)
 {
-	if (company == INVALID_OWNER) {
+	if (company == INVALID_OWNER && gs == INVALID_GS_ID) {
 		cargo_monitor_map.clear();
 		return;
 	}
 
 	for (auto it = cargo_monitor_map.begin(); it != cargo_monitor_map.end(); /* nothing */) {
-		if (DecodeMonitorCompany(it->first) == company) {
+		if ((company == INVALID_OWNER || DecodeMonitorCompany(it->first) == company) &&
+				(gs == INVALID_GS_ID || DecodeMonitorGameScriptID(it->first) == gs)) {
 			it = cargo_monitor_map.erase(it);
 		} else {
 			++it;
@@ -43,20 +45,22 @@ static void ClearCargoMonitoring(CargoMonitorMap &cargo_monitor_map, CompanyID c
  * Clear all pick-up cargo monitors.
  * @param company clear all pick-up monitors for this company or if #INVALID_OWNER
  * is passed, all pick-up monitors are cleared regardless of company.
+ * @param gs The Game Script for whitch to clear the monitors or #INVALID_GS_ID if for all of them.
  */
-void ClearCargoPickupMonitoring(CompanyID company)
+void ClearCargoPickupMonitoring(CompanyID company, GameID gs)
 {
-	ClearCargoMonitoring(_cargo_pickups, company);
+	ClearCargoMonitoring(_cargo_pickups, company, gs);
 }
 
 /**
  * Clear all delivery cargo monitors.
  * @param company clear all delivery monitors for this company or if #INVALID_OWNER
  * is passed, all delivery monitors are cleared regardless of company.
+ * @param gs The Game Script for whitch to clear the monitors or #INVALID_GS_ID if for all of them.
  */
-void ClearCargoDeliveryMonitoring(CompanyID company)
+void ClearCargoDeliveryMonitoring(CompanyID company, GameID gs)
 {
-	ClearCargoMonitoring(_cargo_deliveries, company);
+	ClearCargoMonitoring(_cargo_deliveries, company, gs);
 }
 
 /**
@@ -122,15 +126,19 @@ void AddCargoDelivery(CargoType cargo_type, CompanyID company, uint32_t amount, 
 		/* Handle pickup update. */
 		switch (src.type) {
 			case SourceType::Industry: {
-				CargoMonitorID num = EncodeCargoIndustryMonitor(company, cargo_type, src.ToIndustryID());
-				CargoMonitorMap::iterator iter = _cargo_pickups.find(num);
-				if (iter != _cargo_pickups.end()) iter->second += amount;
+				for (GameID id = 0; id < Game::GetCurrentCountOfInstances(); ++id) {
+					CargoMonitorID num = EncodeCargoIndustryMonitor(company, cargo_type, src.ToIndustryID(), id);
+					CargoMonitorMap::iterator iter = _cargo_pickups.find(num);
+					if (iter != _cargo_pickups.end()) iter->second += amount;
+				}
 				break;
 			}
 			case SourceType::Town: {
-				CargoMonitorID num = EncodeCargoTownMonitor(company, cargo_type, src.ToTownID());
-				CargoMonitorMap::iterator iter = _cargo_pickups.find(num);
-				if (iter != _cargo_pickups.end()) iter->second += amount;
+				for (GameID id = 0; id < Game::GetCurrentCountOfInstances(); ++id) {
+					CargoMonitorID num = EncodeCargoTownMonitor(company, cargo_type, src.ToTownID(), id);
+					CargoMonitorMap::iterator iter = _cargo_pickups.find(num);
+					if (iter != _cargo_pickups.end()) iter->second += amount;
+				}
 				break;
 			}
 			default: break;
@@ -139,18 +147,19 @@ void AddCargoDelivery(CargoType cargo_type, CompanyID company, uint32_t amount, 
 
 	/* Handle delivery.
 	 * Note that delivery in the right area is sufficient to prevent trouble with neighbouring industries or houses. */
-
-	/* Town delivery. */
-	CargoMonitorID num = EncodeCargoTownMonitor(company, cargo_type, st->town->index);
-	CargoMonitorMap::iterator iter = _cargo_deliveries.find(num);
-	if (iter != _cargo_deliveries.end()) iter->second += amount;
-
-	/* Industry delivery. */
-	for (const auto &i : st->industries_near) {
-		if (i.industry->index != dest) continue;
-		CargoMonitorID num = EncodeCargoIndustryMonitor(company, cargo_type, i.industry->index);
+	for (GameID id = 0; id < Game::GetCurrentCountOfInstances(); ++id) {
+		/* Town delivery. */
+		CargoMonitorID num = EncodeCargoTownMonitor(company, cargo_type, st->town->index, id);
 		CargoMonitorMap::iterator iter = _cargo_deliveries.find(num);
 		if (iter != _cargo_deliveries.end()) iter->second += amount;
+
+		/* Industry delivery. */
+		for (const auto &i : st->industries_near) {
+			if (i.industry->index != dest) continue;
+			CargoMonitorID num = EncodeCargoIndustryMonitor(company, cargo_type, i.industry->index, id);
+			CargoMonitorMap::iterator iter = _cargo_deliveries.find(num);
+			if (iter != _cargo_deliveries.end()) iter->second += amount;
+		}
 	}
 }
 

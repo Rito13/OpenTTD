@@ -33,10 +33,11 @@ GameInstance::GameInstance() :
 	ScriptInstance("GS")
 {}
 
-void GameInstance::Initialize(GameInfo *info)
+void GameInstance::Initialize(GameInfo *info, GameID id)
 {
 	this->api_version = info->GetAPIVersion();
 	this->required_sub_apis = info->required_sub_apis;
+	this->id = id;
 
 	/* Register the GameController */
 	SQGSController_Register(*this->engine);
