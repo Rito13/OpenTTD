@@ -92,7 +92,9 @@ template <> SQInteger PushClassName<GameInfo, ScriptType::GS>(HSQUIRRELVM vm) { 
 		info->required_sub_apis = GSSubAPIs{static_cast<GSSubAPIs::BaseType>(required_sub_apis)};
 	} else {
 		/* For Game Scripts that use API pre 16 we want to require all sub APIs by default. For newer APIs we require none. */
-		if (*std::ranges::find_if(GameInfo::ApiVersions, [info](const std::string_view &v){ return v == info->api_version || v == "16"; }) == "16") {
+		size_t i = 0;
+		while (GameInfo::ApiVersions[i] != info->api_version && GameInfo::ApiVersions[i] != "16") ++i;
+		if (GameInfo::ApiVersions[i] == "16") {
 			info->required_sub_apis = {};
 		} else {
 			info->required_sub_apis = ALL_GS_SUB_APIS;

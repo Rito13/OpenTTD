@@ -645,7 +645,12 @@ struct FramerateWindow : Window {
 			if (skip > 0) {
 				skip--;
 			} else if (e == PerformanceElement::GameScript || e >= PerformanceElement::AI0) {
-				uint64_t value = e == PerformanceElement::GameScript ? Game::GetInstance()->GetAllocatedMemory() : Company::Get(GetAIIndex(e))->ai_instance->GetAllocatedMemory();
+				uint64_t value = 0;
+				if (e == PerformanceElement::GameScript) {
+					for (GameID id = 0; id < Game::GetCurrentCountOfInstances(); ++id) value += Game::GetInstance(id)->GetAllocatedMemory();
+				} else {
+					value = Company::Get(GetAIIndex(e))->ai_instance->GetAllocatedMemory();
+				}
 				DrawString(r.left, r.right, y, GetString(STR_FRAMERATE_BYTES_GOOD, value), TextColour::FromString, AlignmentH::ForceRight);
 				y += GetCharacterHeight(FontSize::Normal);
 				drawable--;

@@ -160,7 +160,7 @@ struct GSConfigWindow : public Window {
 	 */
 	static bool IsEditable()
 	{
-		return _game_mode != GameMode::Normal || Game::GetInstance() != nullptr;
+		return _game_mode != GameMode::Normal || Game::GetCurrentCountOfInstances() > 0;
 	}
 
 	/**

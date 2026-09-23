@@ -95,9 +95,14 @@ void GameInstance::Died()
  */
 void CcGame(Commands cmd, const CommandCost &result, const CommandDataBuffer &data, CommandDataBuffer result_data)
 {
-	if (Game::GetInstance()->DoCommandCallback(result, data, std::move(result_data), cmd)) {
-		Game::GetInstance()->Continue();
+	for (GameID id = 0; id < Game::GetCurrentCountOfInstances(); ++id) {
+		if (!Game::GetInstance(id)->IsWaitingForServer()) continue;
+		if (Game::GetInstance(id)->DoCommandCallback(result, data, std::move(result_data), cmd)) {
+			Game::GetInstance(id)->Continue();
+		}
+		return;
 	}
+	NOT_REACHED();
 }
 
 CommandCallbackData *GameInstance::GetDoCommandCallback()

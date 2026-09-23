@@ -178,6 +178,12 @@ public:
 	inline bool IsAlive() const { return !this->IsDead() && !this->in_shutdown; }
 
 	/**
+	 * Return whether the script is waiting for server to process a DoCommand.
+	 * @return \c true iff the script is waiting to continue.
+	 */
+	inline bool IsWaitingForServer() const { return this->suspend < 0; }
+
+	/**
 	 * Call the script Save function and save all data in the savegame.
 	 */
 	void Save();

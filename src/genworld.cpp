@@ -183,13 +183,15 @@ static void _GenerateWorld()
 			}
 
 			if (_game_mode != GameMode::Editor) {
-				if (Game::GetInstance() != nullptr) {
+				if (Game::GetCurrentCountOfInstances() > 0) {
 					SetGeneratingWorldProgress(GenWorldProgress::GameScript, 2500);
 					_generating_world = true;
 					for (i = 0; i < 2500; i++) {
 						Game::GameLoop();
 						IncreaseGeneratingWorldProgress(GenWorldProgress::GameScript);
-						if (Game::GetInstance()->IsSleeping()) break;
+						bool is_sleeping = true;
+						for (GameID id = 0; id < Game::GetCurrentCountOfInstances(); ++id) is_sleeping &= Game::GetInstance(id)->IsSleeping();
+						if (is_sleeping) break;
 					}
 					_generating_world = false;
 				}

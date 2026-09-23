@@ -50,7 +50,7 @@
 
 static ScriptConfig *GetConfig(CompanyID slot)
 {
-	if (slot == OWNER_DEITY) return GameConfig::GetConfig();
+	if (slot >= OWNER_END) return GameConfig::GetConfig();
 	return AIConfig::GetConfig(slot);
 }
 
@@ -178,8 +178,9 @@ struct ScriptListWindow : public Window {
 			GetConfig(this->slot)->Change(it->second->GetName(), it->second->GetVersion());
 		}
 		if (_game_mode == GameMode::Editor) {
-			if (this->slot == OWNER_DEITY) {
-				if (Game::GetInstance() != nullptr) Game::ResetInstance();
+			if (this->slot >= OWNER_END) {
+				assert(Game::GetCurrentCountOfInstances() >= (this->slot.base() - OWNER_END.base()));
+				if (Game::GetCurrentCountOfInstances() > (this->slot.base() - OWNER_END.base())) Game::ResetInstance(this->slot.base() - OWNER_END.base());
 				Game::StartNew();
 			} else {
 				Company *c = Company::GetIfValid(this->slot);
@@ -189,7 +190,7 @@ struct ScriptListWindow : public Window {
 				}
 			}
 		}
-		InvalidateWindowData(WindowClass::GameOptions, this->slot == OWNER_DEITY ? GameOptionsWindowNumber::GS : GameOptionsWindowNumber::AI);
+		InvalidateWindowData(WindowClass::GameOptions, this->slot >= OWNER_END ? GameOptionsWindowNumber::GS : GameOptionsWindowNumber::AI);
 		InvalidateWindowClassesData(WindowClass::ScriptSettings);
 		InvalidateWindowClassesData(WindowClass::ScriptDebug, -1);
 		CloseWindowByClass(WindowClass::QueryString);
@@ -692,7 +693,7 @@ struct ScriptDebugWindow : public Window {
 
 	ScriptLogTypes::LogData &GetLogData() const
 	{
-		if (this->filter.script_debug_company == OWNER_DEITY) return Game::GetInstance()->GetLogData();
+		if (this->filter.script_debug_company >= OWNER_END) return Game::GetInstance(this->filter.script_debug_company.base() - OWNER_END.base())->GetLogData();
 		return Company::Get(this->filter.script_debug_company)->ai_instance->GetLogData();
 	}
 
@@ -702,8 +703,8 @@ struct ScriptDebugWindow : public Window {
 	 */
 	bool IsDead() const
 	{
-		if (this->filter.script_debug_company == OWNER_DEITY) {
-			GameInstance *game = Game::GetInstance();
+		if (this->filter.script_debug_company >= OWNER_END) {
+			GameInstance *game = Game::GetInstance(this->filter.script_debug_company.base() - OWNER_END.base());
 			return game == nullptr || game->IsDead();
 		}
 		return !Company::IsValidAiID(this->filter.script_debug_company) || Company::Get(this->filter.script_debug_company)->ai_instance->IsDead();
@@ -716,11 +717,9 @@ struct ScriptDebugWindow : public Window {
 	 */
 	bool IsValidDebugCompany(CompanyID company) const
 	{
-		switch (company.base()) {
-			case CompanyID::Invalid().base(): return false;
-			case OWNER_DEITY.base(): return Game::GetInstance() != nullptr;
-			default:              return Company::IsValidAiID(company);
-		}
+		if (company == CompanyID::Invalid()) return false;
+		if (company < OWNER_END) return Company::IsValidAiID(company);
+		return company.base() - OWNER_END.base() < Game::GetCurrentCountOfInstances();
 	}
 
 	/**
@@ -742,7 +741,7 @@ struct ScriptDebugWindow : public Window {
 		}
 
 		/* If no AI is available, see if there is a game script. */
-		if (Game::GetInstance() != nullptr) this->ChangeToScript(OWNER_DEITY);
+		if (Game::GetCurrentCountOfInstances() != 0) this->ChangeToScript(OWNER_END);
 	}
 
 	/**
@@ -963,15 +962,17 @@ struct ScriptDebugWindow : public Window {
 	 */
 	void UpdateGSButtonState()
 	{
-		GameInstance *game = Game::GetInstance();
-		bool valid = game != nullptr;
-		bool dead = valid && game->IsDead();
-		bool paused = valid && game->IsPaused();
+		for (GameID id = 0; id < MAX_COUNT_OF_GAME_SCRIPTS; ++id) {
+			bool valid = id < Game::GetCurrentCountOfInstances();
+			GameInstance *game = valid ? Game::GetInstance(id) : nullptr;
+			bool dead = valid && game->IsDead();
+			bool paused = valid && game->IsPaused();
 
-		NWidgetCore *button = this->GetWidget<NWidgetCore>(WID_SCRD_SCRIPT_GAME);
-		button->SetDisabled(!valid);
-		button->SetLowered(this->filter.script_debug_company == OWNER_DEITY);
-		SetScriptButtonColour(*button, dead, paused);
+			NWidgetCore *button = this->GetWidget<NWidgetCore>(WID_SCRD_GAME_SCRIPT_BUTTON_START + id);
+			button->SetDisabled(!valid);
+			button->SetLowered(this->filter.script_debug_company == static_cast<CompanyID>(OWNER_END.base() + id));
+			SetScriptButtonColour(*button, dead, paused);
+		}
 	}
 
 	/**
@@ -1012,11 +1013,11 @@ struct ScriptDebugWindow : public Window {
 			this->ChangeToScript(static_cast<CompanyID>(widget - WID_SCRD_COMPANY_BUTTON_START), _ctrl_pressed);
 		}
 
-		switch (widget) {
-			case WID_SCRD_SCRIPT_GAME:
-				this->ChangeToScript(OWNER_DEITY, _ctrl_pressed);
-				break;
+		if (IsInsideMM(widget, WID_SCRD_GAME_SCRIPT_BUTTON_START, WID_SCRD_GAME_SCRIPT_BUTTON_END + 1)) {
+			this->ChangeToScript(static_cast<CompanyID>(widget - WID_SCRD_GAME_SCRIPT_BUTTON_START + OWNER_END.base()), _ctrl_pressed);
+		}
 
+		switch (widget) {
 			case WID_SCRD_RELOAD_TOGGLE:
 				if (this->filter.script_debug_company == OWNER_DEITY) break;
 				/* First kill the company of the AI, then start a new one. This should start the current AI again */
@@ -1041,8 +1042,8 @@ struct ScriptDebugWindow : public Window {
 			case WID_SCRD_CONTINUE_BTN:
 				/* Unpause current AI / game script and mark the corresponding script button dirty. */
 				if (!this->IsDead()) {
-					if (this->filter.script_debug_company == OWNER_DEITY) {
-						Game::Unpause();
+					if (this->filter.script_debug_company >= OWNER_END) {
+						Game::Unpause(this->filter.script_debug_company.base() - OWNER_END.base());
 					} else {
 						AI::Unpause(this->filter.script_debug_company);
 					}
@@ -1050,7 +1051,13 @@ struct ScriptDebugWindow : public Window {
 
 				/* If the last AI/Game Script is unpaused, unpause the game too. */
 				if (_pause_mode.Test(PauseMode::Normal)) {
-					bool all_unpaused = !Game::IsPaused();
+					bool all_unpaused = true;
+					for (GameID id = 0; id < Game::GetCurrentCountOfInstances(); ++id) {
+						if (Game::IsPaused(id)) {
+							all_unpaused = false;
+							break;
+						}
+					}
 					if (all_unpaused) {
 						for (const Company *c : Company::Iterate()) {
 							if (c->is_ai && AI::IsPaused(c->index)) {
@@ -1104,8 +1111,8 @@ struct ScriptDebugWindow : public Window {
 				if (this->break_string_filter.GetState()) {
 					/* Pause execution of script. */
 					if (!this->IsDead()) {
-						if (this->filter.script_debug_company == OWNER_DEITY) {
-							Game::Pause();
+						if (this->filter.script_debug_company >= OWNER_END) {
+							Game::Pause(this->filter.script_debug_company.base() - OWNER_END.base());
 						} else {
 							AI::Pause(this->filter.script_debug_company);
 						}
@@ -1151,7 +1158,7 @@ struct ScriptDebugWindow : public Window {
 				this->filter.script_debug_company == OWNER_DEITY ||
 				this->filter.script_debug_company == _local_company);
 		this->SetWidgetDisabledState(WID_SCRD_CONTINUE_BTN, this->filter.script_debug_company == CompanyID::Invalid() ||
-			(this->filter.script_debug_company == OWNER_DEITY ? !Game::IsPaused() : !AI::IsPaused(this->filter.script_debug_company)));
+			(this->filter.script_debug_company >= OWNER_END ? !Game::IsPaused(this->filter.script_debug_company.base() - OWNER_END.base()) : !AI::IsPaused(this->filter.script_debug_company)));
 	}
 
 	void OnResize() override
@@ -1190,7 +1197,7 @@ struct ScriptDebugWindow : public Window {
 		Hotkey(0, "company_14", WID_SCRD_COMPANY_BUTTON_START + 13),
 		Hotkey(0, "company_15", WID_SCRD_COMPANY_BUTTON_START + 14),
 		Hotkey('S', "settings", WID_SCRD_SETTINGS),
-		Hotkey('0', "game_script", WID_SCRD_SCRIPT_GAME),
+		Hotkey('0', "game_script", WID_SCRD_GAME_SCRIPT_BUTTON_START),
 		Hotkey(0, "reload", WID_SCRD_RELOAD_TOGGLE),
 		Hotkey('B', "break_toggle", WID_SCRD_BREAK_STR_ON_OFF_BTN),
 		Hotkey('F', "break_string", WID_SCRD_BREAK_STR_EDIT_BOX),
@@ -1203,6 +1210,12 @@ struct ScriptDebugWindow : public Window {
 std::unique_ptr<NWidgetBase> MakeCompanyButtonRowsScriptDebug()
 {
 	return MakeCompanyButtonRows(WID_SCRD_COMPANY_BUTTON_START, WID_SCRD_COMPANY_BUTTON_END, Colours::Grey, 5, STR_AI_DEBUG_SELECT_AI_TOOLTIP, false);
+}
+
+/** Make a number of rows with buttons for each Game Script for the Script debug window. @copydoc NWidgetFunctionType */
+std::unique_ptr<NWidgetBase> MakeGSButtonRowsScriptDebug()
+{
+	return MakeCompanyButtonRows(WID_SCRD_GAME_SCRIPT_BUTTON_START, WID_SCRD_GAME_SCRIPT_BUTTON_END, Colours::Grey, 11, STR_AI_GAME_SCRIPT_TOOLTIP, false);
 }
 
 /** Widgets for the Script debug window. */
@@ -1218,7 +1231,9 @@ static constexpr std::initializer_list<NWidgetPart> _nested_script_debug_widgets
 		NWidget(WWT_PANEL, Colours::Grey, WID_SCRD_VIEW),
 			NWidgetFunction(MakeCompanyButtonRowsScriptDebug), SetPadding(0, 2, 1, 2),
 		EndContainer(),
-		NWidget(WWT_TEXTBTN, Colours::Grey, WID_SCRD_SCRIPT_GAME), SetMinimalSize(100, 20), SetStringTip(STR_AI_GAME_SCRIPT, STR_AI_GAME_SCRIPT_TOOLTIP),
+		NWidget(WWT_PANEL, Colours::Grey, WID_SCRD_VIEW),
+			NWidgetFunction(MakeGSButtonRowsScriptDebug), SetPadding(0, 2, 1, 2),
+		EndContainer(),
 		NWidget(WWT_TEXTBTN, Colours::Grey, WID_SCRD_NAME_TEXT), SetResize(1, 0), SetToolTip(STR_AI_DEBUG_NAME_TOOLTIP),
 		NWidget(NWID_VERTICAL),
 			NWidget(WWT_PUSHTXTBTN, Colours::Grey, WID_SCRD_SETTINGS), SetMinimalSize(100, 20), SetFill(0, 1), SetStringTip(STR_AI_DEBUG_SETTINGS, STR_AI_DEBUG_SETTINGS_TOOLTIP),
@@ -1320,8 +1335,7 @@ void ShowScriptDebugWindowIfScriptError()
 		}
 	}
 
-	GameInstance *g = Game::GetInstance();
-	if (g != nullptr && g->IsDead()) {
-		ShowScriptDebugWindow(OWNER_DEITY);
+	for (GameID id = 0; id < Game::GetCurrentCountOfInstances(); ++id) {
+		if (Game::GetInstance(id)->IsDead()) ShowScriptDebugWindow(static_cast<CompanyID>(OWNER_END.base() + id));
 	}
 }
