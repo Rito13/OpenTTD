@@ -41,7 +41,6 @@
 #include "table/strings.h"
 
 #include <unordered_set>
-#include <variant>
 
 #include "safeguards.h"
 
@@ -141,7 +140,18 @@ void GetShipSpriteSize(EngineID engine, uint &width, uint &height, int &xoffs, i
  */
 std::variant<std::monostate, SubSprite> Ship::GetShipSubSprite(EngineImageType image_type) const
 {
-	if (image_type == EngineImageType::OnMap) return SubSprite{0,0,20,20};
+	static constexpr int INF = 1000; ///< Big number compared to tilesprite size.
+	static constexpr DiagDirectionIndexArray<SubSprite> tunnel_direction_sub_sprite{
+		SubSprite{-0, -INF, INF, 0},
+		SubSprite{-0, -0, INF, INF},
+		SubSprite{-INF, -0, 0, INF},
+		SubSprite{-INF, -INF, 0, 0},
+	};
+	if (image_type == EngineImageType::OnMap) {
+		Tile t = TileAddByDir(this->tile, this->rotation);
+		Debug(Facility{}, Severity::Critical, "GetShipSubSprite at {}", GetTileType(t));
+		if (IsTunnelTile(t)) return SubSprite{0, 0, 10, 10};//tunnel_direction_sub_sprite[GetTunnelBridgeDirection(t)];
+	}
 	return std::monostate{};
 }
 

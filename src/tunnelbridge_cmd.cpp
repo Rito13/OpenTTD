@@ -2057,6 +2057,7 @@ static VehicleEnterTileStates VehicleEnterTile_TunnelBridge(Vehicle *v, TileInde
 					}
 				}
 			} else {
+				Ship::From(v)->UpdateViewport(true, false);
 				return {};
 			}
 		}
