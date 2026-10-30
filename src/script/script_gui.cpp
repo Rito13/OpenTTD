@@ -172,7 +172,14 @@ struct ScriptListWindow : public Window {
 	void ChangeScript()
 	{
 		if (this->selected == -1) {
-			GetConfig(this->slot)->Change(std::nullopt);
+			if (this->slot >= OWNER_END) {
+				/* The selected Game Script is none so we want to remove the entry from config instead of setting it to none.
+				 * This prevents the list from having empty entries and makes iterations easier. */
+				auto &config = _game_mode == GameMode::Menu ? _settings_newgame.script_config.game : _settings_game.script_config.game;
+				config.erase(config.cbegin() + (this->slot.base() - OWNER_END.base()));
+			} else {
+				GetConfig(this->slot)->Change(std::nullopt);
+			}
 		} else {
 			ScriptInfoList::const_iterator it = this->info_list->cbegin();
 			std::advance(it, this->selected);
@@ -191,7 +198,7 @@ struct ScriptListWindow : public Window {
 				}
 			}
 		}
-		InvalidateWindowData(WindowClass::GameOptions, this->slot >= OWNER_END ? GameOptionsWindowNumber::GS : GameOptionsWindowNumber::AI);
+		InvalidateWindowData(WindowClass::GameOptions, this->slot >= OWNER_END ? GameOptionsWindowNumber::GS : GameOptionsWindowNumber::AI, this->selected != -1);
 		InvalidateWindowClassesData(WindowClass::ScriptSettings);
 		InvalidateWindowClassesData(WindowClass::ScriptDebug, -1);
 		CloseWindowByClass(WindowClass::QueryString);

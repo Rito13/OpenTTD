@@ -44,13 +44,16 @@ static constexpr std::initializer_list<NWidgetPart> _nested_gs_config_widgets = 
 	EndContainer(),
 	NWidget(WWT_PANEL, Colours::Mauve, WID_GSC_BACKGROUND),
 		NWidget(NWID_VERTICAL), SetPIP(0, WidgetDimensions::unscaled.vsep_wide, 0), SetPadding(WidgetDimensions::unscaled.sparse_resize),
-			NWidget(WWT_FRAME, Colours::Mauve), SetStringTip(STR_AI_CONFIG_GAMESCRIPT), SetFill(1, 0), SetResize(1, 0),
-				NWidget(WWT_MATRIX, Colours::Mauve, WID_GSC_GSLIST), SetMinimalSize(288, 14), SetFill(1, 1), SetResize(1, 0), SetMatrixDataTip(1, 1, STR_AI_CONFIG_GAMELIST_TOOLTIP),
+			NWidget(WWT_FRAME, Colours::Mauve), SetStringTip(STR_AI_CONFIG_GAMESCRIPT), SetFill(1, 0), SetResize(1, 0), SetPIP(0, WidgetDimensions::unscaled.vsep_sparse, 0),
+				NWidget(NWID_HORIZONTAL),
+					NWidget(WWT_MATRIX, Colours::Mauve, WID_GSC_GSLIST), SetMinimalSize(288, 112), SetFill(1, 0), SetResize(1, 0), SetMatrixDataTip(1, 0, STR_AI_CONFIG_GAMELIST_TOOLTIP), SetScrollbar(WID_GSC_SCROLLBAR),
+					NWidget(NWID_VSCROLLBAR, Colours::Mauve, WID_GSC_SCROLLBAR),
+				EndContainer(),
 			EndContainer(),
 			NWidget(WWT_FRAME, Colours::Mauve), SetStringTip(STR_AI_CONFIG_GAMESCRIPT_PARAM), SetFill(1, 1), SetResize(1, 0), SetPIP(0, WidgetDimensions::unscaled.vsep_sparse, 0),
 				NWidget(NWID_HORIZONTAL),
-					NWidget(WWT_MATRIX, Colours::Mauve, WID_GSC_SETTINGS), SetFill(1, 0), SetResize(1, 1), SetMinimalSize(188, 182), SetMatrixDataTip(1, 0), SetScrollbar(WID_GSC_SCROLLBAR),
-					NWidget(NWID_VSCROLLBAR, Colours::Mauve, WID_GSC_SCROLLBAR),
+					NWidget(WWT_MATRIX, Colours::Mauve, WID_GSC_SETTINGS), SetFill(1, 0), SetResize(1, 1), SetMinimalSize(188, 182), SetMatrixDataTip(1, 0), SetScrollbar(WID_GSC_SETTINGS_SCROLLBAR),
+					NWidget(NWID_VSCROLLBAR, Colours::Mauve, WID_GSC_SETTINGS_SCROLLBAR),
 				EndContainer(),
 				NWidget(WWT_PUSHTXTBTN, Colours::Yellow, WID_GSC_RESET), SetFill(1, 0), SetResize(1, 0), SetStringTip(STR_AI_SETTINGS_RESET),
 			EndContainer(),
@@ -97,18 +100,22 @@ struct GSConfigWindow : public Window {
 	bool clicked_dropdown = false; ///< Whether the dropdown is open.
 	bool closing_dropdown = false; ///< True, if the dropdown list is currently closing.
 	int clicked_row = 0; ///< The clicked row of settings.
-	Scrollbar *vscroll = nullptr; ///< Cache of the vertical scrollbar.
+	Scrollbar *vscroll = nullptr; ///< Cache of the vertical scrollbar for GSs list.
+	Scrollbar *settings_vscroll = nullptr; ///< Cache of the vertical scrollbar for settigns list.
 	typedef std::vector<const ScriptConfigItem *> VisibleSettingsList; ///< typedef for a vector of script settings
 	VisibleSettingsList visible_settings{}; ///< List of visible GS settings
 	GameID game_script = 0; ///< Currently configured Game Script.
 
 	GSConfigWindow() : Window(_gs_config_desc)
 	{
-		this->gs_config = GameConfig::GetConfig(this->game_script);
-
 		this->CreateNestedTree(); // Initializes 'this->line_height' as a side effect.
 		this->vscroll = this->GetScrollbar(WID_GSC_SCROLLBAR);
+		this->settings_vscroll = this->GetScrollbar(WID_GSC_SETTINGS_SCROLLBAR);
 		this->FinishInitNested(GameOptionsWindowNumber::GS);
+		NWidgetCore *nwi = this->GetWidget<NWidgetCore>(WID_GSC_GSLIST);
+		this->vscroll->SetCapacity(nwi->current_y / this->line_height);
+		auto &config = _game_mode == GameMode::Menu ? _settings_newgame.script_config.game : _settings_game.script_config.game;
+		this->vscroll->SetCount(std::max(static_cast<size_t>(1), config.size()));
 		this->OnInvalidateData(0);
 
 		this->RebuildVisibleSettings();
@@ -136,22 +143,21 @@ struct GSConfigWindow : public Window {
 			}
 		}
 
-		this->vscroll->SetCount(this->visible_settings.size());
+		this->settings_vscroll->SetCount(this->visible_settings.size());
 	}
 
 	void UpdateWidgetSize(WidgetID widget, Dimension &size, [[maybe_unused]] const Dimension &padding, [[maybe_unused]] Dimension &fill, [[maybe_unused]] Dimension &resize) override
 	{
 		switch (widget) {
+			case WID_GSC_GSLIST:
 			case WID_GSC_SETTINGS:
 				this->line_height = std::max(SETTING_BUTTON_HEIGHT, GetCharacterHeight(FontSize::Normal)) + padding.height;
-				resize.width = 1;
-				fill.height = resize.height = this->line_height;
+				resize.height = this->line_height;
+				if (widget == WID_GSC_SETTINGS) {
+					resize.width = 1;
+					fill.height = this->line_height;
+				}
 				size.height = 5 * this->line_height;
-				break;
-
-			case WID_GSC_GSLIST:
-				this->line_height = GetCharacterHeight(FontSize::Normal) + padding.height;
-				size.height = 1 * this->line_height;
 				break;
 		}
 	}
@@ -167,11 +173,12 @@ struct GSConfigWindow : public Window {
 
 	/**
 	 * Get text to display for game script name.
+	 * @param gs_id The Game Script to get the text for.
 	 * @returns Text to display for game script name.
 	 */
-	std::string GetText() const
+	std::string GetText(GameID gs_id) const
 	{
-		if (const GameInfo *info = GameConfig::GetConfig(this->game_script)->GetInfo(); info != nullptr) return info->GetName();
+		if (const GameInfo *info = GameConfig::GetConfig(gs_id)->GetInfo(); info != nullptr) return info->GetName();
 		return GetString(STR_AI_CONFIG_NONE);
 	}
 
@@ -179,8 +186,12 @@ struct GSConfigWindow : public Window {
 	{
 		switch (widget) {
 			case WID_GSC_GSLIST: {
-				/* There is only one slot, unlike with the GS GUI, so it should never be white */
-				DrawString(r.Shrink(WidgetDimensions::scaled.matrix), this->GetText(), (IsEditable() ? TextColour::Orange : TextColour::Silver));
+				Rect tr = r.Shrink(WidgetDimensions::scaled.matrix);
+
+				for (GameID i = static_cast<GameID>(this->vscroll->GetPosition()); i < this->vscroll->GetCount(); ++i) {
+					DrawString(tr, this->GetText(i), IsEditable() ? (this->game_script == i ? TextColour::White : TextColour::Orange) : TextColour::Silver);
+					tr.top += this->line_height;
+				}
 				break;
 			}
 			case WID_GSC_SETTINGS: {
@@ -193,7 +204,7 @@ struct GSConfigWindow : public Window {
 				int button_y_offset = (this->line_height - SETTING_BUTTON_HEIGHT) / 2;
 				int text_y_offset = (this->line_height - GetCharacterHeight(FontSize::Normal)) / 2;
 
-				const auto [first, last] = this->vscroll->GetVisibleRangeIterators(this->visible_settings);
+				const auto [first, last] = this->settings_vscroll->GetVisibleRangeIterators(this->visible_settings);
 				for (auto it = first; it != last; ++it) {
 					const ScriptConfigItem &config_item = **it;
 					int current_value = this->gs_config->GetSetting(config_item.name);
@@ -238,6 +249,7 @@ struct GSConfigWindow : public Window {
 
 		switch (widget) {
 			case WID_GSC_GSLIST: {
+				this->game_script = static_cast<GameID>(this->vscroll->GetScrolledRowFromWidget(pt.y, this, widget));
 				this->InvalidateData();
 				if (click_count > 1 && _game_mode != GameMode::Normal) ShowScriptListWindow(static_cast<CompanyID>(OWNER_END.base() + this->game_script), _ctrl_pressed);
 				break;
@@ -256,7 +268,7 @@ struct GSConfigWindow : public Window {
 				break;
 
 			case WID_GSC_SETTINGS: {
-				auto it = this->vscroll->GetScrolledItemFromWidget(this->visible_settings, pt.y, this, widget);
+				auto it = this->settings_vscroll->GetScrolledItemFromWidget(this->visible_settings, pt.y, this, widget);
 				if (it == this->visible_settings.end()) break;
 
 				const ScriptConfigItem &config_item = **it;
@@ -378,7 +390,7 @@ struct GSConfigWindow : public Window {
 
 	void OnResize() override
 	{
-		this->vscroll->SetCapacityFromWidget(this, WID_GSC_SETTINGS);
+		this->settings_vscroll->SetCapacityFromWidget(this, WID_GSC_SETTINGS);
 	}
 
 	/** When reset, unclick the button after a small timeout. */
@@ -392,9 +404,11 @@ struct GSConfigWindow : public Window {
 	 * @param data Information about the changed data.
 	 * @param gui_scope Whether the call is done from GUI scope. You may not do everything when not in GUI scope. See #InvalidateWindowData() for details.
 	 */
-	void OnInvalidateData([[maybe_unused]] int data = 0, [[maybe_unused]] bool gui_scope = true) override
+	void OnInvalidateData(int data = 0, [[maybe_unused]] bool gui_scope = true) override
 	{
 		if (!gui_scope) return;
+
+		this->gs_config = GameConfig::GetConfig(this->game_script);
 
 		this->SetWidgetDisabledState(WID_GSC_CHANGE, (_game_mode == GameMode::Normal) || !IsEditable());
 
@@ -406,6 +420,9 @@ struct GSConfigWindow : public Window {
 		this->RebuildVisibleSettings();
 		this->CloseChildWindows(WindowClass::DropdownMenu);
 		this->CloseChildWindows(WindowClass::QueryString);
+
+		auto &script_config = _game_mode == GameMode::Menu ? _settings_newgame.script_config.game : _settings_game.script_config.game;
+		this->vscroll->SetCount(std::max(static_cast<size_t>(1), std::min(script_config.size() + data, static_cast<size_t>(MAX_COUNT_OF_GAME_SCRIPTS))));
 	}
 private:
 	bool IsEditableItem(const ScriptConfigItem &config_item) const

@@ -15,9 +15,10 @@
 /** Widgets of the #GSConfigWindow class. */
 enum GSConfigWidgets : WidgetID {
 	WID_GSC_BACKGROUND,       ///< Window background.
-	WID_GSC_GSLIST,           ///< List with current selected Game Script.
+	WID_GSC_GSLIST, ///< List with currenty selected Game Scripts.
+	WID_GSC_SCROLLBAR, ///< Scrollbar to scroll through the selected Game Scripts.
 	WID_GSC_SETTINGS,         ///< Panel to draw the Game Script settings on
-	WID_GSC_SCROLLBAR,        ///< Scrollbar to scroll through the selected AIs.
+	WID_GSC_SETTINGS_SCROLLBAR, ///< Scrollbar to scroll through the settings of selected GS.
 	WID_GSC_CHANGE,           ///< Select another Game Script button.
 	WID_GSC_OPEN_URL,         ///< Open GS URL.
 	WID_GSC_TEXTFILE,         ///< Open GS readme, changelog (+1) or license (+2).
