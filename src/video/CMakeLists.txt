@@ -2,6 +2,7 @@ add_subdirectory(cocoa)
 
 if(NOT OPTION_DEDICATED)
     add_files(
+    	allegro4_patch.h
         allegro_v.cpp
         allegro_v.h
         CONDITION Allegro_FOUND

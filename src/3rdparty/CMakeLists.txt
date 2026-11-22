@@ -1,3 +1,4 @@
+add_subdirectory(allegro4_patch)
 add_subdirectory(catch2)
 add_subdirectory(fmt)
 add_subdirectory(icu)

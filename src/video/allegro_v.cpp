@@ -26,7 +26,7 @@
 #include "../thread.h"
 #include "../window_func.h"
 #include "allegro_v.h"
-#include <allegro.h>
+#include "allegro4_patch.h"
 
 #ifdef _DEBUG
 /* Allegro replaces SEGV/ABRT signals meaning that the debugger will never
@@ -182,6 +182,32 @@ static void GetAvailableVideoMode(uint *w, uint *h)
 	*h = _resolutions[best].height;
 }
 
+static bool _resized = false;
+
+static void ResizeCallback(RESIZE_DISPLAY_EVENT *ev)
+{
+	_resized = true;
+	return;
+}
+
+/** Update _screen with values provided by Allegro. */
+static void UpdateScreenSize()
+{
+	int bpp = BlitterFactory::GetCurrentBlitter()->GetScreenDepth();
+	assert(bpp != 0);
+
+	/* The size of the screen might be bigger than the part we can actually draw on!
+	 * So calculate the size based on the top, bottom, left and right */
+	_allegro_screen = create_bitmap_ex(bpp, screen->cr - screen->cl, screen->cb - screen->ct);
+	_screen.width = _allegro_screen->w;
+	_screen.height = _allegro_screen->h;
+	_screen.pitch = ((uint8_t*)screen->line[1] - (uint8_t*)screen->line[0]) / (bpp / 8);
+	_screen.dst_ptr = _allegro_screen->line[0];
+
+	/* Initialise the screen so we don't blit garbage to the screen */
+	std::fill_n(static_cast<std::byte *>(_screen.dst_ptr), static_cast<size_t>(_screen.height) * _screen.pitch, static_cast<std::byte>(0));
+}
+
 static bool CreateMainSurface(uint w, uint h)
 {
 	int bpp = BlitterFactory::GetCurrentBlitter()->GetScreenDepth();
@@ -194,16 +220,7 @@ static bool CreateMainSurface(uint w, uint h)
 		return false;
 	}
 
-	/* The size of the screen might be bigger than the part we can actually draw on!
-	 * So calculate the size based on the top, bottom, left and right */
-	_allegro_screen = create_bitmap_ex(bpp, screen->cr - screen->cl, screen->cb - screen->ct);
-	_screen.width = _allegro_screen->w;
-	_screen.height = _allegro_screen->h;
-	_screen.pitch = ((uint8_t*)screen->line[1] - (uint8_t*)screen->line[0]) / (bpp / 8);
-	_screen.dst_ptr = _allegro_screen->line[0];
-
-	/* Initialise the screen so we don't blit garbage to the screen */
-	std::fill_n(static_cast<std::byte *>(_screen.dst_ptr), static_cast<size_t>(_screen.height) * _screen.pitch, static_cast<std::byte>(0));
+	UpdateScreenSize();
 
 	/* Set the mouse at the place where we expect it */
 	poll_mouse();
@@ -216,6 +233,8 @@ static bool CreateMainSurface(uint w, uint h)
 
 	std::string caption = VideoDriver::GetCaption();
 	set_window_title(caption.c_str());
+
+	_xwin_sysdrv_set_resize_callback(ResizeCallback);
 
 	GameSizeChanged();
 
@@ -421,8 +440,35 @@ bool VideoDriver_Allegro::PollEvent()
  */
 int _allegro_instance_count = 0;
 
+static void acknowledge_resize(void)
+{
+	Debug(Facility{}, Severity{}, "acknowledge_resize");
+	_resized = false;
+
+	BITMAP *new_screen;
+
+	/* Hide the mouse from current "screen" */
+	if (_mouse_installed) show_mouse(NULL);
+
+	new_screen = _xwin_acknowledge_resize();
+	if (!new_screen) {
+		return;
+	}
+
+	screen = new_screen;
+
+	UpdateScreenSize();
+	BlitterFactory::GetCurrentBlitter()->PostResize();
+	GameSizeChanged();
+
+	if (_al_linker_mouse) _al_linker_mouse->set_mouse_etc();
+}
+
 std::optional<std::string_view> VideoDriver_Allegro::Start(const StringList &param)
 {
+	assert(_allegro_instance_count == 0);
+	InjectResizablePatch();
+
 	if (_allegro_instance_count == 0 && install_allegro(SYSTEM_AUTODETECT, &errno, nullptr)) {
 		Debug(Facility::Driver, Severity::Critical, "allegro: install_allegro failed '{}'", allegro_error);
 		return "Failed to set up Allegro";
@@ -491,6 +537,7 @@ void VideoDriver_Allegro::MainLoop()
 
 	for (;;) {
 		if (_exit_game) break;
+		if (_resized) acknowledge_resize();
 
 		this->Tick();
 		this->SleepTillNextTick();
