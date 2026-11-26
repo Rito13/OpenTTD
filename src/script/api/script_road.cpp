@@ -394,17 +394,18 @@ static std::optional<RoadPartOrientation> ToRoadPartOrientation(const TileIndex 
  */
 static Array<TileIndex> MapRoadBitsToNeighbourTiles(const ::RoadBits rb)
 {
-	const TileIndex neighbours[] = {
+	const EnumIndexArray<TileIndex, RoadBit, RoadBit::End> neighbours = {
 		ScriptMap::GetTileIndex(0, -1), // RoadBit::NW
 		ScriptMap::GetTileIndex(1, 0), // RoadBit::SW
 		ScriptMap::GetTileIndex(0, 1), // RoadBit::SE
 		ScriptMap::GetTileIndex(-1, 0), // RoadBit::NE
 	};
 
+
 	Array<TileIndex> existing;
 	existing.reserve(rb.Count());
 	for (const RoadBit &roadbit : rb) {
-		existing.emplace_back(neighbours[to_underlying(roadbit)]);
+		existing.emplace_back(neighbours[roadbit]);
 	}
 
 	return existing;
